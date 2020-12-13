@@ -107,7 +107,7 @@ def define_G(opt, step=0):
     gpu_ids = opt['gpu_ids']
     opt_net = opt['network_G']
     which_model = opt_net['which_model_G']
-    
+
     if opt_net['net_act']: # If set, use a different activation function
         act_type = opt_net['net_act']
     else: # Use networks defaults
@@ -117,7 +117,7 @@ def define_G(opt, step=0):
             act_type = 'leakyrelu'
         elif which_model == 'ppon':
             act_type = 'leakyrelu'
-    
+
     if which_model == 'sr_resnet':  # SRResNet
         from models.modules.architectures import SRResNet_arch
         netG = SRResNet_arch.SRResNet(in_nc=opt_net['in_nc'], out_nc=opt_net['out_nc'], nf=opt_net['nf'], \
@@ -139,7 +139,7 @@ def define_G(opt, step=0):
             nb=opt_net['nb'], gc=opt_net['gc'])
     elif which_model == 'ppon':
         from models.modules.architectures import PPON_arch
-        netG = PPON_arch.PPON(in_nc=opt_net['in_nc'], nf=opt_net['nf'], nb=opt_net['nb'], out_nc=opt_net['out_nc'], 
+        netG = PPON_arch.PPON(in_nc=opt_net['in_nc'], nf=opt_net['nf'], nb=opt_net['nb'], out_nc=opt_net['out_nc'],
             upscale=opt_net['scale'], act_type=act_type) #(in_nc=3, nf=64, nb=24, out_nc=3)
     elif which_model == 'asr_cnn':
         from models.modules.architectures import ASRResNet_arch
@@ -155,22 +155,50 @@ def define_G(opt, step=0):
         from models.modules.architectures import PAN_arch
         netG = PAN_arch.PAN(in_nc=opt_net['in_nc'], out_nc=opt_net['out_nc'],
                             nf=opt_net['nf'], unf=opt_net['unf'], nb=opt_net['nb'], scale=opt_net['scale'],
-                            self_attention=opt_net.get('self_attention', False), 
+                            self_attention=opt_net.get('self_attention', False),
                             double_scpa=opt_net.get('double_scpa', False),
                             ups_inter_mode=opt_net.get('ups_inter_mode', 'nearest'))
     elif which_model == 'sofvsr_net':
         from models.modules.architectures import SOFVSR_arch
         netG = SOFVSR_arch.SOFVSR(scale=opt_net['scale'],n_frames=opt_net.get('n_frames', 3),
-                                  channels=opt_net.get('channels', 320), img_ch=opt_net.get('img_ch', 1), 
-                                  SR_net=opt_net.get('SR_net', 'sofvsr'), 
-                                  sr_nf=opt_net.get('sr_nf', 64), sr_nb=opt_net.get('sr_nb', 23), 
+                                  channels=opt_net.get('channels', 320), img_ch=opt_net.get('img_ch', 1),
+                                  SR_net=opt_net.get('SR_net', 'sofvsr'),
+                                  sr_nf=opt_net.get('sr_nf', 64), sr_nb=opt_net.get('sr_nb', 23),
                                   sr_gc=opt_net.get('sr_gc', 32), sr_unf=opt_net.get('sr_unf', 24),
-                                  sr_gaussian_noise=opt_net.get('sr_gaussian_noise', 64), 
+                                  sr_gaussian_noise=opt_net.get('sr_gaussian_noise', 64),
                                   sr_plus=opt_net.get('sr_plus', False), sr_sa=opt_net.get('sr_sa', True),
                                   sr_upinter_mode=opt_net.get('sr_upinter_mode', 'nearest'))
     elif which_model == 'rife_net':
         from models.modules.architectures import RIFE_arch
         netG = RIFE_arch.RIFE()
+    elif which_model == 'DFNet':
+        from models.modules.architectures import DFNet_arch
+        netG = DFNet_arch.DFNet(c_img=opt_net['c_img'], c_mask=opt_net['c_mask'], c_alpha=opt_net['c_alpha'],
+            mode=opt_net['mode'], norm=opt_net['norm'], act_en=opt_net['act_en'], act_de=opt_net['act_de'],
+            en_ksize=opt_net['en_ksize'], de_ksize=opt_net['de_ksize'],
+            blend_layers=opt_net['blend_layers'])
+    elif which_model == 'EdgeConnect':
+        from models.modules.architectures import EdgeConnect_arch
+        netG = EdgeConnect_arch.EdgeConnectModel(use_spectral_norm=opt_net['use_spectral_norm'])
+    elif which_model == 'CSA':
+        from models.modules.architectures import CSA_arch
+        netG = CSA_arch.InpaintNet()
+    elif which_model == 'RN':
+        from models.modules.architectures import RN_arch
+        netG = RN_arch.G_Net(input_channels=opt_net['input_channels'], residual_blocks=opt_net['residual_blocks'], threshold=opt_net['threshold'])
+    elif which_model == 'deepfillv2':
+        from models.modules.architectures import deepfillv2_arch
+        netG = deepfillv2_arch.InpaintSANet()
+    elif which_model == 'Adaptive':
+        from models.modules.architectures import Adaptive_arch
+        netG = Adaptive_arch.PyramidNet(in_channels=opt_net['in_channels'], residual_blocks=opt_net['residual_blocks'], init_weights=opt_net['init_weights'])
+    elif which_model == 'Global':
+        from models.modules.architectures import Global_arch
+        netG = Global_arch.Generator(input_dim=opt_net['input_channels'], ngf=opt_net['input_channels'], use_cuda=opt_net['input_channels'], device_ids=opt_net['input_channels'])
+    elif which_model == 'Pluralistic':
+        from models.modules.architectures import Pluralistic_arch
+        netG = Pluralistic_arch.PluralisticGenerator(ngf_E=opt_net['ngf_E'], z_nc_E=opt_net['z_nc_E'], img_f_E=opt_net['img_f_E'], layers_E=opt_net['layers_E'], norm_E=opt_net['norm_E'], activation_E=opt_net['activation_E'],
+                ngf_G=opt_net['ngf_G'], z_nc_G=opt_net['z_nc_G'], img_f_G=opt_net['img_f_G'], L_G=opt_net['L_G'], output_scale_G=opt_net['output_scale_G'], norm_G=opt_net['norm_G'], activation_G=opt_net['activation_G'])
     elif which_model == 'SRFlowNet':
         from models.modules.architectures import SRFlowNet_arch
         netG = SRFlowNet_arch.SRFlowNet(in_nc=opt_net['in_nc'], out_nc=opt_net['out_nc'],
@@ -178,7 +206,7 @@ def define_G(opt, step=0):
     else:
         raise NotImplementedError('Generator model [{:s}] not recognized'.format(which_model))
 
-    if opt['is_train'] and which_model != 'MRRDB_net':
+    if opt['is_train'] and which_model != 'MRRDB_net' and which_model != 'RN' and which_model != 'Pluralistic':
         # Note: MRRDB_net initializes the modules during init, no need to initialize again here
         init_weights(netG, init_type='kaiming', scale=0.1)
     if gpu_ids:
@@ -193,12 +221,12 @@ def define_D(opt):
     opt_net = opt['network_D']
     which_model = opt_net['which_model_D']
     which_model_G = opt_net['which_model_G']
-    
+
     if which_model_G == 'ppon':
         model_G = 'PPON'
     else:
         model_G = 'ESRGAN'
-    
+
     if which_model == 'dis_acd':  # sft-gan, Auxiliary Classifier Discriminator
         from models.modules.architectures import sft_arch
         netD = sft_arch.ACD_VGG_BN_96()
@@ -284,9 +312,9 @@ def define_D(opt):
 
 def define_F(opt, use_bn=False):
     from models.modules.architectures import perceptual
-    
-    feat_network = 'vgg' #opt['feat_network'] #can be configurable option 
-    
+
+    feat_network = 'vgg' #opt['feat_network'] #can be configurable option
+
     gpu_ids = opt['gpu_ids']
     if opt['datasets']['train']['znorm']:
         z_norm = opt['datasets']['train']['znorm']
@@ -298,13 +326,13 @@ def define_F(opt, use_bn=False):
         feature_layer = 49
     else:
         feature_layer = 34
-    
+
     if feat_network == 'resnet': #ResNet
         netF = perceptual.ResNet101FeatureExtractor(use_input_norm=True, device=device)
     else: #VGG network (default)
         netF = perceptual.VGGFeatureExtractor(feature_layer=feature_layer, use_bn=use_bn, \
             use_input_norm=True, device=device, z_norm=z_norm)
-    
+
     if gpu_ids:
         netF = nn.DataParallel(netF)
     netF.eval()  # No need to train
@@ -312,7 +340,7 @@ def define_F(opt, use_bn=False):
 
 
 ####################
-# model coversions and validation for 
+# model coversions and validation for
 # network loading
 ####################
 
@@ -412,6 +440,6 @@ def model_val(opt_net=None, state_dict=None, model_type=None):
         # model = opt_get(opt_net, ['network_G', 'which_model_D'])
         return state_dict
     else:
-        # if model_type not provided, return unchanged 
+        # if model_type not provided, return unchanged
         # (can do other validations here)
         return state_dict

@@ -21,6 +21,22 @@ def create_model(opt):
         from .VSR_model import VSRModel as M
     elif model == 'pbr':
         from .PBR_model import PBRModel as M
+    elif model == 'EdgeConnect':
+        from .EdgeConnectModel import EdgeConnectInpaintor as M
+    elif model == 'DFNet':
+        from .inpaint_model import inpaintModel as M
+    elif model == 'CSA':
+        from .inpaint_model import inpaintModel as M
+    elif model == 'RN':
+        from .inpaint_model import inpaintModel as M
+    elif model == 'deepfillv2':
+        from .inpaint_model import inpaintModel as M
+    elif model == 'Adaptive':
+        from .inpaint_model import inpaintModel as M
+    elif model == 'Global':
+        from .inpaint_model import inpaintModel as M
+    elif model == 'Pluralistic':
+        from .inpaint_model import inpaintModel as M
     else:
         raise NotImplementedError('Model [{:s}] not recognized.'.format(model))
     m = M(opt)

@@ -11,7 +11,7 @@ _str_to_cv2_pad_to = {'constant':cv2.BORDER_CONSTANT,
                    'symmetric':cv2.BORDER_REFLECT
                   }
 #INTER_MODE
-_str_to_cv2_interpolation = {'nearest':cv2.INTER_NEAREST, 
+_str_to_cv2_interpolation = {'nearest':cv2.INTER_NEAREST,
                          'linear':cv2.INTER_LINEAR,
                          'bilinear':cv2.INTER_LINEAR,
                          'area':cv2.INTER_AREA,
@@ -122,7 +122,7 @@ def parse(opt_path, is_train=True):
         dataset['scale'] = scale
         is_lmdb = False
         if 'dataroot_HR' in dataset and dataset['dataroot_HR'] is not None:
-            HR_images_paths = dataset['dataroot_HR']        
+            HR_images_paths = dataset['dataroot_HR']
             if type(HR_images_paths) is list:
                 dataset['dataroot_HR'] = []
                 for path in HR_images_paths:
@@ -134,7 +134,7 @@ def parse(opt_path, is_train=True):
                 if dataset['dataroot_HR'].endswith('lmdb'):
                     is_lmdb = True
         if 'dataroot_HR_bg' in dataset and dataset['dataroot_HR_bg'] is not None:
-            HR_images_paths = dataset['dataroot_HR_bg']        
+            HR_images_paths = dataset['dataroot_HR_bg']
             if type(HR_images_paths) is list:
                 dataset['dataroot_HR_bg'] = []
                 for path in HR_images_paths:
@@ -174,13 +174,13 @@ def parse(opt_path, is_train=True):
 
         if dataset.get('lr_blur_types', None) and dataset.get('lr_blur', None):
             dataset['lr_blur_types'] = parse2lists(dataset['lr_blur_types'])
-        
+
         if dataset.get('lr_noise_types', None) and dataset.get('lr_noise', None):
             dataset['lr_noise_types'] = parse2lists(dataset['lr_noise_types'])
-        
+
         if dataset.get('lr_noise_types2', None) and dataset.get('lr_noise2', None):
             dataset['lr_noise_types2'] = parse2lists(dataset['lr_noise_types2'])
-        
+
         if dataset.get('hr_noise_types', None) and dataset.get('hr_noise', None):
             dataset['hr_noise_types'] = parse2lists(dataset['hr_noise_types'])
 
@@ -241,7 +241,7 @@ def parse(opt_path, is_train=True):
             opt['train']['swa_start_iter'] = int(opt['train']['swa_start_iter_rel'] * niter)
             opt['train'].pop('swa_start_iter_rel')
         # print(opt['train'])
-    
+
     # export CUDA_VISIBLE_DEVICES
     gpu_list = ','.join(str(x) for x in opt['gpu_ids'])
     os.environ['CUDA_VISIBLE_DEVICES'] = gpu_list

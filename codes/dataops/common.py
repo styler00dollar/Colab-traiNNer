@@ -18,7 +18,7 @@ from dataops.debug import tmp_vis, describe_numpy, describe_tensor
 ####################
 
 ###################### get image path list ######################
-IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP', '.dng', '.DNG', '.webp','.npy', '.NPY']
+IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP', '.dng', '.DNG', '.webp', '.WEBP', '.npy', '.NPY']
 
 def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
@@ -88,7 +88,7 @@ def read_img(env, path, out_nc=3, fix_channels=True):
         out_nc: Desired number of channels
         fix_channels: changes the images to the desired number of channels
     Output:
-        Numpy uint8, HWC, BGR, [0,255] by default 
+        Numpy uint8, HWC, BGR, [0,255] by default
     '''
 
     img = None
@@ -100,7 +100,7 @@ def read_img(env, path, out_nc=3, fix_channels=True):
         if(path[-3:].lower() == 'npy'): # if image is a NPY numpy array
             with open(path, 'rb') as f:
                 img = np.load(f)
-        else: # else, if image can be read by cv2 
+        else: # else, if image can be read by cv2
             img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
         #TODO: add variable detecting if cv2 is not available and try PIL instead
         # elif: # using PIL instead of OpenCV
@@ -129,12 +129,12 @@ def fix_img_channels(img, out_nc):
         #img = img[..., np.newaxis] #alt
         #img = np.expand_dims(img, axis=2)
         img = np.tile(np.expand_dims(img, axis=2), (1, 1, 3))
-    # special case: properly remove alpha channel 
-    if out_nc == 3 and img.shape[2] == 4: 
+    # special case: properly remove alpha channel
+    if out_nc == 3 and img.shape[2] == 4:
         img = bgra2rgb(img)
-    # remove all extra channels 
-    elif img.shape[2] > out_nc: 
-        img = img[:, :, :out_nc] 
+    # remove all extra channels
+    elif img.shape[2] > out_nc:
+        img = img[:, :, :out_nc]
     # if alpha is expected, add solid alpha channel
     elif img.shape[2] == 3 and out_nc == 4:
         img = np.dstack((img, np.full(img.shape[:-1], 255, dtype=np.uint8)))
@@ -210,10 +210,10 @@ def rgb2ycbcr(img, only_y=True):
 
 def bgr2ycbcr(img, only_y=True, separate=False):
     '''bgr version of matlab rgb2ycbcr
-    Python opencv library (cv2) cv2.COLOR_BGR2YCrCb has 
+    Python opencv library (cv2) cv2.COLOR_BGR2YCrCb has
     different parameters with MATLAB color convertion.
     only_y: only return Y channel
-    separate: if true, will returng the channels as 
+    separate: if true, will returng the channels as
         separate images
     Input:
         uint8, [0, 255]
@@ -231,12 +231,12 @@ def bgr2ycbcr(img, only_y=True, separate=False):
                               [65.481, -37.797, 112.0]]) / 255.0 + [16, 128, 128]
         # to make ycrcb like cv2
         # rlt = rlt[:, :, (0, 2, 1)]
-    
+
     if in_img_type == np.uint8:
         rlt = rlt.round()
     else:
         rlt /= 255.
-    
+
     if separate:
         rlt = rlt.astype(in_img_type)
         # y, cb, cr
@@ -247,7 +247,7 @@ def bgr2ycbcr(img, only_y=True, separate=False):
 '''
 def ycbcr2rgb_(img, only_y=True):
     """same as matlab ycbcr2rgb
-    (Note: this implementation is the original from BasicSR, but 
+    (Note: this implementation is the original from BasicSR, but
     appears to be for ycrcb, like cv2)
     Input:
         uint8, [0, 255]
@@ -257,7 +257,7 @@ def ycbcr2rgb_(img, only_y=True):
     img_ = img.astype(np.float32)
     if in_img_type != np.uint8:
         img_  *= 255.
-    
+
     # to make ycrcb like cv2
     # rlt = rlt[:, :, (0, 2, 1)]
 
@@ -272,7 +272,7 @@ def ycbcr2rgb_(img, only_y=True):
     # rlt = img_.dot(xform.T)
     np.putmask(rlt, rlt > 255, 255)
     np.putmask(rlt, rlt < 0, 0)
-    
+
     if in_img_type == np.uint8:
         rlt = rlt.round()
     else:
@@ -283,7 +283,7 @@ def ycbcr2rgb_(img, only_y=True):
 def ycbcr2rgb(img, only_y=True):
     '''
     bgr version of matlab ycbcr2rgb
-    Python opencv library (cv2) cv2.COLOR_YCrCb2BGR has 
+    Python opencv library (cv2) cv2.COLOR_YCrCb2BGR has
     different parameters to MATLAB color convertion.
 
     Input:
@@ -294,7 +294,7 @@ def ycbcr2rgb(img, only_y=True):
     img_ = img.astype(np.float32)
     if in_img_type != np.uint8:
         img_  *= 255.
-    
+
     # to make ycrcb like cv2
     # rlt = rlt[:, :, (0, 2, 1)]
 
@@ -306,7 +306,7 @@ def ycbcr2rgb(img, only_y=True):
     rlt = np.dot((img_ - offset), mat)
     rlt = np.clip(rlt, 0, 255)
     ## rlt = np.rint(rlt).astype('uint8')
-    
+
     if in_img_type == np.uint8:
         rlt = rlt.round()
     else:
@@ -380,7 +380,7 @@ def denorm(x, min_max=(-1.0, 1.0)):
     '''
         Denormalize from [-1,1] range to [0,1]
         formula: xi' = (xi - mu)/sigma
-        Example: "out = (x + 1.0) / 2.0" for denorm 
+        Example: "out = (x + 1.0) / 2.0" for denorm
             range (-1,1) to (0,1)
         for use with proper act in Generator output (ie. tanh)
     '''
@@ -393,7 +393,7 @@ def denorm(x, min_max=(-1.0, 1.0)):
         raise TypeError("Got unexpected object type, expected torch.Tensor or \
         np.ndarray")
 
-def norm(x): 
+def norm(x):
     #Normalize (z-norm) from [0,1] range to [-1,1]
     out = (x - 0.5) * 2.0
     if isinstance(x, torch.Tensor):
@@ -416,7 +416,7 @@ def np2tensor(img, bgr2rgb=True, data_range=1., normalize=False, change_range=Tr
     Converts a numpy image array into a Tensor array.
     Parameters:
         img (numpy array): the input image numpy array
-        add_batch (bool): choose if new tensor needs batch dimension added 
+        add_batch (bool): choose if new tensor needs batch dimension added
     """
     if not isinstance(img, np.ndarray): #images expected to be uint8 -> 255
         raise TypeError("Got unexpected object type, expected np.ndarray")
@@ -443,18 +443,18 @@ def np2tensor(img, bgr2rgb=True, data_range=1., normalize=False, change_range=Tr
     return img
 
 #2np
-def tensor2np(img, rgb2bgr=True, remove_batch=True, data_range=255, 
+def tensor2np(img, rgb2bgr=True, remove_batch=True, data_range=255,
               denormalize=False, change_range=True, imtype=np.uint8):
     """
     Converts a Tensor array into a numpy image array.
     Parameters:
         img (tensor): the input image tensor array
             4D(B,(3/1),H,W), 3D(C,H,W), or 2D(H,W), any range, RGB channel order
-        remove_batch (bool): choose if tensor of shape BCHW needs to be squeezed 
+        remove_batch (bool): choose if tensor of shape BCHW needs to be squeezed
         denormalize (bool): Used to denormalize from [-1,1] range back to [0,1]
-        imtype (type): the desired type of the converted numpy array (np.uint8 
+        imtype (type): the desired type of the converted numpy array (np.uint8
             default)
-    Output: 
+    Output:
         img (np array): 3D(H,W,C) or 2D(H,W), [0,255], np.uint8 (default)
     """
     if not isinstance(img, torch.Tensor):
@@ -462,27 +462,27 @@ def tensor2np(img, rgb2bgr=True, remove_batch=True, data_range=255,
     n_dim = img.dim()
 
     #TODO: Check: could denormalize here in tensor form instead, but end result is the same
-    
-    img = img.float().cpu()  
-    
+
+    img = img.float().cpu()
+
     if n_dim == 4 or n_dim == 3:
         #if n_dim == 4, has to convert to 3 dimensions, either removing batch or by creating a grid
         if n_dim == 4 and remove_batch:
             if img.shape[0] > 1:
                 # leave only the first image in the batch
-                img = img[0,...] 
+                img = img[0,...]
             else:
                 # remove a fake batch dimension
                 img = img.squeeze()
                 # squeeze removes batch and channel of grayscale images (dimensions = 1)
-                if len(img.shape) < 3: 
+                if len(img.shape) < 3:
                     #add back the lost channel dimension
                     img = img.unsqueeze(dim=0)
         # convert images in batch (BCHW) to a grid of all images (C B*H B*W)
         else:
             n_img = len(img)
             img = make_grid(img, nrow=int(math.sqrt(n_img)), normalize=False)
-        
+
         if img.shape[0] == 3 and rgb2bgr: #RGB
             #RGB to BGR -> in tensor, if using OpenCV, else not needed. Only if image has colors.
             img_np = rgb_to_bgr(img).numpy()
@@ -773,7 +773,7 @@ def imresize_np(img, scale, antialiasing=True, interpolation=None):
     # Now the scale should be the same for H and W
     # input: img: Numpy, HWC BGR [0,1]
     # output: HWC BGR [0,1] w/o round
-    
+
     change_range = False
     if img.max() > 1:
         img_type = img.dtype
@@ -856,7 +856,7 @@ def imresize_np(img, scale, antialiasing=True, interpolation=None):
         out_2[:, i, 2] = out_1_aug[:, idx:idx + kernel_width, 2].mv(weights_W[i])
 
     out_2 = out_2.numpy().clip(0,1)
-    
+
     if change_range:
         out_2 = out_2*info(img_type).max #uint8 = 255
         out_2 = out_2.astype(img_type)

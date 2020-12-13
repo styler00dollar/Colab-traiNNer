@@ -1,48 +1,46 @@
-name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
-#name: 001_template # remove "debug" to run the real training session.
+#name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
+name: 001_template # remove "debug" to run the real training session.
 use_tb_logger: true
-model: srragan #srragan | sr | srgan | ppon | asrragan
-scale: 4
+model: EdgeConnect #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv2 | Adaptive | Global | Pluralistic
+scale: 1
 gpu_ids: [0]
-use_amp: true
+use_amp: false
 use_swa: false
 
 # Dataset options:
 datasets:
-  train: 
+  train:
     name: DIV2K
-    mode: LRHRC
+    mode: LRHRC # LR | LRHR | LRHROTF | LRHRC | LRHRseg_bg |VLRHR | VLR | LRHRPBR
     # dataroot_HR: '../datasets/train/hr' # Original, with a single directory
     # dataroot_LR: '../datasets/train/lr' # Original, with a single directory
     dataroot_HR: [
-      '../datasets/train/hr1', 
-      '../datasets/train/hr2', 
-      '../datasets/train/hr3'
+      '/content/hr'
       ] # high resolution / ground truth images
     dataroot_LR: [
-      '../datasets/train/lr1', 
-      '../datasets/train/lr2' #,
+      #'/content/lr' #,
       # '../datasets/train/lr3'
       ] # low resolution images. If there are missing LR images, they will be generated on the fly from HR
     subset_file: null
     use_shuffle: true
     znorm: false # true | false # To normalize images in [-1, 1] range. Default = None (range [0,1]). Can use with activation function like tanh.
-    n_workers: 4 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
-    batch_size: 8
-    virtual_batch_size: 8
-    HR_size: 128 # patch size. Default: 128. Needs to be coordinated with the patch size of the features network
+    n_workers: 2 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
+    batch_size: 2
+    virtual_batch_size: 2
+    HR_size: 256 # patch size. Default: 128. Needs to be coordinated with the patch size of the features network
     image_channels: 3 # number of channels to load images in
+    training_with_canny: True # Needed for edge-connect
 
     # Color space conversion: 'color' for both LR and HR, 'color_LR' for LR independently, 'color_HR' for HR independently
     # color: 'y' # remove for no conversion (RGB) | 'y' for Y in YCbCr | 'gray' to convert RGB to grayscale | 'RGB' to convert gray to RGB
     # color_LR: 'y' # remove for no conversion (RGB) | 'y' for Y in YCbCr | 'gray' to convert RGB to grayscale | 'RGB' to convert gray to RGB
     # color_HR: 'y' # remove for no conversion (RGB) | 'y' for Y in YCbCr | 'gray' to convert RGB to grayscale | 'RGB' to convert gray to RGB
-    
+
     # LR and HR modifiers. Random flip LR and HR or ignore provided LRs and generate new ones on the fly with defined probability:
     # rand_flip_LR_HR: false # true # flip LR and HR during training.
     # flip_chance: 0.05 # Example: 0.05 = 5% chance of LR and HR flipping during training.
     # aug_downscale: 0.2 # Example: 0.6 = 60% chance of generating LR on the fly, even if LR dataset exists
-    
+
     # If manually configuring on the fly generation of LR: (else, it will automatically default to Matlab-like downscale algorithm (777) when/if required
     dataroot_kernels: '../training/kernels/results/' # location of the image kernels extracted with KernelGAN, for use with the "realistic" downscale type
     lr_downscale: true # false
@@ -52,7 +50,7 @@ datasets:
     use_flip: true # flip images
     use_rot: true # rotate images in 90 degree angles
     hr_rrot: false # rotate images in random degress between -45 and 45
-    
+
     # Noise and blur augmentations:
     lr_blur: false # true | false
     lr_blur_types: {gaussian: 1, clean: 3} # select from: "average","box","gaussian","bilateral","clean" ##blur options #median and motion aren't working yet
@@ -63,7 +61,7 @@ datasets:
     lr_noise_types2: {dither: 2, clean: 2} # select from: "gaussian", "JPEG", "quantize", "poisson", "dither", "s&p", "speckle", "patches", "clean"
     hr_noise: false # true | false
     hr_noise_types:  {gaussian: 1, clean: 4} # select from: "gaussian", "JPEG", "quantize", "poisson", "dither", "s&p", "speckle", "clean"
-    
+
     # Color augmentations
     # lr_fringes: true # true | false
     # lr_fringes_chance: 0.4
@@ -73,31 +71,31 @@ datasets:
     # lr_rand_unsharp: 1 # Example: 0.5 = 50% chance of adding unsharpening mask to LR images on the fly
     # hr_unsharp_mask: true # add a unsharpening mask to HR images. Can work well together with the HFEN loss function.
     # hr_rand_unsharp: 1 # Example: 0.5 = 50% chance of adding unsharpening mask to HR images on the fly
-    
+
     # Augmentations for classification or (maybe) inpainting networks:
     # lr_cutout: false # true | false
     # lr_erasing: false # true | false
 
-  val: 
+  val:
     name: val_set14_part
     mode: LRHROTF
-    dataroot_HR: '../datasets/val/hr'
-    dataroot_LR: '../datasets/val/lr'
-    
+    dataroot_HR: '/content/hr_val'
+    dataroot_LR: '/content/lr_val'
+
     znorm: false # true | false # To normalize images in [-1, 1] range. Default = None (range [0,1]). Can use with activation function like tanh.
-    
+
     # Color space conversion: 'color' for both LR and HR, 'color_LR' for LR independently, 'color_HR' for HR independently
     # color: 'y' # remove for no conversion (RGB) | 'y' for Y in YCbCr | 'gray' to convert RGB to grayscale | 'RGB' to convert gray to RGB
     # color_LR: 'y' # remove for no conversion (RGB) | 'y' for Y in YCbCr | 'gray' to convert RGB to grayscale | 'RGB' to convert gray to RGB
     # color_HR: 'y' # remove for no conversion (RGB) | 'y' for Y in YCbCr | 'gray' to convert RGB to grayscale | 'RGB' to convert gray to RGB
-    
+
     # hr_crop: false #disabled
     lr_downscale: false
     lr_downscale_types: ["linear", "cubic"] # select from ["nearest", "linear", "cubic", "area", "lanczos4", "linear_exact", "matlab_bicubic"] #scale_algos #scaling interpolation options
 path:
-    strict: false # true | false 
-    root: 'D:/Code/GitHub/BasicSR'
-    pretrain_model_G: '../experiments/pretrained_models/RRDB_PSNR_x4.pth'
+    strict: false # true | false
+    root: '/content/BasicSR/'
+    #pretrain_model_G: '../experiments/pretrained_models/RRDB_PSNR_x4.pth'
     #pretrain_model_G: '../experiments/pretrained_models/RRDB_ESRGAN_x4.pth'
     #pretrain_model_G: '../experiments/pretrained_models/nESRGANplus.pth'
     #pretrain_model_G: '../experiments/pretrained_models/PPON_G.pth'
@@ -106,21 +104,20 @@ path:
 
 # Generator options:
 network_G:
-    strict: false # true | false # whether to load the model in strict mode or not
     # ESRGAN:
-    which_model_G: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch) | sr_resnet
-    norm_type: null
-    mode: CNA
-    nf: 64 # of discrim filters in the first conv layer
-    nb: 23
-    in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
-    out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
-    gc: 32
-    group: 1
-    convtype: Conv2D # Conv2D | PartialConv2D
-    net_act: leakyrelu # swish | leakyrelu
-    gaussian: true # true | false
-    plus: false # true | false
+    #which_model_G: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch) | sr_resnet
+    #norm_type: null
+    #mode: CNA
+    #nf: 64 # of discrim filters in the first conv layer
+    #nb: 23
+    #in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
+    #out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
+    #gc: 32
+    #group: 1
+    #convtype: Conv2D # Conv2D | PartialConv2D
+    #net_act: leakyrelu # swish | leakyrelu
+    #gaussian: true # true | false
+    #plus: false # true | false
     ##finalact: tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
 
     # ASRGAN:
@@ -138,7 +135,7 @@ network_G:
     ##gc: 32
     #group: 1
     ##convtype: Conv2D #Conv2D | PartialConv2D
-    
+
     # SRGAN:
     #which_model_G: sr_resnet # RRDB_net | sr_resnet
     #norm_type: null
@@ -147,7 +144,7 @@ network_G:
     #nb: 16
     #in_nc: 3
     #out_nc: 3
-    
+
     # SR:
     #which_model_G: RRDB_net # RRDB_net | sr_resnet
     #norm_type: null
@@ -169,9 +166,68 @@ network_G:
     # self_attention: true
     # double_scpa: false
 
+    # ----Inpainting Generators----
+    # DFNet (needs 2^x image input and validation)
+    #which_model_G: DFNet
+    #c_img: 3
+    #c_mask: 1
+    #c_alpha: 3
+    #mode: nearest
+    #norm: batch
+    #act_en: relu
+    #act_de: leaky_relu
+    #en_ksize: [7, 5, 5, 3, 3, 3, 3, 3]
+    #de_ksize: [3, 3, 3, 3, 3, 3, 3, 3]
+    #blend_layers: [0, 1, 2, 3, 4, 5]
+
+    # EdgeConnect
+    which_model_G: EdgeConnect
+    use_spectral_norm: True
+
+    # CSA
+    #which_model_G: CSA
+
+    # RN
+    #which_model_G: RN
+    #input_channels: 3
+    #residual_blocks: 8
+    #threshold: 0.8
+
+    # deepfillv2
+    #which_model_G: deepfillv2
+
+    # Adaptive
+    #which_model_G: Adaptive
+    #in_channels: 3
+    #residual_blocks: 1
+    #init_weights: True
+
+    # Global
+    #which_model_G: Global
+    #input_dim: 5
+    #ngf: 32
+    #use_cuda: True
+    #device_ids: [0]
+
+    # Pluralistic
+    #which_model_G: Pluralistic
+    #ngf_E: 32
+    #z_nc_E: 128
+    #img_f_E: 128
+    #layers_E: 5
+    #norm_E: 'none'
+    #activation_E: 'LeakyReLU'
+    #ngf_G: 32
+    #z_nc_G: 128
+    #img_f_G: 128
+    #L_G: 0
+    #output_scale_G: 1
+    #norm_G: 'instance'
+    #activation_G: 'LeakyReLU'
+
+
 # Discriminator options:
 network_D:
-    strict: true # true | false # whether to load the model in strict mode or not
     # ESRGAN (default)| PPON:
     which_model_D: discriminator_vgg # discriminator_vgg_128 | discriminator_vgg | discriminator_vgg_128_fea (feature extraction) | discriminator_vgg_fea (feature extraction) | patchgan | multiscale
     norm_type: batch
@@ -193,8 +249,7 @@ train:
 
     # For MultiStepLR (ESRGAN, default):
     lr_scheme: MultiStepLR
-    # lr_steps: [50000, 100000, 200000, 300000] # training from scratch
-    lr_steps_rel: [0.1, 0.2, 0.4, 0.6] # to use lr steps relative to % of training niter instead of fixed lr_steps
+    lr_steps: [50000, 100000, 200000, 300000] # training from scratch
     #lr_steps: [50000, 75000, 85000, 100000] #finetuning
     lr_gamma: 0.5 # lr change at every step (multiplied by)
 
@@ -203,9 +258,9 @@ train:
     # lr_scheme: StepLR_Restart # MultiStepLR | MultiStepLR_Restart | StepLR | StepLR_Restart | CosineAnnealingLR_Restart
     # lr_step_sizes: [200, 100, 250] # Steps for each restart for "StepLR_Restart"
     # restarts: [138000, 172500] # Restart iterations for "MultiStepLR_Restart", "StepLR_Restart" and "CosineAnnealingLR_Restart"
-    # restart_weights: [1, 0.5, 0.5] #lr_() * each weight in "restart_weights" for each restart in "restarts"    
+    # restart_weights: [1, 0.5, 0.5] #lr_() * each weight in "restart_weights" for each restart in "restarts"
     ##clear_state: true
-    
+
     # For MultiStepLR_Restart:
     # lr_gamma: 0.9
     # lr_scheme: MultiStepLR_Restart # MultiStepLR | MultiStepLR_Restart | StepLR | StepLR_Restart | CosineAnnealingLR_Restart
@@ -224,21 +279,19 @@ train:
     # beta2_D: 0.99
     # # beta1: 0.9
     # # beta2: 0.99
+    # niter: 1000000
+    # warmup_iter: -1  # no warm up
     # T_period: [250000, 250000, 250000, 250000]
-    ## T_period_rel: [0.25, 0.25, 0.25, 0.25] # to use T_period relative to % of training niter instead of fixed T_period
     # restarts: [250000, 500000, 750000]
-    ## restarts_rel: [0.25, 0.5, 0.75]
     # restart_weights: [1, 1, 1]
     # eta_min: !!float 1e-7
-    # niter: 1000000
 
     # For SWA scheduler
     swa_start_iter: 375000 #Just reference: 75% of 500000. Can be any value, including 0 to start right away with a pretrained model.
-    # swa_start_iter_rel: 0.75 # to use swa_start_iter relative to % of training niter instead of fixed swa_start_iter
     swa_lr: 1e-4 #Has to be ~order of magnitude of a stable lr for the regular scheduler
     swa_anneal_epochs: 10
     swa_anneal_strategy: "cos"
-    
+
     # Losses:
     pixel_criterion: l1 # "l1" | "l2" | "cb" | "elastic" | "relativel1" | "l1cosinesim" | "clipl1" #pixel loss
     pixel_weight: 1e-2 # 1e-2 | 1
@@ -248,7 +301,7 @@ train:
     # cx_type: contextual
     # cx_vgg_layers: {conv_3_2: 1, conv_4_2: 1}
     # hfen_criterion: l1 # hfen: "l1" | "l2" | "rel_l1" | "rel_l2" #helps in deblurring and finding edges, lines
-    # hfen_weight: 1e-6 
+    # hfen_weight: 1e-6
     # grad_type: grad-4d-l1 # 2d | 4d / - any of the pixel crit, ie "grad-2d-l1"
     # grad_weight: 4e-1 # 4e-1
     # tv_type: 4D # "normal" | "4D" #helps in denoising, reducing upscale artefacts
@@ -258,8 +311,8 @@ train:
     # ssim_weight: 1
     # lpips_weight: 1 # perceptual loss
     # lpips_type: net-lin # net-lin | net *
-    # lpips_net: squeeze # "vgg" | "alex" | "squeeze" 
-    
+    # lpips_net: squeeze # "vgg" | "alex" | "squeeze"
+
     # Experimental losses
     # spl_type: spl # "spl" | "gpl" | "cpl"
     # spl_weight: 0.1 # 1e-2 # SPL loss function. note: needs to add a cap in the generator (finalcap; For [0,1] range -> "finalcap": "clamp") or the overflow loss or it can become unstable.
@@ -273,11 +326,10 @@ train:
     # avg_weight: 5 # Averaging downscale loss
     # ms_criterion: multiscale-l1
     # ms_weight: 1e-2
-    
+
     # Adversarial loss:
-    gan_type: vanilla # "vanilla" | "wgan-gp" | "lsgan" 
+    gan_type: vanilla # "vanilla" | "wgan-gp" | "lsgan"
     gan_weight: 5e-3 # * test: 7e-3
-    # freeze_loc: 4 # last feature layer location to freeze in discriminator. VGG-like Discs have 10 layers, patchgan has nlayer.
     # for wgan-gp
     # D_update_ratio: 1
     # D_init_iters: 0
@@ -286,18 +338,18 @@ train:
     # gan_featmaps: true # true | false
     # dis_feature_criterion: cb # "l1" | "l2" | "cb" | "elastic" #discriminator feature loss
     # dis_feature_weight: 0.01 # 1
-    
+
     # For PPON
     # train_phase: 1 # Training starting phase, can skip the first phases
     # phase1_s: 100 # 5000 #100 #5000 #138000 #-1 to skip. Need to coordinate with the LR steps. #COBranch: lr =  2e−4, decreased by the factor of 2 for every 1000 epochs (1.38e+5 iterations) 138k
     # phase2_s: 200 # 10000 #200 #10000 #172500 #-1 to skip. Need to coordinate with the LR steps. #SOBranch: λ = 1e+3 (?), lr = 1e−4 and halved at every 250 epochs (3.45e+4iterations) 34.5k
     # phase3_s: 5000000 # 207000 #-1 to skip. Need to coordinate with the LR steps. #POBranch: η = 5e−3,  lr = 1e−4 and halved at every 250 epochs (3.45e+4iterations) 34.5k
     # phase4_s: 100100
-    
+
     # Differentiable Augmentation for Data-Efficient GAN Training
     # diffaug: true
     # dapolicy: 'color,transl_zoom,flip,rotate,cutout' # smart "all" (translation, zoom_in and zoom_out are exclusive)
-    
+
     # Batch (Mixup) augmentations
     # mixup: true
     # mixopts: [blend, rgb, mixup, cutmix, cutmixup] # , "cutout", "cutblur"]
@@ -306,20 +358,19 @@ train:
     # aux_mixprob: 1.0
     # aux_mixalpha: 1.2
     ## mix_p: 1.2
-    
+
     # Frequency Separator
     # fs: true
     # lpf_type: average # "average" | "gaussian"
     # hpf_type: average # "average" | "gaussian"
-    
+
     # Other training options:
     # finalcap: clamp # Test. Cap Generator outputs to fit in: [-1, 1] range ("tanh"), rescale tanh to [0,1] range ("scaltanh"), cap ("sigmoid") or clamp ("clamp") to [0,1] range. Default = None. Coordinate with znorm. Required for SPL if using image range [0,1]
     manual_seed: 0
     niter: 5e5
-    # warmup_iter: -1  # number of warm up iterations, -1 for no warm up
     val_freq: 1000 # 5e3
     # overwrite_val_imgs: true
-    # val_comparison: true
+    val_comparison: true
     metrics: 'psnr,ssim,lpips' # select from: "psnr,ssim,lpips" or a combination separated by comma ","
 
 logger:
