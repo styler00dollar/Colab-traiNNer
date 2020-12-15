@@ -294,9 +294,6 @@ def define_D(opt):
         from models.modules.architectures import discriminators
         netD = discriminators.MultiscaleDiscriminator(input_nc=opt_net['in_nc'], ndf=opt_net['nf'], \
             n_layers=opt_net['nlayer'], num_D=opt_net['num_D'])
-    elif which_model == 'sisr':
-        from models.modules.architectures import sisr_arch
-        netG = sisr_arch.EdgeSRModel()
     else:
         raise NotImplementedError('Discriminator model [{:s}] not recognized'.format(which_model))
     """
