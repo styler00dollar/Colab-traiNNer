@@ -478,8 +478,15 @@ class LRHRDataset(data.Dataset):
           img_HR_gray = torch.from_numpy(img_HR_gray).unsqueeze(0)
           img_HR_canny = torch.from_numpy(img_HR_canny).unsqueeze(0)
 
+        if self.opt['training_with_canny_SR'] == True:
+          img_LR_gray = cv2.cvtColor(img_LR, cv2.COLOR_BGR2GRAY)
+          img_LR_canny = cv2.Canny(img_LR_gray,100,150)
+          img_LR_canny = torch.from_numpy(img_LR_canny).unsqueeze(0)
 
-        img_HR = util.np2tensor(img_HR, normalize=znorm, add_batch=False)
+
+
+        cv2.imwrite("img_HR.png", img_HR)
+        img_HR = util.np2tensor(img_HR, normalize=znorm, add_batch=False) #.astype('uint8').clip(0,255)
         img_LR = util.np2tensor(img_LR, normalize=znorm, add_batch=False)
 
         if LR_path is None:
@@ -487,6 +494,8 @@ class LRHRDataset(data.Dataset):
 
         if self.opt['training_with_canny'] == True:
           return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_HR_gray': img_HR_gray, 'img_HR_canny': img_HR_canny}
+        elif self.opt['training_with_canny_SR'] == True:
+          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_LR_canny': img_LR_canny}
         else:
           return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path}
 

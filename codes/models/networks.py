@@ -203,6 +203,9 @@ def define_G(opt, step=0):
         from models.modules.architectures import SRFlowNet_arch
         netG = SRFlowNet_arch.SRFlowNet(in_nc=opt_net['in_nc'], out_nc=opt_net['out_nc'],
                 nf=opt_net['nf'], nb=opt_net['nb'], scale=opt['scale'], K=opt_net['flow']['K'], opt=opt, step=step)
+    elif which_model == 'sisr':
+        from models.modules.architectures import sisr_arch
+        netG = sisr_arch.EdgeSRModel(use_spectral_norm=opt_net['use_spectral_norm'])
     else:
         raise NotImplementedError('Generator model [{:s}] not recognized'.format(which_model))
 
@@ -291,6 +294,9 @@ def define_D(opt):
         from models.modules.architectures import discriminators
         netD = discriminators.MultiscaleDiscriminator(input_nc=opt_net['in_nc'], ndf=opt_net['nf'], \
             n_layers=opt_net['nlayer'], num_D=opt_net['num_D'])
+    elif which_model == 'sisr':
+        from models.modules.architectures import sisr_arch
+        netG = sisr_arch.EdgeSRModel()
     else:
         raise NotImplementedError('Discriminator model [{:s}] not recognized'.format(which_model))
     """

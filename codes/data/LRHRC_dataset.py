@@ -302,6 +302,23 @@ class LRHRDataset(Dataset):
                     #print("Warning: img_LR dimensions ratio does not match img_HR dimensions ratio for: ", HR_path)
                     img_LR = img_HR
 
+
+            # centercrop image
+            if self.opt['center_crop'] == True:
+              if img_HR.shape[0] > img_HR.shape[1]:
+                img_HR = transforms.CenterCrop((img_HR.shape[1],img_HR.shape[1]))(np.copy(img_HR))
+                img_LR = transforms.CenterCrop((img_HR.shape[1],img_HR.shape[1]))(np.copy(img_LR))
+              else:
+                img_HR = transforms.CenterCrop((img_HR.shape[0],img_HR.shape[0]))(np.copy(img_HR))
+                img_LR = transforms.CenterCrop((img_HR.shape[0],img_HR.shape[0]))(np.copy(img_LR))
+
+            # resize lr and hr image to given hr dimension
+            if self.opt['resize_HR_dimension'] == True:
+              img_HR = transforms.Resize((self.opt['HR_size'],self.opt['HR_size']), interpolation="BILINEAR")(np.copy(img_HR))
+              img_LR = transforms.Resize((self.opt['HR_size'],self.opt['HR_size']), interpolation="BILINEAR")(np.copy(img_LR))
+
+
+
             # Random Crop (reduce computing cost and adjust images to correct size first)
             if img_HR.shape[0] > HR_size or img_HR.shape[1] > HR_size:
                 #Here the scale should be in respect to the images, not to the training scale (in case they are being scaled on the fly)
@@ -581,6 +598,13 @@ class LRHRDataset(Dataset):
           img_HR_canny = torch.from_numpy(img_HR_canny).unsqueeze(0)
 
 
+        if self.opt['training_with_canny_SR'] == True:
+          img_LR_gray = cv2.cvtColor(img_LR, cv2.COLOR_BGR2GRAY)
+          img_LR_canny = cv2.Canny(img_LR_gray,100,150)
+          img_LR_canny = torch.from_numpy(img_LR_canny).unsqueeze(0)
+
+
+
         img_HR = util.np2tensor(img_HR, normalize=znorm, add_batch=False) #.astype('uint8').clip(0,255)
         img_LR = util.np2tensor(img_LR, normalize=znorm, add_batch=False)
 
@@ -592,6 +616,8 @@ class LRHRDataset(Dataset):
 
         if self.opt['training_with_canny'] == True:
           return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_HR_gray': img_HR_gray, 'img_HR_canny': img_HR_canny}
+        elif self.opt['training_with_canny_SR'] == True:
+          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_LR_canny': img_LR_canny}
         else:
           return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path}
 

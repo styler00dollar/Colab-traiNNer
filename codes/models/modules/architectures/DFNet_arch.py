@@ -191,6 +191,7 @@ class FusionBlock(nn.Module):
         result = alpha * raw + (1 - alpha) * img_miss
         return result, alpha, raw
 
+from torchvision.utils import save_image
 
 class DFNet(nn.Module):
     def __init__(
@@ -251,22 +252,25 @@ class DFNet(nn.Module):
 
     def forward(self, img_miss, mask):
 
-        out = torch.cat([img_miss, mask], dim=1)
+        save_image(img_miss, "img_miss.png")
 
+        out = torch.cat([img_miss, mask], dim=1)
         out_en = [out]
+
         for encode in self.en:
             out = encode(out)
             out_en.append(out)
 
+
         results = []
-        alphas = []
-        raws = []
+        #alphas = []
+        #raws = []
         for i, (decode, fuse) in enumerate(zip(self.de, self.fuse)):
             out = decode(out, out_en[-i-2])
             if fuse:
                 result, alpha, raw = fuse(img_miss, out)
                 results.append(result)
-                alphas.append(alpha)
-                raws.append(raw)
+                #alphas.append(alpha)
+                #raws.append(raw)
 
         return results[::-1][0]

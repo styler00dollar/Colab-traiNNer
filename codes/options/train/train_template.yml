@@ -1,8 +1,8 @@
-#name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
-name: 001_template # remove "debug" to run the real training session.
+name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
+#name: 001_template # remove "debug" to run the real training session.
 use_tb_logger: true
-model: EdgeConnect #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv2 | Adaptive | Global | Pluralistic
-scale: 1
+model: sisr #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv2 | Adaptive | Global | Pluralistic
+scale: 4
 gpu_ids: [0]
 use_amp: false
 use_swa: false
@@ -29,7 +29,6 @@ datasets:
     virtual_batch_size: 2
     HR_size: 256 # patch size. Default: 128. Needs to be coordinated with the patch size of the features network
     image_channels: 3 # number of channels to load images in
-    training_with_canny: True # Needed for edge-connect
 
     # Color space conversion: 'color' for both LR and HR, 'color_LR' for LR independently, 'color_HR' for HR independently
     # color: 'y' # remove for no conversion (RGB) | 'y' for Y in YCbCr | 'gray' to convert RGB to grayscale | 'RGB' to convert gray to RGB
@@ -76,6 +75,13 @@ datasets:
     # lr_cutout: false # true | false
     # lr_erasing: false # true | false
 
+    # Options for inpainting (Options currently only for 1x inpainting in mind.)
+    center_crop: False # Will centergrop LR and HR images and keep aspect ratio
+    resize_HR_dimension: False # Downscale lr and hr to given HR value (if you don't set this to true and the image is bigger than needed, random crop will be applied. Should be used with center crop)
+
+    training_with_canny: False # ONLY needed for EdgeConnect
+    training_with_canny_SR: True # ONLY needed for sisr
+
   val:
     name: val_set14_part
     mode: LRHROTF
@@ -90,8 +96,12 @@ datasets:
     # color_HR: 'y' # remove for no conversion (RGB) | 'y' for Y in YCbCr | 'gray' to convert RGB to grayscale | 'RGB' to convert gray to RGB
 
     # hr_crop: false #disabled
-    lr_downscale: false
+    lr_downscale: True # Needs to be true if you don't train 1x
     lr_downscale_types: ["linear", "cubic"] # select from ["nearest", "linear", "cubic", "area", "lanczos4", "linear_exact", "matlab_bicubic"] #scale_algos #scaling interpolation options
+
+    training_with_canny: False # ONLY needed for EdgeConnect
+    training_with_canny_SR: True # ONLY needed for sisr
+
 path:
     strict: false # true | false
     root: '/content/BasicSR/'
@@ -105,7 +115,7 @@ path:
 # Generator options:
 network_G:
     # ESRGAN:
-    #which_model_G: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch) | sr_resnet
+    #which_model_G: RRDB_net # RRDB_net | sr_resnet
     #norm_type: null
     #mode: CNA
     #nf: 64 # of discrim filters in the first conv layer
@@ -166,6 +176,10 @@ network_G:
     # self_attention: true
     # double_scpa: false
 
+    # edge-informed-sisr
+    which_model_G: sisr
+    use_spectral_norm: True
+
     # ----Inpainting Generators----
     # DFNet (needs 2^x image input and validation)
     #which_model_G: DFNet
@@ -181,8 +195,8 @@ network_G:
     #blend_layers: [0, 1, 2, 3, 4, 5]
 
     # EdgeConnect
-    which_model_G: EdgeConnect
-    use_spectral_norm: True
+    #which_model_G: EdgeConnect
+    #use_spectral_norm: True
 
     # CSA
     #which_model_G: CSA

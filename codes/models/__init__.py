@@ -37,6 +37,8 @@ def create_model(opt):
         from .inpaint_model import inpaintModel as M
     elif model == 'Pluralistic':
         from .inpaint_model import inpaintModel as M
+    elif model == 'sisr':
+        from .inpaintSR_model import inpaintSRModel as M
     else:
         raise NotImplementedError('Model [{:s}] not recognized.'.format(model))
     m = M(opt)
