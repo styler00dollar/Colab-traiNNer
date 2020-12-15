@@ -485,7 +485,6 @@ class LRHRDataset(data.Dataset):
 
 
 
-        cv2.imwrite("img_HR.png", img_HR)
         img_HR = util.np2tensor(img_HR, normalize=znorm, add_batch=False) #.astype('uint8').clip(0,255)
         img_LR = util.np2tensor(img_LR, normalize=znorm, add_batch=False)
 
