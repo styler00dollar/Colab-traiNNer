@@ -297,7 +297,8 @@ class Generator(nn.Module):
         x_stage1 = self.coarse_generator(x, mask)
         x_stage2 = self.fine_generator(x, x_stage1, mask)
         #return x_stage1, x_stage2
-        return x_stage2
+        #return x_stage2
+        return x_stage2, x_stage1
 
 
 class CoarseGenerator(nn.Module):

@@ -1,8 +1,8 @@
 name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
 #name: 001_template # remove "debug" to run the real training session.
 use_tb_logger: true
-model: sisr #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv2 | Adaptive | Global | Pluralistic
-scale: 4
+model: crfill #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv2 | Adaptive | Global | Pluralistic | crfill
+scale: 1
 gpu_ids: [0]
 use_amp: false
 use_swa: false
@@ -80,9 +80,9 @@ datasets:
     resize_HR_dimension: False # Downscale lr and hr to given HR value (if you don't set this to true and the image is bigger than needed, random crop will be applied. Should be used with center crop)
 
     training_with_canny: False # ONLY needed for EdgeConnect
-    training_with_canny_SR: True # ONLY needed for sisr
+    training_with_canny_SR: False # ONLY needed for sisr
 
-  val:
+val:
     name: val_set14_part
     mode: LRHROTF
     dataroot_HR: '/content/hr_val'
@@ -96,11 +96,11 @@ datasets:
     # color_HR: 'y' # remove for no conversion (RGB) | 'y' for Y in YCbCr | 'gray' to convert RGB to grayscale | 'RGB' to convert gray to RGB
 
     # hr_crop: false #disabled
-    lr_downscale: True # Needs to be true if you don't train 1x
+    lr_downscale: False # Needs to be true if you don't train 1x
     lr_downscale_types: ["linear", "cubic"] # select from ["nearest", "linear", "cubic", "area", "lanczos4", "linear_exact", "matlab_bicubic"] #scale_algos #scaling interpolation options
 
     training_with_canny: False # ONLY needed for EdgeConnect
-    training_with_canny_SR: True # ONLY needed for sisr
+    training_with_canny_SR: False # ONLY needed for sisr
 
 path:
     strict: false # true | false
@@ -177,8 +177,8 @@ network_G:
     # double_scpa: false
 
     # edge-informed-sisr
-    which_model_G: sisr
-    use_spectral_norm: True
+    #which_model_G: sisr
+    #use_spectral_norm: True
 
     # ----Inpainting Generators----
     # DFNet (needs 2^x image input and validation)
@@ -207,8 +207,17 @@ network_G:
     #residual_blocks: 8
     #threshold: 0.8
 
+    # deepfillv1 (not implemented)
+    #which_model_G:  deepfillv1
+
     # deepfillv2
     #which_model_G: deepfillv2
+    #in_channels:  4
+    #out_channels:  3
+    #latent_channels:  64
+    #pad_type:  'zero'
+    #activation:  'lrelu'
+    #norm: 'in'
 
     # Adaptive
     #which_model_G: Adaptive
@@ -239,11 +248,15 @@ network_G:
     #norm_G: 'instance'
     #activation_G: 'LeakyReLU'
 
+    # crfill
+    which_model_G: crfill
+    cnum: 48
+
 
 # Discriminator options:
 network_D:
     # ESRGAN (default)| PPON:
-    which_model_D: discriminator_vgg # discriminator_vgg_128 | discriminator_vgg | discriminator_vgg_128_fea (feature extraction) | discriminator_vgg_fea (feature extraction) | patchgan | multiscale
+    which_model_D: discriminator_vgg # discriminator_vgg_128 | discriminator_vgg | discriminator_vgg_128_fea (feature extraction) | discriminator_vgg_fea (feature extraction) | patchgan | multiscale | InpaintSADirciminator
     norm_type: batch
     act_type: leakyrelu
     mode: CNA # CNA | NAC
@@ -382,7 +395,7 @@ train:
     # finalcap: clamp # Test. Cap Generator outputs to fit in: [-1, 1] range ("tanh"), rescale tanh to [0,1] range ("scaltanh"), cap ("sigmoid") or clamp ("clamp") to [0,1] range. Default = None. Coordinate with znorm. Required for SPL if using image range [0,1]
     manual_seed: 0
     niter: 5e5
-    val_freq: 1000 # 5e3
+    val_freq: 5000 # 5e3
     # overwrite_val_imgs: true
     val_comparison: true
     metrics: 'psnr,ssim,lpips' # select from: "psnr,ssim,lpips" or a combination separated by comma ","

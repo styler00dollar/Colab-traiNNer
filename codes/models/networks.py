@@ -186,19 +186,28 @@ def define_G(opt, step=0):
     elif which_model == 'RN':
         from models.modules.architectures import RN_arch
         netG = RN_arch.G_Net(input_channels=opt_net['input_channels'], residual_blocks=opt_net['residual_blocks'], threshold=opt_net['threshold'])
+        # using rn init to avoid errors
+        RN_arch = RN_arch.rn_initialize_weights(netG, scale=0.1)
+    #elif which_model == 'deepfillv1':
+    #    from models.modules.architectures import deepfillv1_arch
+    #    netG = deepfillv1_arch.InpaintSANet()
     elif which_model == 'deepfillv2':
         from models.modules.architectures import deepfillv2_arch
-        netG = deepfillv2_arch.InpaintSANet()
+        netG = deepfillv2_arch.GatedGenerator(in_channels = opt_net['in_channels'], out_channels = opt_net['out_channels'], latent_channels = opt_net['latent_channels'], pad_type = opt_net['pad_type'], activation = opt_net['activation'], norm = opt_net['norm'])
+        # using deepfill init to avoid errors
+        deepfillv2_arch.deepfillv2_weights_init(netG)
     elif which_model == 'Adaptive':
         from models.modules.architectures import Adaptive_arch
         netG = Adaptive_arch.PyramidNet(in_channels=opt_net['in_channels'], residual_blocks=opt_net['residual_blocks'], init_weights=opt_net['init_weights'])
     elif which_model == 'Global':
         from models.modules.architectures import Global_arch
-        netG = Global_arch.Generator(input_dim=opt_net['input_channels'], ngf=opt_net['input_channels'], use_cuda=opt_net['input_channels'], device_ids=opt_net['input_channels'])
+        netG = Global_arch.Generator(input_dim=opt_net['input_dim'], ngf=opt_net['ngf'], use_cuda=opt_net['use_cuda'], device_ids=opt_net['device_ids'])
     elif which_model == 'Pluralistic':
         from models.modules.architectures import Pluralistic_arch
         netG = Pluralistic_arch.PluralisticGenerator(ngf_E=opt_net['ngf_E'], z_nc_E=opt_net['z_nc_E'], img_f_E=opt_net['img_f_E'], layers_E=opt_net['layers_E'], norm_E=opt_net['norm_E'], activation_E=opt_net['activation_E'],
                 ngf_G=opt_net['ngf_G'], z_nc_G=opt_net['z_nc_G'], img_f_G=opt_net['img_f_G'], L_G=opt_net['L_G'], output_scale_G=opt_net['output_scale_G'], norm_G=opt_net['norm_G'], activation_G=opt_net['activation_G'])
+        # using pluralistic init to avoid errors
+        Pluralistic_arch.pluralistic_init_weights(netG, init_type='kaiming', gain=0.02)
     elif which_model == 'SRFlowNet':
         from models.modules.architectures import SRFlowNet_arch
         netG = SRFlowNet_arch.SRFlowNet(in_nc=opt_net['in_nc'], out_nc=opt_net['out_nc'],
@@ -206,11 +215,16 @@ def define_G(opt, step=0):
     elif which_model == 'sisr':
         from models.modules.architectures import sisr_arch
         netG = sisr_arch.EdgeSRModel(use_spectral_norm=opt_net['use_spectral_norm'])
+
+    elif which_model == 'crfill':
+        from models.modules.architectures import crfill_arch
+        netG = crfill_arch.InpaintGenerator(cnum=opt_net['cnum'])
     else:
         raise NotImplementedError('Generator model [{:s}] not recognized'.format(which_model))
 
-    if opt['is_train'] and which_model != 'MRRDB_net' and which_model != 'RN' and which_model != 'Pluralistic':
+    if opt['is_train'] and which_model != 'MRRDB_net' and which_model != 'RN' and which_model != 'Pluralistic'and which_model != 'deepfillv2':
         # Note: MRRDB_net initializes the modules during init, no need to initialize again here
+        # pluralistic, rn and deepfillv2 already does init in a different place
         init_weights(netG, init_type='kaiming', scale=0.1)
     if gpu_ids:
         assert torch.cuda.is_available()

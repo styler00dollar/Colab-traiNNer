@@ -10,7 +10,128 @@ https://github.com/lyndonzheng/Pluralistic-Inpainting/blob/master/model/base_fun
 
 external_function.py (13-12-20)
 https://github.com/lyndonzheng/Pluralistic-Inpainting/blob/master/model/external_function.py
+
+task.py (16-12-20)
+https://github.com/lyndonzheng/Pluralistic-Inpainting/blob/1ca1855615fed8b686ca218c6494f455860f9996/util/task.py
 """
+
+import torch
+import torch.nn.functional as F
+import torchvision.transforms as transforms
+from random import randint
+import numpy as np
+import cv2
+from PIL import Image
+import random
+
+###################################################################
+# random mask generation
+###################################################################
+
+
+def random_regular_mask(img):
+    """Generates a random regular hole"""
+    mask = torch.ones_like(img)
+    s = img.size()
+    N_mask = random.randint(1, 5)
+    limx = s[1] - s[1] / (N_mask + 1)
+    limy = s[2] - s[2] / (N_mask + 1)
+    for _ in range(N_mask):
+        x = random.randint(0, int(limx))
+        y = random.randint(0, int(limy))
+        range_x = x + random.randint(int(s[1] / (N_mask + 7)), int(s[1] - x))
+        range_y = y + random.randint(int(s[2] / (N_mask + 7)), int(s[2] - y))
+        mask[:, int(x):int(range_x), int(y):int(range_y)] = 0
+    return mask
+
+
+def center_mask(img):
+    """Generates a center hole with 1/4*W and 1/4*H"""
+    mask = torch.ones_like(img)
+    size = img.size()
+    x = int(size[1] / 4)
+    y = int(size[2] / 4)
+    range_x = int(size[1] * 3 / 4)
+    range_y = int(size[2] * 3 / 4)
+    mask[:, x:range_x, y:range_y] = 0
+
+    return mask
+
+
+def random_irregular_mask(img):
+    """Generates a random irregular mask with lines, circles and elipses"""
+    transform = transforms.Compose([transforms.ToTensor()])
+    mask = torch.ones_like(img)
+    size = img.size()
+    img = np.zeros((size[1], size[2], 1), np.uint8)
+
+    # Set size scale
+    max_width = 20
+    if size[1] < 64 or size[2] < 64:
+        raise Exception("Width and Height of mask must be at least 64!")
+
+    number = random.randint(16, 64)
+    for _ in range(number):
+        model = random.random()
+        if model < 0.6:
+            # Draw random lines
+            x1, x2 = randint(1, size[1]), randint(1, size[1])
+            y1, y2 = randint(1, size[2]), randint(1, size[2])
+            thickness = randint(4, max_width)
+            cv2.line(img, (x1, y1), (x2, y2), (1, 1, 1), thickness)
+
+        elif model > 0.6 and model < 0.8:
+            # Draw random circles
+            x1, y1 = randint(1, size[1]), randint(1, size[2])
+            radius = randint(4, max_width)
+            cv2.circle(img, (x1, y1), radius, (1, 1, 1), -1)
+
+        elif model > 0.8:
+            # Draw random ellipses
+            x1, y1 = randint(1, size[1]), randint(1, size[2])
+            s1, s2 = randint(1, size[1]), randint(1, size[2])
+            a1, a2, a3 = randint(3, 180), randint(3, 180), randint(3, 180)
+            thickness = randint(4, max_width)
+            cv2.ellipse(img, (x1, y1), (s1, s2), a1, a2, a3, (1, 1, 1), thickness)
+
+    img = img.reshape(size[2], size[1])
+    img = Image.fromarray(img*255)
+
+    img_mask = transform(img)
+    for j in range(size[0]):
+        mask[j, :, :] = img_mask < 1
+
+    return mask
+
+###################################################################
+# multi scale for image generation
+###################################################################
+
+
+def scale_img(img, size):
+    scaled_img = F.interpolate(img, size=size, mode='bilinear', align_corners=True)
+    return scaled_img
+
+
+def scale_pyramid(img, num_scales):
+    scaled_imgs = [img]
+
+    s = img.size()
+
+    h = s[2]
+    w = s[3]
+
+    for i in range(1, num_scales):
+        ratio = 2**i
+        nh = h // ratio
+        nw = w // ratio
+        scaled_img = scale_img(img, size=[nh, nw])
+        scaled_imgs.append(scaled_img)
+
+    scaled_imgs.reverse()
+    return scaled_imgs
+
+
 
 import torch
 from torch import nn
@@ -249,13 +370,15 @@ from torch.nn import init
 import functools
 from torch.optim import lr_scheduler
 #from .external_function import SpectralNorm
+import logging
+logger = logging.getLogger('base')
 
 ######################################################################################
 # base function for network structure
 ######################################################################################
 
 
-def init_weights(net, init_type='normal', gain=0.02):
+def pluralistic_init_weights(net, init_type='normal', gain=0.02):
     """Get different initial method for the network weights"""
     def init_func(m):
         classname = m.__class__.__name__
@@ -276,7 +399,8 @@ def init_weights(net, init_type='normal', gain=0.02):
             init.normal_(m.weight.data, 1.0, 0.02)
             init.constant_(m.bias.data, 0.0)
 
-    print('initialize network with %s' % init_type)
+    #print('initialize network with %s' % init_type)
+    logger.info('Initialization method [{:s}]'.format(init_type))
     net.apply(init_func)
 
 
@@ -1059,17 +1183,100 @@ class ResGenerator(nn.Module):
 # https://github.com/lyndonzheng/Pluralistic-Inpainting/blob/1ca1855615fed8b686ca218c6494f455860f9996/util/task.py
 class PluralisticGenerator(nn.Module):
     def __init__(self, ngf_E=32, z_nc_E=128, img_f_E=128, layers_E=5, norm_E='none', activation_E='LeakyReLU',
-                 ngf_G=32, z_nc_G=128, img_f_G=128, L_G=0, output_scale_G=1, norm_G='instance', activation_G='LeakyReLU'):
+                 ngf_G=32, z_nc_G=128, img_f_G=128, L_G=0, output_scale_G=1, norm_G='instance', activation_G='LeakyReLU', train_paths='two'):
         super().__init__()
         self.net_E = ResEncoder(ngf=ngf_E, z_nc=z_nc_E, img_f=img_f_E, layers=layers_E, norm=norm_E, activation=activation_E)
         self.net_G = ResGenerator(ngf=ngf_G, z_nc=z_nc_G, img_f=img_f_G, L=L_G, layers=5, output_scale=output_scale_G,
                                       norm=norm_G, activation=activation_G)
+        self.train_paths = train_paths
+    def get_distribution(self, distributions, mask):
+        """Calculate encoder distribution for img_m, img_c"""
+        # get distribution
+        sum_valid = (torch.mean(mask.view(mask.size(0), -1), dim=1) - 1e-5).view(-1, 1, 1, 1)
+        m_sigma = 1 / (1 + ((sum_valid - 0.8) * 8).exp_())
+        p_distribution, q_distribution, kl_rec, kl_g = 0, 0, 0, 0
+        self.distribution = []
+        for distribution in distributions:
+            print(len(distribution))
+            p_mu, p_sigma, q_mu, q_sigma = distribution
+            # the assumption distribution for different mask regions
+            m_distribution = torch.distributions.Normal(torch.zeros_like(p_mu), m_sigma * torch.ones_like(p_sigma))
+            # m_distribution = torch.distributions.Normal(torch.zeros_like(p_mu), torch.ones_like(p_sigma))
+            # the post distribution from mask regions
+            p_distribution = torch.distributions.Normal(p_mu, p_sigma)
+            p_distribution_fix = torch.distributions.Normal(p_mu.detach(), p_sigma.detach())
+            # the prior distribution from valid region
+            q_distribution = torch.distributions.Normal(q_mu, q_sigma)
 
-    def scale_img(img, size):
-        scaled_img = torch.nn.functional.interpolate(img, size=size, mode='bilinear', align_corners=True)
-        return scaled_img
+            # kl divergence
+            kl_rec += torch.distributions.kl_divergence(m_distribution, p_distribution)
+            if self.train_paths == "one":
+                kl_g += torch.distributions.kl_divergence(m_distribution, q_distribution)
+            elif self.train_paths == "two":
+                kl_g += torch.distributions.kl_divergence(p_distribution_fix, q_distribution)
+            self.distribution.append([torch.zeros_like(p_mu), m_sigma * torch.ones_like(p_sigma), p_mu, p_sigma, q_mu, q_sigma])
 
-    def forward(self, images, masks):
+        return p_distribution, q_distribution, kl_rec, kl_g
+
+    def get_G_inputs(self, p_distribution, q_distribution, f, mask):
+        """Process the encoder feature and distributions for generation network"""
+        f_m = torch.cat([f[-1].chunk(2)[0], f[-1].chunk(2)[0]], dim=0)
+        f_e = torch.cat([f[2].chunk(2)[0], f[2].chunk(2)[0]], dim=0)
+        scale_mask = scale_img(mask, size=[f_e.size(2), f_e.size(3)])
+        mask = torch.cat([scale_mask.chunk(3, dim=1)[0], scale_mask.chunk(3, dim=1)[0]], dim=0)
+        z_p = p_distribution.rsample()
+        z_q = q_distribution.rsample()
+        z = torch.cat([z_p, z_q], dim=0)
+        return z, f_m, f_e, mask
+    #def scale_img(img, size):
+    #    scaled_img = torch.nn.functional.interpolate(img, size=size, mode='bilinear', align_corners=True)
+    #    return scaled_img
+
+    def forward(self, images, img_inverted, masks):
+      distributions, f = self.net_E(images, img_inverted)
+      p_distribution, q_distribution, kl_rec, kl_g = self.get_distribution(distributions, masks)
+      z, f_m, f_e, mask = self.get_G_inputs(p_distribution, q_distribution, f, masks)
+      results, attn = self.net_G(z, f_m, f_e, mask)
+      """
+      p_mu, p_sigma, q_mu, q_sigma = distribution
+
+      q_distribution = torch.distributions.Normal(distribution[-1][0], distribution[-1][1])
+      p_distribution = torch.distributions.Normal(p_mu, p_sigma)
+
+
+      z = q_distribution.sample()
+
+      z, f_m, f_e, mask = self.get_G_inputs(p_distribution, q_distribution, f)
+      results, attn = self.net_G(z, f_m, f_e, mask)
+      """
+      """
+      self.img_rec = []
+      self.img_g = []
+      for result in results:
+          img_rec, img_g = result.chunk(2)
+          self.img_rec.append(img_rec)
+          self.img_g.append(img_g)
+      """
+      """
+      # encoder kl loss
+          self.loss_kl_rec = self.kl_rec.mean()
+          self.loss_kl_g = self.kl_g.mean()
+      """
+
+
+      self.img_rec = []
+      self.img_g = []
+      for result in results:
+          img_rec, img_g = result.chunk(2)
+          self.img_rec.append(img_rec)
+          self.img_g.append(img_g)
+      self.img_out = (1-masks) * images[-1].detach() + masks * images
+
+      return self.img_out, kl_rec, kl_g
+
+
+      """
+      # old working version
       distribution, f = self.net_E(images)
       q_distribution = torch.distributions.Normal(distribution[-1][0], distribution[-1][1])
       z = q_distribution.sample()
@@ -1078,3 +1285,4 @@ class PluralisticGenerator(nn.Module):
 
       output, attn = self.net_G(z, f_m=f[-1], f_e=f[2], mask=scale_mask.chunk(3, dim=1)[0])
       return output[0]
+      """

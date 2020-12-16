@@ -64,7 +64,7 @@ class inpaintModel(BaseModel):
                 self.netD = networks.define_D(opt).to(self.device)  # D
                 self.netD.train()
         self.load()  # load G and D if needed
-
+        self.which_model_G = opt['network_G']['which_model_G']
 
         # define losses, optimizer and scheduler
         if self.is_train:
@@ -235,12 +235,25 @@ class inpaintModel(BaseModel):
         for i in range(self.var_L.shape[0]-1):
           mask = torch.cat([mask, self.random_mask(height=self.var_L.shape[2], width=self.var_L.shape[3]).cuda()], dim=0)
 
-        self.var_L=self.var_L * mask
-        return self.var_L, mask
+        #self.var_L=self.var_L * mask
+        return self.var_L * mask, mask
+
+    def masking_images_with_invert(self):
+        mask = self.random_mask(height=self.var_L.shape[2], width=self.var_L.shape[3]).cuda()
+        for i in range(self.var_L.shape[0]-1):
+          mask = torch.cat([mask, self.random_mask(height=self.var_L.shape[2], width=self.var_L.shape[3]).cuda()], dim=0)
+
+        #self.var_L=self.var_L * mask
+        return self.var_L * mask, self.var_L * (1-mask), mask
 
     def feed_data(self, data, need_HR=True):
         # LR images
-        self.var_L = data['LR'].to(self.device)
+        if self.which_model_G == 'EdgeConnect':
+          self.var_L = data['LR'].to(self.device)
+          self.canny_data = data['img_HR_canny'].to(self.device)
+          self.grayscale_data = data['img_HR_gray'].to(self.device)
+        else:
+          self.var_L = data['LR'].to(self.device)
 
         if need_HR:  # train or val
             # HR images
@@ -269,11 +282,29 @@ class inpaintModel(BaseModel):
                 self.aux_mixprob, self.aux_mixalpha, self.mix_p
                 )
 
-        self.var_L, mask = self.masking_images()
+        if self.which_model_G == 'Pluralistic':
+          # pluralistic needs the inpainted area as an image and not only the cut-out
+          self.var_L, img_inverted, mask = self.masking_images_with_invert()
+        else:
+          self.var_L, mask = self.masking_images()
 
         ### Network forward, generate SR
         with self.cast():
-            self.fake_H = self.netG(self.var_L, mask) #[0] for dfn hotfix
+              # normal
+              if self.which_model_G == 'Adaptive' or self.which_model_G == 'DFNet' or self.which_model_G == 'RN':
+                self.fake_H = self.netG(self.var_L, mask)
+              # 2 rgb images
+              if self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill':
+                self.fake_H, self.other_img = self.netG(self.var_L, mask)
+
+              # special
+              if self.which_model_G == 'Pluralistic':
+                self.fake_H, self.kl_rec, self.kl_g = self.netG(self.var_L, img_inverted, mask)
+
+              if self.which_model_G == 'EdgeConnect':
+                self.fake_H, self.other_img = self.netG(self.var_L, self.canny_data, self.grayscale_data, mask)
+
+
         #/with self.cast():
         #self.fake_H = self.netG(self.var_L, mask)
 
@@ -297,6 +328,53 @@ class inpaintModel(BaseModel):
             with self.cast(): # Casts operations to mixed precision if enabled, else nullcontext
                 # regular losses
                 loss_results, self.log_dict = self.generatorlosses(self.fake_H, self.var_H, self.log_dict, self.f_low)
+
+                # additional losses, in case a model does output more than a normal image
+                ###############################
+                # deepfillv2 / global / edge-connect
+                if self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill':
+                  L1Loss = nn.L1Loss()
+                  l1_stage1 = L1Loss(self.other_img, self.var_H)
+
+                  self.log_dict.update(l1_stage1=l1_stage1)
+                  loss_results.append(l1_stage1)
+
+                if self.which_model_G == 'EdgeConnect':
+                  L1Loss = nn.L1Loss()
+                  l1_edge = L1Loss(self.other_img, self.var_H)
+
+                  self.log_dict.update(l1_edge=l1_edge)
+                  loss_results.append(l1_edge)
+                ###############################
+                # csa
+                if self.which_model_G == 'CSA':
+                  #coarse_result, refine_result, csa, csa_d = g_model(masked, mask)
+                  L1Loss = nn.L1Loss()
+                  recon_loss = L1Loss(coarse_result, img) + L1Loss(refine_result, img)
+
+                  from models.modules.csa_loss import ConsistencyLoss
+                  cons = ConsistencyLoss()
+                  cons_loss = cons(csa, csa_d, img, mask)
+
+                  self.log_dict.update(recon_loss=recon_loss)
+                  loss_results.append(recon_loss)
+                  self.log_dict.update(cons_loss=cons_loss)
+                  loss_results.append(cons_loss)
+                ###############################
+                # pluralistic (encoder kl loss)
+                if self.which_model_G == 'Pluralistic':
+                  loss_kl_rec = self.kl_rec.mean()
+                  loss_kl_g = self.kl_g.mean()
+
+                  self.log_dict.update(loss_kl_rec=loss_kl_rec)
+                  loss_results.append(loss_kl_rec)
+                  self.log_dict.update(loss_kl_g=loss_kl_g)
+                  loss_results.append(loss_kl_g)
+                ###############################
+
+                #for key, value in self.log_dict.items():
+                #    print(key, value)
+
                 l_g_total += sum(loss_results)/self.accumulations
 
                 if self.cri_gan:
@@ -368,14 +446,32 @@ class inpaintModel(BaseModel):
                 self.optDstep = True
 
     def test(self):
-        self.var_L, mask = self.masking_images()
+        #self.var_L, mask = self.masking_images()
+        if self.which_model_G == 'Pluralistic':
+          # pluralistic needs the inpainted area as an image and not only the cut-out
+          self.var_L, img_inverted, mask = self.masking_images_with_invert()
+        else:
+          self.var_L, mask = self.masking_images()
 
         self.netG.eval()
         with torch.no_grad():
-            if self.is_train:
-                self.fake_H = self.netG(self.var_L, mask)
-            else:
-                self.fake_H = self.netG(self.var_L, mask, isTest=True)
+            #if self.is_train:
+            # normal
+            if self.which_model_G == 'Adaptive' or self.which_model_G == 'DFNet' or self.which_model_G == 'RN':
+              self.fake_H = self.netG(self.var_L, mask)
+            # 2 rgb images
+            if self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill':
+              self.fake_H, _ = self.netG(self.var_L, mask)
+
+            # special
+            if self.which_model_G == 'Pluralistic':
+              self.fake_H, _, _ = self.netG(self.var_L, img_inverted, mask)
+
+            if self.which_model_G == 'EdgeConnect':
+              self.fake_H, _ = self.netG(self.var_L, self.canny_data, self.grayscale_data, mask)
+
+            #else:
+            #    self.fake_H = self.netG(self.var_L, mask, isTest=True)
 
         self.netG.train()
 

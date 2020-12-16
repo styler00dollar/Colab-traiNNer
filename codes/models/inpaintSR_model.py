@@ -252,6 +252,17 @@ class inpaintSRModel(BaseModel):
         # update generator (on its own if only training generator or alternatively if training GAN)
         if (self.cri_gan is not True) or (step % self.D_update_ratio == 0 and step > self.D_init_iters):
             with self.cast(): # Casts operations to mixed precision if enabled, else nullcontext
+                ###############################
+                # sisr
+                if self.which_model_G == 'sisr':
+                  L1Loss = nn.L1Loss()
+                  l1_stage1 = L1Loss(self.other_img, self.var_H)
+
+                  self.log_dict.update(l1_stage1=l1_stage1)
+                  loss_results.append(l1_stage1)
+                ###############################
+
+
                 # regular losses
                 loss_results, self.log_dict = self.generatorlosses(self.fake_H, self.var_H, self.log_dict, self.f_low)
                 l_g_total += sum(loss_results)/self.accumulations

@@ -146,17 +146,17 @@ class EdgeConnectModel(nn.Module):
         super().__init__()
         self.EdgeGenerator = EdgeGenerator(use_spectral_norm=use_spectral_norm)
         self.InpaintGenerator = InpaintGenerator()
-      
+
     def forward(self, images, edges, grayscale, masks):
         # edge
         edges_masked = (edges * masks)
         images_masked = (images * (1 - masks)) + masks
         grayscale_masked = (grayscale * (1 - masks)) + masks
         inputs = torch.cat((grayscale_masked, edges_masked, masks), dim=1)
-        outputs = self.EdgeGenerator(inputs)                                      # in: [grayscale(1) + edge(1) + mask(1)]
+        outputs_edge = self.EdgeGenerator(inputs)                                      # in: [grayscale(1) + edge(1) + mask(1)]
 
         # inpaint
         images_masked = (images * masks).float() + (1-masks)
-        inputs = torch.cat((images_masked, outputs), dim=1)
+        inputs = torch.cat((images_masked, outputs_edge), dim=1)
         outputs = self.InpaintGenerator(inputs)                                    # in: [rgb(3) + edge(1)]
-        return outputs
+        return outputs, outputs_edge
