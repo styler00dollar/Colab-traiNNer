@@ -30,8 +30,8 @@ def create_model(opt):
         from .inpaint_model import inpaintModel as M
     elif model == 'RN':
         from .inpaint_model import inpaintModel as M
-    #elif model == 'deepfillv1':
-    #    from .inpaint_model import inpaintModel as M
+    elif model == 'deepfillv1':
+        from .inpaint_model import inpaintModel as M
     elif model == 'deepfillv2':
         from .inpaint_model import inpaintModel as M
     elif model == 'Adaptive':
@@ -43,6 +43,8 @@ def create_model(opt):
     elif model == 'sisr':
         from .inpaintSR_model import inpaintSRModel as M
     elif model == 'crfill':
+        from .inpaint_model import inpaintModel as M
+    elif model == 'DeepDFNet':
         from .inpaint_model import inpaintModel as M
     else:
         raise NotImplementedError('Model [{:s}] not recognized.'.format(model))

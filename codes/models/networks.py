@@ -188,9 +188,9 @@ def define_G(opt, step=0):
         netG = RN_arch.G_Net(input_channels=opt_net['input_channels'], residual_blocks=opt_net['residual_blocks'], threshold=opt_net['threshold'])
         # using rn init to avoid errors
         RN_arch = RN_arch.rn_initialize_weights(netG, scale=0.1)
-    #elif which_model == 'deepfillv1':
-    #    from models.modules.architectures import deepfillv1_arch
-    #    netG = deepfillv1_arch.InpaintSANet()
+    elif which_model == 'deepfillv1':
+        from models.modules.architectures import deepfillv1_arch
+        netG = deepfillv1_arch.InpaintSANet()
     elif which_model == 'deepfillv2':
         from models.modules.architectures import deepfillv2_arch
         netG = deepfillv2_arch.GatedGenerator(in_channels = opt_net['in_channels'], out_channels = opt_net['out_channels'], latent_channels = opt_net['latent_channels'], pad_type = opt_net['pad_type'], activation = opt_net['activation'], norm = opt_net['norm'])
@@ -215,14 +215,19 @@ def define_G(opt, step=0):
     elif which_model == 'sisr':
         from models.modules.architectures import sisr_arch
         netG = sisr_arch.EdgeSRModel(use_spectral_norm=opt_net['use_spectral_norm'])
-
     elif which_model == 'crfill':
         from models.modules.architectures import crfill_arch
         netG = crfill_arch.InpaintGenerator(cnum=opt_net['cnum'])
+    elif which_model == 'DeepDFNet':
+        from models.modules.architectures import DeepDFNet_arch
+        netG = DeepDFNet_arch.GatedGenerator(in_channels = opt_net['in_channels'], out_channels = opt_net['out_channels'], latent_channels = opt_net['latent_channels'], pad_type = opt_net['pad_type'], activation = opt_net['activation'], norm = opt_net['norm'])
+
+        # using deepfill init to avoid errors
+        DeepDFNet_arch.deepfillv2_weights_init(netG)
     else:
         raise NotImplementedError('Generator model [{:s}] not recognized'.format(which_model))
 
-    if opt['is_train'] and which_model != 'MRRDB_net' and which_model != 'RN' and which_model != 'Pluralistic'and which_model != 'deepfillv2':
+    if opt['is_train'] and which_model != 'MRRDB_net' and which_model != 'RN' and which_model != 'Pluralistic'and which_model != 'deepfillv2' and which_model != 'DeepDFNet':
         # Note: MRRDB_net initializes the modules during init, no need to initialize again here
         # pluralistic, rn and deepfillv2 already does init in a different place
         init_weights(netG, init_type='kaiming', scale=0.1)

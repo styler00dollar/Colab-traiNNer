@@ -252,6 +252,7 @@ class inpaintModel(BaseModel):
           self.var_L = data['LR'].to(self.device)
           self.canny_data = data['img_HR_canny'].to(self.device)
           self.grayscale_data = data['img_HR_gray'].to(self.device)
+          #self.mask = data['green_mask'].to(self.device)
         else:
           self.var_L = data['LR'].to(self.device)
 
@@ -294,7 +295,7 @@ class inpaintModel(BaseModel):
               if self.which_model_G == 'Adaptive' or self.which_model_G == 'DFNet' or self.which_model_G == 'RN':
                 self.fake_H = self.netG(self.var_L, mask)
               # 2 rgb images
-              if self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill':
+              if self.which_model_G == 'deepfillv1' or self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill' or self.which_model_G == 'DeepDFNet':
                 self.fake_H, self.other_img = self.netG(self.var_L, mask)
 
               # special
@@ -371,6 +372,14 @@ class inpaintModel(BaseModel):
                   self.log_dict.update(loss_kl_g=loss_kl_g)
                   loss_results.append(loss_kl_g)
                 ###############################
+                # deepfillv1
+                from models.modules.deepfillv1_loss import ReconLoss
+                ReconLoss_ = ReconLoss(1,1,1,1)
+                reconstruction_loss = ReconLoss_(self.var_H, self.other_img, self.fake_H, mask)
+
+                self.log_dict.update(reconstruction_loss=reconstruction_loss)
+                loss_results.append(reconstruction_loss)
+                ###############################
 
                 #for key, value in self.log_dict.items():
                 #    print(key, value)
@@ -445,33 +454,41 @@ class inpaintModel(BaseModel):
                 self.optimizer_D.zero_grad()
                 self.optDstep = True
 
-    def test(self):
-        #self.var_L, mask = self.masking_images()
+
+
+    def test(self, data):
+        """
+        # generating random mask for validation
+        self.var_L, mask = self.masking_images()
         if self.which_model_G == 'Pluralistic':
           # pluralistic needs the inpainted area as an image and not only the cut-out
           self.var_L, img_inverted, mask = self.masking_images_with_invert()
         else:
           self.var_L, mask = self.masking_images()
+        """
+
+        self.mask = data['green_mask'].to(self.device).unsqueeze(0)
+        self.var_L = self.var_L * self.mask
+        #print("self.mask")
+        #print(self.mask)
+
 
         self.netG.eval()
         with torch.no_grad():
-            #if self.is_train:
-            # normal
-            if self.which_model_G == 'Adaptive' or self.which_model_G == 'DFNet' or self.which_model_G == 'RN':
-              self.fake_H = self.netG(self.var_L, mask)
-            # 2 rgb images
-            if self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill':
-              self.fake_H, _ = self.netG(self.var_L, mask)
+            if self.is_train:
+              # normal
+              if self.which_model_G == 'Adaptive' or self.which_model_G == 'DFNet' or self.which_model_G == 'RN':
+                self.fake_H = self.netG(self.var_L, self.mask)
+              # 2 rgb images
+              if self.which_model_G == 'deepfillv1' or self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill' or self.which_model_G == 'DeepDFNet':
+                self.fake_H, _ = self.netG(self.var_L, self.mask)
 
-            # special
-            if self.which_model_G == 'Pluralistic':
-              self.fake_H, _, _ = self.netG(self.var_L, img_inverted, mask)
+              # special
+              if self.which_model_G == 'Pluralistic':
+                self.fake_H, _, _ = self.netG(self.var_L, img_inverted, self.mask)
 
-            if self.which_model_G == 'EdgeConnect':
-              self.fake_H, _ = self.netG(self.var_L, self.canny_data, self.grayscale_data, mask)
-
-            #else:
-            #    self.fake_H = self.netG(self.var_L, mask, isTest=True)
+              if self.which_model_G == 'EdgeConnect':
+                self.fake_H, _ = self.netG(self.var_L, self.canny_data, self.grayscale_data, self.mask)
 
         self.netG.train()
 

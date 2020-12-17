@@ -418,7 +418,7 @@ class InpaintSANet(torch.nn.Module):
         #print(coarse_x.shape)
         #print(x.shape)
         #return coarse_x, x
-        return x
+        return x, coarse_x
 
 class InpaintSADirciminator(nn.Module):
     def __init__(self):
@@ -440,7 +440,6 @@ class InpaintSADirciminator(nn.Module):
         #print("InpaintSADirciminator input shape")
         #print(input.shape)
 
-        # TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
         pos_imgs = torch.cat([imgs, masks, torch.full_like(masks, 1.)], dim=1)
         neg_imgs = torch.cat([complete_imgs, masks, torch.full_like(masks, 1.)], dim=1)
         input = torch.cat([pos_imgs, neg_imgs], dim=0)
@@ -449,7 +448,8 @@ class InpaintSADirciminator(nn.Module):
         x = self.discriminator_net(input)
         x = x.view((x.size(0),-1))
         #x = self.linear(x)
-        return x
+        #return x
+        return x, coarse_x
 
 
 class SADiscriminator(nn.Module):

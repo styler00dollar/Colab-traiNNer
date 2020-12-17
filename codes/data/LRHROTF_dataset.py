@@ -483,20 +483,25 @@ class LRHRDataset(data.Dataset):
           img_LR_canny = cv2.Canny(img_LR_gray,100,150)
           img_LR_canny = torch.from_numpy(img_LR_canny).unsqueeze(0)
 
-
+        # create mask from green inpainted lr
+        green_mask = np.all(img_HR != [0,255,0], axis=-1).astype(int)
+        green_mask = torch.from_numpy(green_mask)
 
         img_HR = util.np2tensor(img_HR, normalize=znorm, add_batch=False) #.astype('uint8').clip(0,255)
         img_LR = util.np2tensor(img_LR, normalize=znorm, add_batch=False)
+        #green_mask = util.np2tensor(green_mask, normalize=znorm, add_batch=False)
 
         if LR_path is None:
             LR_path = HR_path
+
+
 
         if self.opt['training_with_canny'] == True:
           return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_HR_gray': img_HR_gray, 'img_HR_canny': img_HR_canny}
         elif self.opt['training_with_canny_SR'] == True:
           return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_LR_canny': img_LR_canny}
         else:
-          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path}
+          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'green_mask': green_mask}
 
     def __len__(self):
         return len(self.paths_HR)

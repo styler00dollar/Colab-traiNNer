@@ -1,7 +1,9 @@
+#@title train_template.yml
+%%writefile /content/BasicSR/codes/options/train/train_template.yml
 name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
 #name: 001_template # remove "debug" to run the real training session.
 use_tb_logger: true
-model: crfill #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv2 | Adaptive | Global | Pluralistic | crfill
+model: deepfillv1 #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet
 scale: 1
 gpu_ids: [0]
 use_amp: false
@@ -18,7 +20,7 @@ datasets:
       '/content/hr'
       ] # high resolution / ground truth images
     dataroot_LR: [
-      #'/content/lr' #,
+      '/content/lr' #,
       # '../datasets/train/lr3'
       ] # low resolution images. If there are missing LR images, they will be generated on the fly from HR
     subset_file: null
@@ -82,7 +84,7 @@ datasets:
     training_with_canny: False # ONLY needed for EdgeConnect
     training_with_canny_SR: False # ONLY needed for sisr
 
-val:
+  val:
     name: val_set14_part
     mode: LRHROTF
     dataroot_HR: '/content/hr_val'
@@ -207,8 +209,8 @@ network_G:
     #residual_blocks: 8
     #threshold: 0.8
 
-    # deepfillv1 (not implemented)
-    #which_model_G:  deepfillv1
+    # deepfillv1
+    which_model_G:  deepfillv1
 
     # deepfillv2
     #which_model_G: deepfillv2
@@ -249,9 +251,17 @@ network_G:
     #activation_G: 'LeakyReLU'
 
     # crfill
-    which_model_G: crfill
-    cnum: 48
+    #which_model_G: crfill
+    #cnum: 48
 
+    # DeepDFNet
+    #which_model_G: DeepDFNet
+    #in_channels:  4
+    #out_channels:  3
+    #latent_channels:  64
+    #pad_type:  'zero'
+    #activation:  'lrelu'
+    #norm: 'in'
 
 # Discriminator options:
 network_D:
@@ -395,12 +405,12 @@ train:
     # finalcap: clamp # Test. Cap Generator outputs to fit in: [-1, 1] range ("tanh"), rescale tanh to [0,1] range ("scaltanh"), cap ("sigmoid") or clamp ("clamp") to [0,1] range. Default = None. Coordinate with znorm. Required for SPL if using image range [0,1]
     manual_seed: 0
     niter: 5e5
-    val_freq: 5000 # 5e3
+    val_freq: 1000 # 5e3
     # overwrite_val_imgs: true
     val_comparison: true
     metrics: 'psnr,ssim,lpips' # select from: "psnr,ssim,lpips" or a combination separated by comma ","
 
 logger:
-    print_freq: 200
+    print_freq: 200 #200
     save_checkpoint_freq: 5e3
     overwrite_chkp: false
