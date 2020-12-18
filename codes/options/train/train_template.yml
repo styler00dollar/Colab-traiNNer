@@ -1,9 +1,7 @@
-#@title train_template.yml
-%%writefile /content/BasicSR/codes/options/train/train_template.yml
 name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
 #name: 001_template # remove "debug" to run the real training session.
 use_tb_logger: true
-model: deepfillv1 #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet
+model: FRRN #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN
 scale: 1
 gpu_ids: [0]
 use_amp: false
@@ -210,7 +208,7 @@ network_G:
     #threshold: 0.8
 
     # deepfillv1
-    which_model_G:  deepfillv1
+    #which_model_G:  deepfillv1
 
     # deepfillv2
     #which_model_G: deepfillv2
@@ -262,6 +260,24 @@ network_G:
     #pad_type:  'zero'
     #activation:  'lrelu'
     #norm: 'in'
+
+    # partial
+    #which_model_G: partial
+
+    # DMFN
+    #which_model_G: DMFN
+
+    # pennet
+    #which_model_G: pennet
+
+    # LBAM
+    #which_model_G: LBAM
+
+    # RFR
+    #which_model_G: RFR
+
+    # Region
+    which_model_G: FRRN
 
 # Discriminator options:
 network_D:

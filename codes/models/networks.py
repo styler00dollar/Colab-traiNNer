@@ -221,9 +221,26 @@ def define_G(opt, step=0):
     elif which_model == 'DeepDFNet':
         from models.modules.architectures import DeepDFNet_arch
         netG = DeepDFNet_arch.GatedGenerator(in_channels = opt_net['in_channels'], out_channels = opt_net['out_channels'], latent_channels = opt_net['latent_channels'], pad_type = opt_net['pad_type'], activation = opt_net['activation'], norm = opt_net['norm'])
-
         # using deepfill init to avoid errors
         DeepDFNet_arch.deepfillv2_weights_init(netG)
+    elif which_model == 'partial':
+        from models.modules.architectures import partial_arch
+        netG = partial_arch.PartialConv()
+    elif which_model == 'DMFN':
+        from models.modules.architectures import DMFN_arch
+        netG = DMFN_arch.InpaintingGenerator()
+    elif which_model == 'pennet':
+        from models.modules.architectures import pennet_arch
+        netG = pennet_arch.InpaintGenerator()
+    elif which_model == 'LBAM':
+        from models.modules.architectures import LBAM_arch
+        netG = LBAM_arch.LBAMModel()
+    elif which_model == 'RFR':
+        from models.modules.architectures import RFR_arch
+        netG = RFR_arch.RFRNet()
+    elif which_model == 'FRRN':
+        from models.modules.architectures import FRRN_arch
+        netG = FRRN_arch.FRRNet()
     else:
         raise NotImplementedError('Generator model [{:s}] not recognized'.format(which_model))
 

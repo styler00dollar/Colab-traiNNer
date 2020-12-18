@@ -292,10 +292,10 @@ class inpaintModel(BaseModel):
         ### Network forward, generate SR
         with self.cast():
               # normal
-              if self.which_model_G == 'Adaptive' or self.which_model_G == 'DFNet' or self.which_model_G == 'RN':
+              if self.which_model_G == 'RFR' or self.which_model_G == 'LBAM' or self.which_model_G == 'DMFN' or self.which_model_G == 'partial' or self.which_model_G == 'Adaptive' or self.which_model_G == 'DFNet' or self.which_model_G == 'RN':
                 self.fake_H = self.netG(self.var_L, mask)
               # 2 rgb images
-              if self.which_model_G == 'deepfillv1' or self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill' or self.which_model_G == 'DeepDFNet':
+              if self.which_model_G == 'pennet' or self.which_model_G == 'deepfillv1' or self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill' or self.which_model_G == 'DeepDFNet':
                 self.fake_H, self.other_img = self.netG(self.var_L, mask)
 
               # special
@@ -305,6 +305,8 @@ class inpaintModel(BaseModel):
               if self.which_model_G == 'EdgeConnect':
                 self.fake_H, self.other_img = self.netG(self.var_L, self.canny_data, self.grayscale_data, mask)
 
+              if self.which_model_G == 'FRRN':
+                self.fake_H, mid_x, mid_mask = self.netG(self.var_L, mask)
 
         #/with self.cast():
         #self.fake_H = self.netG(self.var_L, mask)
@@ -332,7 +334,7 @@ class inpaintModel(BaseModel):
 
                 # additional losses, in case a model does output more than a normal image
                 ###############################
-                # deepfillv2 / global / edge-connect
+                # deepfillv2 / global
                 if self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill':
                   L1Loss = nn.L1Loss()
                   l1_stage1 = L1Loss(self.other_img, self.var_H)
@@ -340,6 +342,7 @@ class inpaintModel(BaseModel):
                   self.log_dict.update(l1_stage1=l1_stage1)
                   loss_results.append(l1_stage1)
 
+                # edge-connect
                 if self.which_model_G == 'EdgeConnect':
                   L1Loss = nn.L1Loss()
                   l1_edge = L1Loss(self.other_img, self.var_H)
@@ -373,12 +376,34 @@ class inpaintModel(BaseModel):
                   loss_results.append(loss_kl_g)
                 ###############################
                 # deepfillv1
-                from models.modules.deepfillv1_loss import ReconLoss
-                ReconLoss_ = ReconLoss(1,1,1,1)
-                reconstruction_loss = ReconLoss_(self.var_H, self.other_img, self.fake_H, mask)
+                if self.which_model_G == 'deepfillv1':
+                  from models.modules.deepfillv1_loss import ReconLoss
+                  ReconLoss_ = ReconLoss(1,1,1,1)
+                  reconstruction_loss = ReconLoss_(self.var_H, self.other_img, self.fake_H, mask)
 
-                self.log_dict.update(reconstruction_loss=reconstruction_loss)
-                loss_results.append(reconstruction_loss)
+                  self.log_dict.update(reconstruction_loss=reconstruction_loss)
+                  loss_results.append(reconstruction_loss)
+                ###############################
+                # pennet
+                if self.which_model_G == 'pennet':
+                  L1Loss = nn.L1Loss()
+                  if self.other_img is not None:
+                    pyramid_loss = 0
+                    for _, f in enumerate(self.other_img):
+                      pyramid_loss += L1Loss(f, torch.nn.functional.interpolate(self.var_H, size=f.size()[2:4], mode='bilinear', align_corners=True))
+
+                  self.log_dict.update(pyramid_loss=pyramid_loss)
+                  loss_results.append(pyramid_loss)
+                ###############################
+                # FRRN
+                if self.which_model_G == 'FRRN':
+                  L1Loss = nn.L1Loss()
+                  # generator step loss
+                  for idx in range(len(mid_x) - 1):
+                      mid_l1_loss = L1Loss(mid_x[idx] * mid_mask[idx], self.var_H * mid_mask[idx])
+
+                  self.log_dict.update(mid_l1_loss=mid_l1_loss)
+                  loss_results.append(mid_l1_loss)
                 ###############################
 
                 #for key, value in self.log_dict.items():
@@ -467,20 +492,20 @@ class inpaintModel(BaseModel):
           self.var_L, mask = self.masking_images()
         """
 
-        self.mask = data['green_mask'].to(self.device).unsqueeze(0)
+        self.mask = data['green_mask'].float().to(self.device).unsqueeze(0)
         self.var_L = self.var_L * self.mask
         #print("self.mask")
         #print(self.mask)
-
+        #self.var_L = self.var_L.float().cuda()
 
         self.netG.eval()
         with torch.no_grad():
             if self.is_train:
               # normal
-              if self.which_model_G == 'Adaptive' or self.which_model_G == 'DFNet' or self.which_model_G == 'RN':
+              if self.which_model_G == 'RFR' or self.which_model_G == 'LBAM' or self.which_model_G == 'DMFN' or self.which_model_G == 'partial' or self.which_model_G == 'Adaptive' or self.which_model_G == 'DFNet' or self.which_model_G == 'RN':
                 self.fake_H = self.netG(self.var_L, self.mask)
               # 2 rgb images
-              if self.which_model_G == 'deepfillv1' or self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill' or self.which_model_G == 'DeepDFNet':
+              if self.which_model_G == 'pennet' or self.which_model_G == 'deepfillv1' or self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill' or self.which_model_G == 'DeepDFNet':
                 self.fake_H, _ = self.netG(self.var_L, self.mask)
 
               # special
@@ -489,6 +514,9 @@ class inpaintModel(BaseModel):
 
               if self.which_model_G == 'EdgeConnect':
                 self.fake_H, _ = self.netG(self.var_L, self.canny_data, self.grayscale_data, self.mask)
+
+              if self.which_model_G == 'FRRN':
+                self.fake_H, _, _ = self.netG(self.var_L, self.mask)
 
         self.netG.train()
 

@@ -24,27 +24,11 @@ def create_model(opt):
     elif model == 'EdgeConnect':
         #from .EdgeConnectModel import EdgeConnectInpaintor as M
         from .inpaint_model import inpaintModel as M
-    elif model == 'DFNet':
-        from .inpaint_model import inpaintModel as M
-    elif model == 'CSA':
-        from .inpaint_model import inpaintModel as M
-    elif model == 'RN':
-        from .inpaint_model import inpaintModel as M
-    elif model == 'deepfillv1':
-        from .inpaint_model import inpaintModel as M
-    elif model == 'deepfillv2':
-        from .inpaint_model import inpaintModel as M
-    elif model == 'Adaptive':
-        from .inpaint_model import inpaintModel as M
-    elif model == 'Global':
-        from .inpaint_model import inpaintModel as M
-    elif model == 'Pluralistic':
-        from .inpaint_model import inpaintModel as M
-    elif model == 'sisr':
-        from .inpaintSR_model import inpaintSRModel as M
-    elif model == 'crfill':
-        from .inpaint_model import inpaintModel as M
-    elif model == 'DeepDFNet':
+    elif (model == 'DFNet' or model == 'CSA' or model == 'RN' or model == 'deepfillv1'
+      or model == 'deepfillv2' or model == 'Adaptive' or model == 'Global'
+      or model == 'Pluralistic' or 'sisr' or model == 'crfill' or model == 'DeepDFNet'
+      or model == 'partial' or model == 'DMFN' or model == 'pennet' or model == 'LBAM'
+      or model == 'RFR' or model == 'FRRN'):
         from .inpaint_model import inpaintModel as M
     else:
         raise NotImplementedError('Model [{:s}] not recognized.'.format(model))
