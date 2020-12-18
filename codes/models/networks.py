@@ -241,6 +241,9 @@ def define_G(opt, step=0):
     elif which_model == 'FRRN':
         from models.modules.architectures import FRRN_arch
         netG = FRRN_arch.FRRNet()
+    elif which_model == 'PRVS':
+        from models.modules.architectures import PRVS_arch
+        netG = PRVS_arch.PRVSNet()
     else:
         raise NotImplementedError('Generator model [{:s}] not recognized'.format(which_model))
 

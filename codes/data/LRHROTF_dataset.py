@@ -497,9 +497,9 @@ class LRHRDataset(data.Dataset):
 
 
         if self.opt['training_with_canny'] == True:
-          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_HR_gray': img_HR_gray, 'img_HR_canny': img_HR_canny}
+          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_HR_gray': img_HR_gray, 'img_HR_canny': img_HR_canny, 'green_mask': green_mask}
         elif self.opt['training_with_canny_SR'] == True:
-          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_LR_canny': img_LR_canny}
+          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_LR_canny': img_LR_canny, 'green_mask': green_mask}
         else:
           return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'green_mask': green_mask}
 

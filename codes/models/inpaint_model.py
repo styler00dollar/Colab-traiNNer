@@ -248,7 +248,7 @@ class inpaintModel(BaseModel):
 
     def feed_data(self, data, need_HR=True):
         # LR images
-        if self.which_model_G == 'EdgeConnect':
+        if self.which_model_G == 'EdgeConnect' or self.which_model_G == 'PRVS':
           self.var_L = data['LR'].to(self.device)
           self.canny_data = data['img_HR_canny'].to(self.device)
           self.grayscale_data = data['img_HR_gray'].to(self.device)
@@ -307,6 +307,9 @@ class inpaintModel(BaseModel):
 
               if self.which_model_G == 'FRRN':
                 self.fake_H, mid_x, mid_mask = self.netG(self.var_L, mask)
+
+              if self.which_model_G == 'PRVS':
+                self.fake_H, _ ,edge_small, edge_big = self.netG(self.var_L, mask, self.canny_data)
 
         #/with self.cast():
         #self.fake_H = self.netG(self.var_L, mask)
@@ -404,6 +407,26 @@ class inpaintModel(BaseModel):
 
                   self.log_dict.update(mid_l1_loss=mid_l1_loss)
                   loss_results.append(mid_l1_loss)
+                ###############################
+                # PRVS
+                if self.which_model_G == 'PRVS':
+                  L1Loss = nn.L1Loss()
+                  #from models.modules.PRVS_loss import edge_loss
+                  #[edge_small, edge_big]
+                  #adv_loss_0 = self.edge_loss(fake_edge[1], real_edge)
+                  #dv_loss_1 = self.edge_loss(fake_edge[0], F.interpolate(real_edge, scale_factor = 0.5))
+
+                  #adv_loss_0 = edge_loss(self, edge_big, self.canny_data, self.grayscale_data)
+                  #adv_loss_1 = edge_loss(self, edge_small, torch.nn.functional.interpolate(self.canny_data, scale_factor = 0.5))
+
+                  # l1 instead of discriminator loss
+                  edge_big_l1 = L1Loss(edge_big, self.canny_data)
+                  edge_small_l1 = L1Loss(edge_small, torch.nn.functional.interpolate(self.canny_data, scale_factor = 0.5))
+
+                  self.log_dict.update(edge_big_l1=edge_big_l1)
+                  loss_results.append(edge_big_l1)
+                  self.log_dict.update(edge_small_l1=edge_small_l1)
+                  loss_results.append(edge_small_l1)
                 ###############################
 
                 #for key, value in self.log_dict.items():
@@ -517,6 +540,10 @@ class inpaintModel(BaseModel):
 
               if self.which_model_G == 'FRRN':
                 self.fake_H, _, _ = self.netG(self.var_L, self.mask)
+
+              if self.which_model_G == 'PRVS':
+                self.fake_H, _, _, _ = self.netG(self.var_L, self.mask, self.canny_data)
+
 
         self.netG.train()
 

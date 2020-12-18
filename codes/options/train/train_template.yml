@@ -1,7 +1,7 @@
 name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
 #name: 001_template # remove "debug" to run the real training session.
 use_tb_logger: true
-model: FRRN #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN
+model: PRVS #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN | PRVS
 scale: 1
 gpu_ids: [0]
 use_amp: false
@@ -79,7 +79,7 @@ datasets:
     center_crop: False # Will centergrop LR and HR images and keep aspect ratio
     resize_HR_dimension: False # Downscale lr and hr to given HR value (if you don't set this to true and the image is bigger than needed, random crop will be applied. Should be used with center crop)
 
-    training_with_canny: False # ONLY needed for EdgeConnect
+    training_with_canny: True # ONLY needed for EdgeConnect and PRVS
     training_with_canny_SR: False # ONLY needed for sisr
 
   val:
@@ -99,7 +99,7 @@ datasets:
     lr_downscale: False # Needs to be true if you don't train 1x
     lr_downscale_types: ["linear", "cubic"] # select from ["nearest", "linear", "cubic", "area", "lanczos4", "linear_exact", "matlab_bicubic"] #scale_algos #scaling interpolation options
 
-    training_with_canny: False # ONLY needed for EdgeConnect
+    training_with_canny: True # ONLY needed for EdgeConnect and PRVS
     training_with_canny_SR: False # ONLY needed for sisr
 
 path:
@@ -277,7 +277,10 @@ network_G:
     #which_model_G: RFR
 
     # Region
-    which_model_G: FRRN
+    #which_model_G: FRRN
+
+    # PRVS
+    which_model_G: PRVS
 
 # Discriminator options:
 network_D:
