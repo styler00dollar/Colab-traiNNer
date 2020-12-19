@@ -289,27 +289,30 @@ class inpaintModel(BaseModel):
         else:
           self.var_L, mask = self.masking_images()
 
-        ### Network forward, generate SR
+        ### Network forward, generate inpainted fake
         with self.cast():
               # normal
               if self.which_model_G == 'RFR' or self.which_model_G == 'LBAM' or self.which_model_G == 'DMFN' or self.which_model_G == 'partial' or self.which_model_G == 'Adaptive' or self.which_model_G == 'DFNet' or self.which_model_G == 'RN':
                 self.fake_H = self.netG(self.var_L, mask)
               # 2 rgb images
-              if self.which_model_G == 'pennet' or self.which_model_G == 'deepfillv1' or self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill' or self.which_model_G == 'DeepDFNet':
+              elif self.which_model_G == 'CRA' or self.which_model_G == 'pennet' or self.which_model_G == 'deepfillv1' or self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill' or self.which_model_G == 'DeepDFNet':
                 self.fake_H, self.other_img = self.netG(self.var_L, mask)
 
               # special
-              if self.which_model_G == 'Pluralistic':
+              elif self.which_model_G == 'Pluralistic':
                 self.fake_H, self.kl_rec, self.kl_g = self.netG(self.var_L, img_inverted, mask)
 
-              if self.which_model_G == 'EdgeConnect':
+              elif self.which_model_G == 'EdgeConnect':
                 self.fake_H, self.other_img = self.netG(self.var_L, self.canny_data, self.grayscale_data, mask)
 
-              if self.which_model_G == 'FRRN':
+              elif self.which_model_G == 'FRRN':
                 self.fake_H, mid_x, mid_mask = self.netG(self.var_L, mask)
 
-              if self.which_model_G == 'PRVS':
+              elif self.which_model_G == 'PRVS':
                 self.fake_H, _ ,edge_small, edge_big = self.netG(self.var_L, mask, self.canny_data)
+
+              else:
+                print("Selected model is not implemented.")
 
         #/with self.cast():
         #self.fake_H = self.netG(self.var_L, mask)
@@ -337,8 +340,8 @@ class inpaintModel(BaseModel):
 
                 # additional losses, in case a model does output more than a normal image
                 ###############################
-                # deepfillv2 / global
-                if self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill':
+                # deepfillv2 / global / crfill / CRA
+                if self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill' or self.which_model_G == 'CRA':
                   L1Loss = nn.L1Loss()
                   l1_stage1 = L1Loss(self.other_img, self.var_H)
 
@@ -528,22 +531,23 @@ class inpaintModel(BaseModel):
               if self.which_model_G == 'RFR' or self.which_model_G == 'LBAM' or self.which_model_G == 'DMFN' or self.which_model_G == 'partial' or self.which_model_G == 'Adaptive' or self.which_model_G == 'DFNet' or self.which_model_G == 'RN':
                 self.fake_H = self.netG(self.var_L, self.mask)
               # 2 rgb images
-              if self.which_model_G == 'pennet' or self.which_model_G == 'deepfillv1' or self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill' or self.which_model_G == 'DeepDFNet':
+              elif self.which_model_G == 'CRA' or self.which_model_G == 'pennet' or self.which_model_G == 'deepfillv1' or self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill' or self.which_model_G == 'DeepDFNet':
                 self.fake_H, _ = self.netG(self.var_L, self.mask)
 
               # special
-              if self.which_model_G == 'Pluralistic':
+              elif self.which_model_G == 'Pluralistic':
                 self.fake_H, _, _ = self.netG(self.var_L, img_inverted, self.mask)
 
-              if self.which_model_G == 'EdgeConnect':
+              elif self.which_model_G == 'EdgeConnect':
                 self.fake_H, _ = self.netG(self.var_L, self.canny_data, self.grayscale_data, self.mask)
 
-              if self.which_model_G == 'FRRN':
+              elif self.which_model_G == 'FRRN':
                 self.fake_H, _, _ = self.netG(self.var_L, self.mask)
 
-              if self.which_model_G == 'PRVS':
+              elif self.which_model_G == 'PRVS':
                 self.fake_H, _, _, _ = self.netG(self.var_L, self.mask, self.canny_data)
-
+              else:
+                print("Selected model is not implemented.")
 
         self.netG.train()
 

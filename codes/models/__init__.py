@@ -28,7 +28,7 @@ def create_model(opt):
       or model == 'deepfillv2' or model == 'Adaptive' or model == 'Global'
       or model == 'Pluralistic' or 'sisr' or model == 'crfill' or model == 'DeepDFNet'
       or model == 'partial' or model == 'DMFN' or model == 'pennet' or model == 'LBAM'
-      or model == 'RFR' or model == 'FRRN' or model == 'PRVS'):
+      or model == 'RFR' or model == 'FRRN' or model == 'PRVS' or model == 'CRA'):
         from .inpaint_model import inpaintModel as M
     else:
         raise NotImplementedError('Model [{:s}] not recognized.'.format(model))

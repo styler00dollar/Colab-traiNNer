@@ -1,7 +1,7 @@
 name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
 #name: 001_template # remove "debug" to run the real training session.
 use_tb_logger: true
-model: PRVS #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN | PRVS
+model: DMFN #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN | PRVS | CRA
 scale: 1
 gpu_ids: [0]
 use_amp: false
@@ -79,7 +79,7 @@ datasets:
     center_crop: False # Will centergrop LR and HR images and keep aspect ratio
     resize_HR_dimension: False # Downscale lr and hr to given HR value (if you don't set this to true and the image is bigger than needed, random crop will be applied. Should be used with center crop)
 
-    training_with_canny: True # ONLY needed for EdgeConnect and PRVS
+    training_with_canny: False # ONLY needed for EdgeConnect and PRVS
     training_with_canny_SR: False # ONLY needed for sisr
 
   val:
@@ -99,7 +99,7 @@ datasets:
     lr_downscale: False # Needs to be true if you don't train 1x
     lr_downscale_types: ["linear", "cubic"] # select from ["nearest", "linear", "cubic", "area", "lanczos4", "linear_exact", "matlab_bicubic"] #scale_algos #scaling interpolation options
 
-    training_with_canny: True # ONLY needed for EdgeConnect and PRVS
+    training_with_canny: False # ONLY needed for EdgeConnect and PRVS
     training_with_canny_SR: False # ONLY needed for sisr
 
 path:
@@ -265,7 +265,13 @@ network_G:
     #which_model_G: partial
 
     # DMFN
-    #which_model_G: DMFN
+    which_model_G: DMFN
+    in_nc: 4
+    out_nc: 3
+    nf: 64
+    n_res: 8
+    norm: 'in'
+    activation: 'relu'
 
     # pennet
     #which_model_G: pennet
@@ -280,7 +286,10 @@ network_G:
     #which_model_G: FRRN
 
     # PRVS
-    which_model_G: PRVS
+    #which_model_G: PRVS
+
+    # CRA (needs hr size 512)
+    #which_model_G: CRA
 
 # Discriminator options:
 network_D:

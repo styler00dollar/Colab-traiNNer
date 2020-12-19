@@ -228,7 +228,9 @@ def define_G(opt, step=0):
         netG = partial_arch.PartialConv()
     elif which_model == 'DMFN':
         from models.modules.architectures import DMFN_arch
-        netG = DMFN_arch.InpaintingGenerator()
+        netG = DMFN_arch.InpaintingGenerator(in_nc=opt_net['in_nc'],
+          out_nc=opt_net['out_nc'],nf=opt_net['nf'],n_res=opt_net['n_res'],
+          norm=opt_net['norm'], activation=opt_net['activation'])
     elif which_model == 'pennet':
         from models.modules.architectures import pennet_arch
         netG = pennet_arch.InpaintGenerator()
@@ -244,6 +246,9 @@ def define_G(opt, step=0):
     elif which_model == 'PRVS':
         from models.modules.architectures import PRVS_arch
         netG = PRVS_arch.PRVSNet()
+    elif which_model == 'CRA':
+        from models.modules.architectures import CRA_arch
+        netG = CRA_arch.GatedGenerator()
     else:
         raise NotImplementedError('Generator model [{:s}] not recognized'.format(which_model))
 
