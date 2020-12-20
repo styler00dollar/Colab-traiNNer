@@ -14,7 +14,7 @@ from dataops.debug import tmp_vis, describe_numpy, describe_tensor
 
 import dataops.opencv_transforms.opencv_transforms as transforms
 
-
+from dataops.noise_estimation import noise_estimate
 
 class LRHRDataset(Dataset):
     '''
@@ -33,6 +33,7 @@ class LRHRDataset(Dataset):
         if opt.get('dataroot_kernels', None):
             #TODO: note: use the model scale to get the right kernel
             scale = opt.get('scale', 4)
+
             self.ds_kernels = KernelDownscale(scale=scale, kernel_paths=opt['dataroot_kernels'])
 
         if opt['phase'] == 'train' and opt.get('lr_noise_types', 3) and "patches" in opt['lr_noise_types']:
@@ -375,6 +376,9 @@ class LRHRDataset(Dataset):
                 else:
                     ds_kernel = None
                 #img_LR, scale_interpol_algo = augmentations.scale_img(img_LR, scale, algo=ds_algo)
+
+                #print("algo")
+                #print(ds_algo)
                 img_LR, _ = Scale(img=img_LR, scale=scale, algo=ds_algo, ds_kernel=ds_kernel)
                 # resize = get_resize(size=LR_size, scale=scale, ds_algo=ds_algo)
                 # img_LR = resize(np.copy(img_LR))
@@ -399,6 +403,7 @@ class LRHRDataset(Dataset):
             # Final sizes checks
             # if the resulting HR image size so far is too large or too small, resize HR to the correct size and downscale to generate a new LR on the fly
             # if the resulting LR so far does not have the correct dimensions, also generate a new HR-LR image pair on the fly
+
             if img_HR.shape[0] != HR_size or img_HR.shape[1] != HR_size or img_LR.shape[0] != LR_size or img_LR.shape[1] != LR_size:
 
                 #if img_HR.shape[0] != HR_size or img_HR.shape[1] != HR_size:
@@ -604,6 +609,11 @@ class LRHRDataset(Dataset):
           img_LR_canny = torch.from_numpy(img_LR_canny).unsqueeze(0)
 
 
+        if self.opt['noise_estimation'] == True:
+          ds_kernel = torch.from_numpy(getattr(ds_kernel,'used_kernel')).unsqueeze(0).float()
+          noise_est = noise_estimate(img_LR, 4)
+          sigma = torch.tensor(noise_est).float().view([1, 1, 1])
+
 
         img_HR = util.np2tensor(img_HR, normalize=znorm, add_batch=False) #.astype('uint8').clip(0,255)
         img_LR = util.np2tensor(img_LR, normalize=znorm, add_batch=False)
@@ -618,6 +628,8 @@ class LRHRDataset(Dataset):
           return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_HR_gray': img_HR_gray, 'img_HR_canny': img_HR_canny}
         elif self.opt['training_with_canny_SR'] == True:
           return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_LR_canny': img_LR_canny}
+        if self.opt['noise_estimation'] == True:
+          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'ds_kernel': ds_kernel, 'sigma': sigma}
         else:
           return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path}
 

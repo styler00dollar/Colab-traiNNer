@@ -21,10 +21,9 @@ def create_model(opt):
         from .VSR_model import VSRModel as M
     elif model == 'pbr':
         from .PBR_model import PBRModel as M
-    elif model == 'EdgeConnect':
-        #from .EdgeConnectModel import EdgeConnectInpaintor as M
-        from .inpaint_model import inpaintModel as M
-    elif (model == 'DFNet' or model == 'CSA' or model == 'RN' or model == 'deepfillv1'
+    elif model == 'USRNet':
+        from .USRNet_model import USRNetmodel as M
+    elif (model == 'EdgeConnect' or model == 'DFNet' or model == 'CSA' or model == 'RN' or model == 'deepfillv1'
       or model == 'deepfillv2' or model == 'Adaptive' or model == 'Global'
       or model == 'Pluralistic' or 'sisr' or model == 'crfill' or model == 'DeepDFNet'
       or model == 'partial' or model == 'DMFN' or model == 'pennet' or model == 'LBAM'

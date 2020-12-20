@@ -9,6 +9,8 @@ import dataops.common as util
 import dataops.augmentations as augmentations
 from dataops.debug import tmp_vis, describe_numpy, describe_tensor
 
+from dataops.noise_estimation import noise_estimate
+from dataops.augmentations import Scale, KernelDownscale
 
 class LRHRDataset(data.Dataset):
     '''
@@ -23,6 +25,11 @@ class LRHRDataset(data.Dataset):
         self.paths_LR, self.paths_HR = None, None
         self.LR_env, self.HR_env = None, None  # environment for lmdb
         self.output_sample_imgs = None
+        if opt.get('dataroot_kernels', None):
+            #TODO: note: use the model scale to get the right kernel
+            scale = opt.get('scale', 4)
+
+            self.ds_kernels = KernelDownscale(scale=scale, kernel_paths=opt['dataroot_kernels'])
 
         # read image list from subset list txt
         if opt['subset_file'] is not None and opt['phase'] == 'train':
@@ -326,7 +333,6 @@ class LRHRDataset(data.Dataset):
                 ds_algo  = self.opt.get('lr_downscale_types', 777)
                 img_LR, _ = augmentations.scale_img(img_HR, scale, algo=ds_algo)
 
-
             # Below are the On The Fly augmentations
 
             # Apply "auto levels" to images
@@ -413,8 +419,13 @@ class LRHRDataset(data.Dataset):
         # For testing and validation
         if self.opt['phase'] != 'train':
             # Randomly downscale LR if enabled
-            if self.opt['lr_downscale']:
-                if self.opt['lr_downscale_types']:
+            if self.opt['lr_downscale']: # True
+                #print("self.opt['lr_downscale_types']")
+                #print(self.opt['lr_downscale_types'])
+                #if self.opt['lr_downscale_types'] == 'realistic':
+                if self.opt.get('lr_downscale', None) and self.opt.get('dataroot_kernels', None) and 999 in self.opt["lr_downscale_types"]:
+                    img_LR, _ = Scale(img=img_LR, scale=scale, algo=self.opt['lr_downscale_types'], ds_kernel=self.ds_kernels)
+                elif self.opt['lr_downscale_types'] and not self.opt.get('dataroot_kernels', None):
                     img_LR, scale_interpol_algo = augmentations.scale_img(img_LR, scale, algo=self.opt['lr_downscale_types'])
                 else: # Default to matlab-like bicubic downscale
                     img_LR, scale_interpol_algo = augmentations.scale_img(img_LR, scale, algo=777)
@@ -483,6 +494,11 @@ class LRHRDataset(data.Dataset):
           img_LR_canny = cv2.Canny(img_LR_gray,100,150)
           img_LR_canny = torch.from_numpy(img_LR_canny).unsqueeze(0)
 
+        if self.opt['noise_estimation'] == True:
+          ds_kernel = torch.from_numpy(getattr(self.ds_kernels,'used_kernel')).unsqueeze(0).float()
+          noise_est = noise_estimate(img_LR, 4)
+          sigma = torch.tensor(noise_est).float().view([1, 1, 1])
+
         # create mask from green inpainted lr
         green_mask = np.all(img_HR != [0,255,0], axis=-1).astype(int)
         green_mask = torch.from_numpy(green_mask)
@@ -495,13 +511,14 @@ class LRHRDataset(data.Dataset):
             LR_path = HR_path
 
 
-
         if self.opt['training_with_canny'] == True:
-          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_HR_gray': img_HR_gray, 'img_HR_canny': img_HR_canny, 'green_mask': green_mask}
+          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_HR_gray': img_HR_gray, 'img_HR_canny': img_HR_canny}
         elif self.opt['training_with_canny_SR'] == True:
-          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_LR_canny': img_LR_canny, 'green_mask': green_mask}
+          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_LR_canny': img_LR_canny}
+        if self.opt['noise_estimation'] == True:
+          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'ds_kernel': ds_kernel, 'sigma': sigma}
         else:
-          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'green_mask': green_mask}
+          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path}
 
     def __len__(self):
         return len(self.paths_HR)
