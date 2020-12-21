@@ -252,6 +252,9 @@ def define_G(opt, step=0):
     elif which_model == 'USRNet':
         from models.modules.architectures import USRNet_arch
         netG = USRNet_arch.USRNet()
+    elif which_model == 'atrous':
+        from models.modules.architectures import atrous_arch
+        netG = atrous_arch.AtrousInpainter()
     else:
         raise NotImplementedError('Generator model [{:s}] not recognized'.format(which_model))
 

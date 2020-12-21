@@ -512,13 +512,13 @@ class LRHRDataset(data.Dataset):
 
 
         if self.opt['training_with_canny'] == True:
-          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_HR_gray': img_HR_gray, 'img_HR_canny': img_HR_canny}
+          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_HR_gray': img_HR_gray, 'img_HR_canny': img_HR_canny, 'green_mask': green_mask}
         elif self.opt['training_with_canny_SR'] == True:
-          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_LR_canny': img_LR_canny}
+          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'img_LR_canny': img_LR_canny, 'green_mask': green_mask}
         if self.opt['noise_estimation'] == True:
           return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'ds_kernel': ds_kernel, 'sigma': sigma}
         else:
-          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path}
+          return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path, 'green_mask': green_mask}
 
     def __len__(self):
         return len(self.paths_HR)

@@ -1,8 +1,8 @@
 #name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
 name: 001_template # remove "debug" to run the real training session.
 use_tb_logger: true
-model: USRNet #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN | PRVS | CRA | USRNet
-scale: 4
+model: atrous #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN | PRVS | CRA | USRNet | atrous
+scale: 1
 gpu_ids: [0]
 use_amp: false
 use_swa: false
@@ -41,7 +41,7 @@ datasets:
     # aug_downscale: 0.2 # Example: 0.6 = 60% chance of generating LR on the fly, even if LR dataset exists
 
     # If manually configuring on the fly generation of LR: (else, it will automatically default to Matlab-like downscale algorithm (777) when/if required
-    dataroot_kernels: '/content/kernels_4x/kernelGAN/' # location of the image kernels extracted with KernelGAN, for use with the "realistic" downscale type
+    #dataroot_kernels: '/content/kernels_4x/kernelGAN/' # location of the image kernels extracted with KernelGAN, for use with the "realistic" downscale type
     lr_downscale: True # false
     lr_downscale_types: ["realistic"] # ["linear", "cubic", "matlab_bicubic"] # select from ["nearest", "linear", "cubic", "area", "lanczos4", "linear_exact", "matlab_bicubic", "realistic"] #scale_algos #scaling interpolation options
 
@@ -81,7 +81,7 @@ datasets:
 
     training_with_canny: False # ONLY needed for EdgeConnect and PRVS
     training_with_canny_SR: False # ONLY needed for sisr
-    noise_estimation: True # ONLY enable this for USRNet
+    noise_estimation: False # ONLY enable this for USRNet
 
   val:
     name: val_set14_part
@@ -99,12 +99,12 @@ datasets:
     # hr_crop: false #disabled
     lr_downscale: True # Needs to be true if you don't train 1x
 
-    dataroot_kernels: '/content/kernels_4x/kernelGAN/' # if kernels exist, downscale will happen with them, if not, then lr_downscale_types will be applied
+    #dataroot_kernels: '/content/kernels_4x/kernelGAN/' # if kernels exist, downscale will happen with them, if not, then lr_downscale_types will be applied
     lr_downscale_types: ["linear", "cubic"] # select from ["nearest", "linear", "cubic", "area", "lanczos4", "linear_exact", "matlab_bicubic"] #scale_algos #scaling interpolation options
 
     training_with_canny: False # ONLY needed for EdgeConnect and PRVS
     training_with_canny_SR: False # ONLY needed for sisr
-    noise_estimation: True # ONLY enable this for USRNet
+    noise_estimation: False # ONLY enable this for USRNet
 
 path:
     strict: false # true | false
@@ -185,10 +185,10 @@ network_G:
     #use_spectral_norm: True
 
     # USRNet
-    which_model_G: USRNet
+    #which_model_G: USRNet
 
     # ----Inpainting Generators----
-    # DFNet (needs 2^x image input and validation)
+    # DFNet (needs 2^x image input and validation) (2019)
     #which_model_G: DFNet
     #c_img: 3
     #c_mask: 1
@@ -201,23 +201,23 @@ network_G:
     #de_ksize: [3, 3, 3, 3, 3, 3, 3, 3]
     #blend_layers: [0, 1, 2, 3, 4, 5]
 
-    # EdgeConnect
+    # EdgeConnect (2019)
     #which_model_G: EdgeConnect
     #use_spectral_norm: True
 
-    # CSA
+    # CSA (2019)
     #which_model_G: CSA
 
-    # RN
+    # RN (2020)
     #which_model_G: RN
     #input_channels: 3
     #residual_blocks: 8
     #threshold: 0.8
 
-    # deepfillv1
+    # deepfillv1 (2018)
     #which_model_G:  deepfillv1
 
-    # deepfillv2
+    # deepfillv2 (2019)
     #which_model_G: deepfillv2
     #in_channels:  4
     #out_channels:  3
@@ -226,20 +226,20 @@ network_G:
     #activation:  'lrelu'
     #norm: 'in'
 
-    # Adaptive
+    # Adaptive (2020)
     #which_model_G: Adaptive
     #in_channels: 3
     #residual_blocks: 1
     #init_weights: True
 
-    # Global
+    # Global (2020)
     #which_model_G: Global
     #input_dim: 5
     #ngf: 32
     #use_cuda: True
     #device_ids: [0]
 
-    # Pluralistic
+    # Pluralistic (2019)
     #which_model_G: Pluralistic
     #ngf_E: 32
     #z_nc_E: 128
@@ -255,7 +255,7 @@ network_G:
     #norm_G: 'instance'
     #activation_G: 'LeakyReLU'
 
-    # crfill
+    # crfill (2020)
     #which_model_G: crfill
     #cnum: 48
 
@@ -268,10 +268,10 @@ network_G:
     #activation:  'lrelu'
     #norm: 'in'
 
-    # partial
+    # partial (2018)
     #which_model_G: partial
 
-    # DMFN
+    # DMFN (2020)
     #which_model_G: DMFN
     #in_nc: 4
     #out_nc: 3
@@ -280,23 +280,26 @@ network_G:
     #norm: 'in'
     #activation: 'relu'
 
-    # pennet
+    # pennet (2019)
     #which_model_G: pennet
 
-    # LBAM
+    # LBAM (2019)
     #which_model_G: LBAM
 
-    # RFR
+    # RFR (2020)
     #which_model_G: RFR
 
-    # Region
+    # FRRN (2019)
     #which_model_G: FRRN
 
-    # PRVS
+    # PRVS (2019)
     #which_model_G: PRVS
 
-    # CRA (needs hr size 512)
+    # CRA (needs hr size 512) (2020)
     #which_model_G: CRA
+
+    # atrous (2020)
+    which_model_G: atrous
 
 # Discriminator options:
 network_D:
@@ -446,6 +449,6 @@ train:
     metrics: 'psnr,ssim,lpips' # select from: "psnr,ssim,lpips" or a combination separated by comma ","
 
 logger:
-    print_freq: 25 #200
+    print_freq: 100 #200
     save_checkpoint_freq: 5e3
     overwrite_chkp: false

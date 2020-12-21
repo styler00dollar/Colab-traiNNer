@@ -311,6 +311,9 @@ class inpaintModel(BaseModel):
               elif self.which_model_G == 'PRVS':
                 self.fake_H, _ ,edge_small, edge_big = self.netG(self.var_L, mask, self.canny_data)
 
+              elif self.which_model_G == 'atrous':
+                self.fake_H = self.netG(self.var_L)
+
               else:
                 print("Selected model is not implemented.")
 
@@ -546,6 +549,9 @@ class inpaintModel(BaseModel):
 
               elif self.which_model_G == 'PRVS':
                 self.fake_H, _, _, _ = self.netG(self.var_L, self.mask, self.canny_data)
+
+              elif self.which_model_G == 'atrous':
+                self.fake_H = self.netG(self.var_L)
               else:
                 print("Selected model is not implemented.")
 
