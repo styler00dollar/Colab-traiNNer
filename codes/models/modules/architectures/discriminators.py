@@ -195,7 +195,7 @@ class Discriminator_VGG_128(nn.Module):
 
 
 # VGG style Discriminator with input size 192*192
-class Discriminator_VGG_192(nn.Module): #vic in PPON is called Discriminator_192 
+class Discriminator_VGG_192(nn.Module): #vic in PPON is called Discriminator_192
     def __init__(self, in_nc, base_nf, norm_type='batch', act_type='leakyrelu', mode='CNA', convtype='Conv2D', arch='ESRGAN'):
         super(Discriminator_VGG_192, self).__init__()
         # features
@@ -324,10 +324,10 @@ class VGGFeatureExtractor(nn.Module):
         self.use_input_norm = use_input_norm
         if self.use_input_norm:
             if z_norm: # if input in range [-1,1]
-                mean = torch.Tensor([0.485-1, 0.456-1, 0.406-1]).view(1, 3, 1, 1).to(device) 
+                mean = torch.Tensor([0.485-1, 0.456-1, 0.406-1]).view(1, 3, 1, 1).to(device)
                 std = torch.Tensor([0.229*2, 0.224*2, 0.225*2]).view(1, 3, 1, 1).to(device)
             else: # input in range [0,1]
-                mean = torch.Tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(device)                 
+                mean = torch.Tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(device)
                 std = torch.Tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(device)
             self.register_buffer('mean', mean)
             self.register_buffer('std', std)
@@ -441,18 +441,18 @@ class Discriminator_VGG_128_fea(nn.Module):
         # features
         # hxw, c
         # 128, 64
-        
+
         # Self-Attention configuration
         '''#TODO
         self.self_attention = self_attention
         self.max_pool = max_pool
         self.poolsize = poolsize
         '''
-        
+
         # Remove BatchNorm2d if using spectral_norm
         if spectral_norm:
             norm_type = None
-        
+
         self.conv0 = B.conv_block(in_nc, base_nf, kernel_size=3, norm_type=None, act_type=act_type, \
             mode=mode)
         self.conv1 = B.conv_block(base_nf, base_nf, kernel_size=4, stride=2, norm_type=norm_type, \
@@ -468,7 +468,7 @@ class Discriminator_VGG_128_fea(nn.Module):
         self.conv5 = B.conv_block(base_nf*4, base_nf*4, kernel_size=4, stride=2, norm_type=norm_type, \
             act_type=act_type, mode=mode, spectral_norm=spectral_norm)
         # 16, 256
-        
+
         '''#TODO
         if self.self_attention:
             self.FSA = SelfAttentionBlock(in_dim = base_nf*4, max_pool=self.max_pool, poolsize = self.poolsize, spectral_norm=spectral_norm)
@@ -519,7 +519,7 @@ class Discriminator_VGG_128_fea(nn.Module):
         feature_maps.append(x)
         x = self.conv9(x)
         feature_maps.append(x)
-        
+
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
         if return_maps:
@@ -534,14 +534,14 @@ class Discriminator_VGG_fea(nn.Module):
         # features
         # hxw, c
         # 128, 64
-        
+
         # Self-Attention configuration
         '''#TODO
         self.self_attention = self_attention
         self.max_pool = max_pool
         self.poolsize = poolsize
         '''
-        
+
         # Remove BatchNorm2d if using spectral_norm
         if spectral_norm:
             norm_type = None
@@ -562,7 +562,7 @@ class Discriminator_VGG_fea(nn.Module):
                 act_type=act_type, mode=mode, spectral_norm=spectral_norm))
             cur_nc = out_nc
             cur_size //= 2
-        
+
         '''#TODO
         if self.self_attention:
             self.FSA = SelfAttentionBlock(in_dim = base_nf*4, max_pool=self.max_pool, poolsize = self.poolsize, spectral_norm=spectral_norm)
@@ -588,7 +588,7 @@ class Discriminator_VGG_fea(nn.Module):
             conv = conv.to(device)
             x = conv(x)
             feature_maps.append(x)
-        
+
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
         if return_maps:
@@ -661,7 +661,7 @@ class MultiscaleDiscriminator(nn.Module):
     https://arxiv.org/pdf/1711.11585.pdf
 
     """
-    def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d, 
+    def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d,
                  use_sigmoid=False, num_D=3, getIntermFeat=False):
         """Construct a pyramid of PatchGAN discriminators
         Parameters:
@@ -677,12 +677,12 @@ class MultiscaleDiscriminator(nn.Module):
         self.num_D = num_D
         self.n_layers = n_layers
         self.getIntermFeat = getIntermFeat
-     
+
         for i in range(num_D):
             netD = NLayerDiscriminator(input_nc, ndf, n_layers, norm_layer, use_sigmoid, getIntermFeat)
-            if getIntermFeat:                                
+            if getIntermFeat:
                 for j in range(n_layers+2):
-                    setattr(self, 'scale'+str(i)+'_layer'+str(j), getattr(netD, 'model'+str(j)))                                   
+                    setattr(self, 'scale'+str(i)+'_layer'+str(j), getattr(netD, 'model'+str(j)))
             else:
                 setattr(self, 'layer'+str(i), netD.model)
 
@@ -697,7 +697,7 @@ class MultiscaleDiscriminator(nn.Module):
         else:
             return [model(input)]
 
-    def forward(self, input):        
+    def forward(self, input):
         num_D = self.num_D
         result = []
         input_downsampled = input
@@ -746,3 +746,31 @@ class PixelDiscriminator(nn.Module):
         return self.net(input)
 
 
+"""
+models.py (21-12-20)
+https://github.com/eriklindernoren/PyTorch-GAN/blob/master/implementations/context_encoder/models.py
+"""
+class context_encoder(nn.Module):
+    def __init__(self, channels=3):
+        super(context_encoder, self).__init__()
+
+        def discriminator_block(in_filters, out_filters, stride, normalize):
+            """Returns layers of each discriminator block"""
+            layers = [nn.Conv2d(in_filters, out_filters, 3, stride, 1)]
+            if normalize:
+                layers.append(nn.InstanceNorm2d(out_filters))
+            layers.append(nn.LeakyReLU(0.2, inplace=True))
+            return layers
+
+        layers = []
+        in_filters = channels
+        for out_filters, stride, normalize in [(64, 2, False), (128, 2, True), (256, 2, True), (512, 1, True)]:
+            layers.extend(discriminator_block(in_filters, out_filters, stride, normalize))
+            in_filters = out_filters
+
+        layers.append(nn.Conv2d(out_filters, 1, 3, 1, 1))
+
+        self.model = nn.Sequential(*layers)
+
+    def forward(self, img):
+        return self.model(img)

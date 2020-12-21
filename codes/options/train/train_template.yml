@@ -1,5 +1,5 @@
-#name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
-name: 001_template # remove "debug" to run the real training session.
+name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
+#name: 001_template # remove "debug" to run the real training session.
 use_tb_logger: true
 model: atrous #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN | PRVS | CRA | USRNet | atrous
 scale: 1
@@ -304,7 +304,7 @@ network_G:
 # Discriminator options:
 network_D:
     # ESRGAN (default)| PPON:
-    which_model_D: discriminator_vgg # discriminator_vgg_128 | discriminator_vgg | discriminator_vgg_128_fea (feature extraction) | discriminator_vgg_fea (feature extraction) | patchgan | multiscale | InpaintSADirciminator
+    which_model_D: context_encoder # discriminator_vgg_128 | discriminator_vgg | discriminator_vgg_128_fea (feature extraction) | discriminator_vgg_fea (feature extraction) | patchgan | multiscale | context_encoder
     norm_type: batch
     act_type: leakyrelu
     mode: CNA # CNA | NAC

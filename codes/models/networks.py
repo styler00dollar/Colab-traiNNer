@@ -344,6 +344,9 @@ def define_D(opt):
         from models.modules.architectures import discriminators
         netD = discriminators.MultiscaleDiscriminator(input_nc=opt_net['in_nc'], ndf=opt_net['nf'], \
             n_layers=opt_net['nlayer'], num_D=opt_net['num_D'])
+    elif which_model == 'context_encoder':
+        from models.modules.architectures import discriminators
+        netD = discriminators.context_encoder()
     else:
         raise NotImplementedError('Discriminator model [{:s}] not recognized'.format(which_model))
     """
