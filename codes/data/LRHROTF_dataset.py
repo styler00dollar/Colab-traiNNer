@@ -500,7 +500,7 @@ class LRHRDataset(data.Dataset):
           sigma = torch.tensor(noise_est).float().view([1, 1, 1])
 
         # create mask from green inpainted lr
-        green_mask = np.all(img_HR != [0,255,0], axis=-1).astype(int)
+        green_mask = 1-np.all(img_HR == [0,255,0], axis=-1).astype(int)
         green_mask = torch.from_numpy(green_mask)
 
         img_HR = util.np2tensor(img_HR, normalize=znorm, add_batch=False) #.astype('uint8').clip(0,255)
