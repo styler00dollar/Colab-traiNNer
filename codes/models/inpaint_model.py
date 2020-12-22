@@ -317,6 +317,10 @@ class inpaintModel(BaseModel):
               else:
                 print("Selected model is not implemented.")
 
+        # Merge inpainted data with original data in masked region
+        self.fake_H = self.var_L * mask + self.fake_H * (1-mask)
+        #save_image(self.fake_H, 'self_fake_H.png')
+
         #/with self.cast():
         #self.fake_H = self.netG(self.var_L, mask)
 
@@ -555,6 +559,8 @@ class inpaintModel(BaseModel):
               else:
                 print("Selected model is not implemented.")
 
+        # Merge inpainted data with original data in masked region
+        self.fake_H = self.var_L * self.mask + self.fake_H * (1-self.mask)
         self.netG.train()
 
     def get_current_log(self):
