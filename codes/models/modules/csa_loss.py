@@ -53,6 +53,8 @@ class ConsistencyLoss(nn.Module):
             std=[0.229, 0.224, 0.225]
         )
         self.vgg = VGG16FeatureExtractor()
+        self.vgg.cuda()
+
         self.l2 = nn.MSELoss()
 
     def forward(self, csa, csa_d, target, mask):

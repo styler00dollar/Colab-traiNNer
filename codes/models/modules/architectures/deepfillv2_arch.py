@@ -10,11 +10,13 @@ from torch import nn
 from torch.nn import functional as F
 from torch.nn import Parameter
 
+from .convolutions import partialconv2d
+
 #-----------------------------------------------
 #                Normal ConvBlock
 #-----------------------------------------------
 class Conv2dLayer(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride = 1, padding = 0, dilation = 1, pad_type = 'zero', activation = 'lrelu', norm = 'none', sn = False):
+    def __init__(self, in_channels, out_channels, conv_type, kernel_size, stride = 1, padding = 0, dilation = 1, pad_type = 'zero', activation = 'lrelu', norm = 'none', sn = False):
         super(Conv2dLayer, self).__init__()
         # Initialize the padding scheme
         if pad_type == 'reflect':
@@ -58,9 +60,15 @@ class Conv2dLayer(nn.Module):
 
         # Initialize the convolution layers
         if sn:
+            print("sn")
             self.conv2d = SpectralNorm(nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding = 0, dilation = dilation))
         else:
-            self.conv2d = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding = 0, dilation = dilation)
+            if conv_type == 'normal':
+              self.conv2d = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding = 0, dilation = dilation)
+            elif conv_type == 'partial':
+              self.conv2d = partialconv2d.PartialConv2d(in_channels, out_channels, kernel_size, stride, padding = 0, dilation = dilation)
+            else:
+              print("conv_type not implemented")
 
     def forward(self, x):
         x = self.pad(x)
@@ -72,11 +80,11 @@ class Conv2dLayer(nn.Module):
         return x
 
 class TransposeConv2dLayer(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride = 1, padding = 0, dilation = 1, pad_type = 'zero', activation = 'lrelu', norm = 'none', sn = False, scale_factor = 2):
+    def __init__(self, in_channels, out_channels, conv_type, kernel_size, stride = 1, padding = 0, dilation = 1, pad_type = 'zero', activation = 'lrelu', norm = 'none', sn = False, scale_factor = 2):
         super(TransposeConv2dLayer, self).__init__()
         # Initialize the conv scheme
         self.scale_factor = scale_factor
-        self.conv2d = Conv2dLayer(in_channels, out_channels, kernel_size, stride, padding, dilation, pad_type, activation, norm, sn)
+        self.conv2d = Conv2dLayer(in_channels, out_channels, conv_type, kernel_size, stride, padding, dilation, pad_type, activation, norm, sn)
 
     def forward(self, x):
         x = F.interpolate(x, scale_factor = self.scale_factor, mode = 'nearest')
@@ -87,7 +95,7 @@ class TransposeConv2dLayer(nn.Module):
 #                Gated ConvBlock
 #-----------------------------------------------
 class GatedConv2d(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride = 1, padding = 0, dilation = 1, pad_type = 'reflect', activation = 'lrelu', norm = 'none', sn = False):
+    def __init__(self, in_channels, out_channels, conv_type, kernel_size, stride = 1, padding = 0, dilation = 1, pad_type = 'reflect', activation = 'lrelu', norm = 'none', sn = False):
         super(GatedConv2d, self).__init__()
         # Initialize the padding scheme
         if pad_type == 'reflect':
@@ -134,8 +142,14 @@ class GatedConv2d(nn.Module):
             self.conv2d = SpectralNorm(nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding = 0, dilation = dilation))
             self.mask_conv2d = SpectralNorm(nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding = 0, dilation = dilation))
         else:
-            self.conv2d = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding = 0, dilation = dilation)
-            self.mask_conv2d = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding = 0, dilation = dilation)
+            if conv_type == 'normal':
+              self.conv2d = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding = 0, dilation = dilation)
+              self.mask_conv2d = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding = 0, dilation = dilation)
+            elif conv_type == 'partial':
+              self.conv2d = partialconv2d.PartialConv2d(in_channels, out_channels, kernel_size, stride, padding = 0, dilation = dilation)
+              self.mask_conv2d = partialconv2d.PartialConv2d(in_channels, out_channels, kernel_size, stride, padding = 0, dilation = dilation)
+            else:
+              print("conv_type not implemented")
         self.sigmoid = torch.nn.Sigmoid()
 
     def forward(self, x):
@@ -151,11 +165,11 @@ class GatedConv2d(nn.Module):
         return x
 
 class TransposeGatedConv2d(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride = 1, padding = 0, dilation = 1, pad_type = 'zero', activation = 'lrelu', norm = 'none', sn = True, scale_factor = 2):
+    def __init__(self, in_channels, out_channels, conv_type, kernel_size, stride = 1, padding = 0, dilation = 1, pad_type = 'zero', activation = 'lrelu', norm = 'none', sn = True, scale_factor = 2):
         super(TransposeGatedConv2d, self).__init__()
         # Initialize the conv scheme
         self.scale_factor = scale_factor
-        self.gated_conv2d = GatedConv2d(in_channels, out_channels, kernel_size, stride, padding, dilation, pad_type, activation, norm, sn)
+        self.gated_conv2d = GatedConv2d(in_channels, out_channels, conv_type, kernel_size, stride, padding, dilation, pad_type, activation, norm, sn)
 
     def forward(self, x):
         x = F.interpolate(x, scale_factor = self.scale_factor, mode = 'nearest')
@@ -304,49 +318,50 @@ def deepfillv2_weights_init(net, init_type = 'kaiming', init_gain = 0.02):
 
 #https://github.com/zhaoyuzhi/deepfillv2/blob/62dad2c601400e14d79f4d1e090c2effcb9bf3eb/deepfillv2/train.py
 class GatedGenerator(nn.Module):
-    def __init__(self, in_channels = 4, out_channels = 3, latent_channels = 64, pad_type = 'zero', activation = 'lrelu', norm = 'in'):
+    def __init__(self, in_channels = 4, out_channels = 3, latent_channels = 64, pad_type = 'zero', activation = 'lrelu', norm = 'in', conv_type = 'normal'):
         super(GatedGenerator, self).__init__()
+
         self.coarse = nn.Sequential(
             # encoder
-            GatedConv2d(in_channels, latent_channels, 7, 1, 3, pad_type = pad_type, activation = activation, norm = 'none'),
-            GatedConv2d(latent_channels, latent_channels * 2, 4, 2, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 2, latent_channels * 4, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 4, 2, 1, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(in_channels, latent_channels, conv_type, 7, 1, 3, pad_type = pad_type, activation = activation, norm = 'none'),
+            GatedConv2d(latent_channels, latent_channels * 2, conv_type, 4, 2, 1, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 2, latent_channels * 4, conv_type, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 4, 2, 1, pad_type = pad_type, activation = activation, norm = norm),
             # Bottleneck
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 2, dilation = 2, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 4, dilation = 4, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 8, dilation = 8, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 16, dilation = 16, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 3, 1, 2, dilation = 2, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 3, 1, 4, dilation = 4, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 3, 1, 8, dilation = 8, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 3, 1, 16, dilation = 16, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
             # decoder
             TransposeGatedConv2d(latent_channels * 4, latent_channels * 2, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 2, latent_channels * 2, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 2, latent_channels * 2, conv_type, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
             TransposeGatedConv2d(latent_channels * 2, latent_channels, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels, out_channels, 7, 1, 3, pad_type = pad_type, activation = 'tanh', norm = 'none')
+            GatedConv2d(latent_channels, out_channels, conv_type, 7, 1, 3, pad_type = pad_type, activation = 'tanh', norm = 'none')
         )
         self.refinement = nn.Sequential(
             # encoder
-            GatedConv2d(in_channels, latent_channels, 7, 1, 3, pad_type = pad_type, activation = activation, norm = 'none'),
-            GatedConv2d(latent_channels, latent_channels * 2, 4, 2, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 2, latent_channels * 4, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 4, 2, 1, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(in_channels, latent_channels, conv_type, 7, 1, 3, pad_type = pad_type, activation = activation, norm = 'none'),
+            GatedConv2d(latent_channels, latent_channels * 2, conv_type, 4, 2, 1, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 2, latent_channels * 4, conv_type, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 4, 2, 1, pad_type = pad_type, activation = activation, norm = norm),
             # Bottleneck
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 2, dilation = 2, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 4, dilation = 4, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 8, dilation = 8, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 16, dilation = 16, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 3, 1, 2, dilation = 2, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 3, 1, 4, dilation = 4, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 3, 1, 8, dilation = 8, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 3, 1, 16, dilation = 16, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 4, latent_channels * 4, conv_type, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
             # decoder
             TransposeGatedConv2d(latent_channels * 4, latent_channels * 2, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 2, latent_channels * 2, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
+            GatedConv2d(latent_channels * 2, latent_channels * 2, conv_type, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
             TransposeGatedConv2d(latent_channels * 2, latent_channels, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels, out_channels, 7, 1, 3, pad_type = pad_type, activation = 'tanh', norm = 'none')
+            GatedConv2d(latent_channels, out_channels, conv_type, 7, 1, 3, pad_type = pad_type, activation = 'tanh', norm = 'none')
         )
 
 

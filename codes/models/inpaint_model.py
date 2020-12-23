@@ -311,6 +311,10 @@ class inpaintModel(BaseModel):
               elif self.which_model_G == 'PRVS':
                 self.fake_H, _ ,edge_small, edge_big = self.netG(self.var_L, mask, self.canny_data)
 
+              elif self.which_model_G == 'CSA':
+                #out_c, out_r, csa, csa_d
+                coarse_result, self.fake_H, csa, csa_d = self.netG(self.var_L, mask)
+
               elif self.which_model_G == 'atrous':
                 self.fake_H = self.netG(self.var_L)
 
@@ -367,11 +371,12 @@ class inpaintModel(BaseModel):
                 if self.which_model_G == 'CSA':
                   #coarse_result, refine_result, csa, csa_d = g_model(masked, mask)
                   L1Loss = nn.L1Loss()
-                  recon_loss = L1Loss(coarse_result, img) + L1Loss(refine_result, img)
+                  recon_loss = L1Loss(coarse_result, self.var_H) + L1Loss(self.fake_H, self.var_H)
 
                   from models.modules.csa_loss import ConsistencyLoss
                   cons = ConsistencyLoss()
-                  cons_loss = cons(csa, csa_d, img, mask)
+
+                  cons_loss = cons(csa, csa_d, self.var_H, mask)
 
                   self.log_dict.update(recon_loss=recon_loss)
                   loss_results.append(recon_loss)
@@ -553,6 +558,9 @@ class inpaintModel(BaseModel):
 
               elif self.which_model_G == 'PRVS':
                 self.fake_H, _, _, _ = self.netG(self.var_L, self.mask, self.canny_data)
+
+              elif self.which_model_G == 'CSA':
+                _, self.fake_H , _, _ = self.netG(self.var_L, self.mask)
 
               elif self.which_model_G == 'atrous':
                 self.fake_H = self.netG(self.var_L)

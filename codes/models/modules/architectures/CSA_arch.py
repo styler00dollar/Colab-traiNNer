@@ -207,9 +207,11 @@ class RefineNet(nn.Module):
         self.de_4 = RefineDecodeBlock(cnum*8*2, cnum*4, normalization=norm, activation=act_de)
         self.de_3 = RefineDecodeBlock(cnum*4*2, cnum*2, normalization=norm, activation=act_de)
         self.de_2 = RefineDecodeBlock(cnum*2*2, cnum, normalization=norm, activation=act_de)
+
         self.de_1 = nn.Sequential(
             get_act(act_de),
             nn.ConvTranspose2d(cnum*2, c_img, 3, 1, padding=1))
+
 
     def forward(self, x1, x2):
         x = torch.cat([x1, x2], 1)
@@ -264,8 +266,11 @@ class InpaintNet(nn.Module):
         out_c = self.coarse(image)
         out_c = image * (1. - mask) + out_c * mask
 
+
         out_r, csa, csa_d = self.refine(out_c, image)
-        out_r = image * (1. - mask) + out_r * mask
+
+        #save_image(out_r, "out_r.png")
+        #out_r = image * (1. - mask) + out_r * mask
 
         """
         #return out_c, out_r, csa, csa_d
@@ -287,4 +292,4 @@ class InpaintNet(nn.Module):
         print(csa.shape)
         save_image(csa, 'csa.png')
         """
-        return out_r
+        return out_c, out_r, csa, csa_d

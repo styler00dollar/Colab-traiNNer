@@ -1,7 +1,7 @@
 name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
 #name: 001_template # remove "debug" to run the real training session.
 use_tb_logger: true
-model: atrous #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN | PRVS | CRA | USRNet | atrous
+model: CSA #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN | PRVS | CRA | USRNet | atrous
 scale: 1
 gpu_ids: [0]
 use_amp: false
@@ -43,7 +43,7 @@ datasets:
     # If manually configuring on the fly generation of LR: (else, it will automatically default to Matlab-like downscale algorithm (777) when/if required
     #dataroot_kernels: '/content/kernels_4x/kernelGAN/' # location of the image kernels extracted with KernelGAN, for use with the "realistic" downscale type
     lr_downscale: True # false
-    lr_downscale_types: ["realistic"] # ["linear", "cubic", "matlab_bicubic"] # select from ["nearest", "linear", "cubic", "area", "lanczos4", "linear_exact", "matlab_bicubic", "realistic"] #scale_algos #scaling interpolation options
+    lr_downscale_types: ["linear", "cubic", "matlab_bicubic"] # select from ["nearest", "linear", "cubic", "area", "lanczos4", "linear_exact", "matlab_bicubic", "realistic"] #scale_algos #scaling interpolation options
 
     # Rotations augmentations:
     use_flip: true # flip images
@@ -200,13 +200,14 @@ network_G:
     #en_ksize: [7, 5, 5, 3, 3, 3, 3, 3]
     #de_ksize: [3, 3, 3, 3, 3, 3, 3, 3]
     #blend_layers: [0, 1, 2, 3, 4, 5]
+    #conv_type: partial # partial | normal
 
     # EdgeConnect (2019)
     #which_model_G: EdgeConnect
     #use_spectral_norm: True
 
     # CSA (2019)
-    #which_model_G: CSA
+    which_model_G: CSA
 
     # RN (2020)
     #which_model_G: RN
@@ -225,6 +226,7 @@ network_G:
     #pad_type:  'zero'
     #activation:  'lrelu'
     #norm: 'in'
+    #conv_type: partial # partial | normal
 
     # Adaptive (2020)
     #which_model_G: Adaptive
@@ -299,7 +301,7 @@ network_G:
     #which_model_G: CRA
 
     # atrous (2020)
-    which_model_G: atrous
+    #which_model_G: atrous
 
 # Discriminator options:
 network_D:

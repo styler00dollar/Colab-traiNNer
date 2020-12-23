@@ -176,7 +176,7 @@ def define_G(opt, step=0):
         netG = DFNet_arch.DFNet(c_img=opt_net['c_img'], c_mask=opt_net['c_mask'], c_alpha=opt_net['c_alpha'],
             mode=opt_net['mode'], norm=opt_net['norm'], act_en=opt_net['act_en'], act_de=opt_net['act_de'],
             en_ksize=opt_net['en_ksize'], de_ksize=opt_net['de_ksize'],
-            blend_layers=opt_net['blend_layers'])
+            blend_layers=opt_net['blend_layers'], conv_type=opt_net['conv_type'])
     elif which_model == 'EdgeConnect':
         from models.modules.architectures import EdgeConnect_arch
         netG = EdgeConnect_arch.EdgeConnectModel(use_spectral_norm=opt_net['use_spectral_norm'])
@@ -193,7 +193,7 @@ def define_G(opt, step=0):
         netG = deepfillv1_arch.InpaintSANet()
     elif which_model == 'deepfillv2':
         from models.modules.architectures import deepfillv2_arch
-        netG = deepfillv2_arch.GatedGenerator(in_channels = opt_net['in_channels'], out_channels = opt_net['out_channels'], latent_channels = opt_net['latent_channels'], pad_type = opt_net['pad_type'], activation = opt_net['activation'], norm = opt_net['norm'])
+        netG = deepfillv2_arch.GatedGenerator(in_channels = opt_net['in_channels'], out_channels = opt_net['out_channels'], latent_channels = opt_net['latent_channels'], pad_type = opt_net['pad_type'], activation = opt_net['activation'], norm = opt_net['norm'], conv_type = opt_net['conv_type'])
         # using deepfill init to avoid errors
         deepfillv2_arch.deepfillv2_weights_init(netG)
     elif which_model == 'Adaptive':
