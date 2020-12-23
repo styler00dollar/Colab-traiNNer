@@ -598,27 +598,6 @@ def deepfillv2_weights_init(net, init_type = 'kaiming', init_gain = 0.02):
 class GatedGenerator(nn.Module):
     def __init__(self, in_channels = 4, out_channels = 3, latent_channels = 64, pad_type = 'zero', activation = 'lrelu', norm = 'in'):
         super(GatedGenerator, self).__init__()
-        self.coarse = nn.Sequential(
-            # encoder
-            GatedConv2d(in_channels, latent_channels, 7, 1, 3, pad_type = pad_type, activation = activation, norm = 'none'),
-            GatedConv2d(latent_channels, latent_channels * 2, 4, 2, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 2, latent_channels * 4, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 4, 2, 1, pad_type = pad_type, activation = activation, norm = norm),
-            # Bottleneck
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 2, dilation = 2, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 4, dilation = 4, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 8, dilation = 8, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 16, dilation = 16, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 4, latent_channels * 4, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            # decoder
-            TransposeGatedConv2d(latent_channels * 4, latent_channels * 2, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels * 2, latent_channels * 2, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            TransposeGatedConv2d(latent_channels * 2, latent_channels, 3, 1, 1, pad_type = pad_type, activation = activation, norm = norm),
-            GatedConv2d(latent_channels, out_channels, 7, 1, 3, pad_type = pad_type, activation = 'tanh', norm = 'none')
-        )
         self.refinement = nn.Sequential(
             # encoder
             GatedConv2d(in_channels, latent_channels, 7, 1, 3, pad_type = pad_type, activation = activation, norm = 'none'),
@@ -643,18 +622,7 @@ class GatedGenerator(nn.Module):
 
         self.DFNet = DFNet()
     def forward(self, img, mask):
-        # img: entire img
-        # mask: 1 for mask region; 0 for unmask region
-        # 1 - mask: unmask
-        # img * (1 - mask): ground truth unmask region
-        # Coarse
-        #print(img.shape, mask.shape)
-        #first_masked_img = img * (1 - mask) + mask
-
         # using DFNet as first stage
-
-        #first_in = torch.cat((first_masked_img, mask), 1)       # in: [B, 4, H, W]
-        #first_out = self.coarse(first_in)                       # out: [B, 3, H, W]
         first_out = self.DFNet(img, mask)
         # Refinement
         second_masked_img = img * (1-mask) + first_out * mask
