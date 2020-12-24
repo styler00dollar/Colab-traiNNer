@@ -9,9 +9,15 @@ https://github.com/researchmm/PEN-Net-for-Inpainting/blob/e8c41cf307e0519a398c2e
 """
 Spectral Normalization from https://arxiv.org/abs/1802.05957
 """
-import torch
-from torch.nn.functional import normalize
 
+
+from torch.nn.functional import normalize
+import math
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torchvision.models as models
 
 class SpectralNorm(object):
     # Invariant before and after each forward call:
@@ -276,13 +282,6 @@ def use_spectral_norm(module, use_sn=False):
 
 ''' Pyramid-Context Encoder Networks: PEN-Net
 '''
-import numpy as np
-import math
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torchvision.models as models
-#from core.spectral_norm import use_spectral_norm
 
 
 class BaseNetwork(nn.Module):

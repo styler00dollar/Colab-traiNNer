@@ -393,12 +393,12 @@ class InpaintSANet(torch.nn.Module):
 
     def forward(self, imgs, masks, img_exs=None):
         # Coarse
-        masked_imgs =  imgs * (1 - masks) + masks
+        #masked_imgs =  imgs * (1 - masks) + masks
 
         if img_exs == None:
-            input_imgs = torch.cat([masked_imgs, masks, torch.full_like(masks, 1.)], dim=1)
+            input_imgs = torch.cat([imgs, masks, torch.full_like(masks, 1.)], dim=1)
         else:
-            input_imgs = torch.cat([masked_imgs, img_exs, masks, torch.full_like(masks, 1.)], dim=1)
+            input_imgs = torch.cat([imgs, img_exs, masks, torch.full_like(masks, 1.)], dim=1)
         #print(input_imgs.size(), imgs.size(), masks.size())
         x = self.coarse_net(input_imgs)
         x = torch.clamp(x, -1., 1.)
@@ -415,90 +415,4 @@ class InpaintSANet(torch.nn.Module):
         x = self.refine_upsample_net(x)
         x = torch.clamp(x, -1., 1.)
 
-        #print(coarse_x.shape)
-        #print(x.shape)
-        #return coarse_x, x
         return x, coarse_x
-
-class InpaintSADirciminator(nn.Module):
-    def __init__(self):
-        super(InpaintSADirciminator, self).__init__()
-        cnum = 32
-        self.discriminator_net = nn.Sequential(
-            SNConvWithActivation(5, 2*cnum, 4, 2, padding=get_pad(256, 5, 2)),
-            SNConvWithActivation(2*cnum, 4*cnum, 4, 2, padding=get_pad(128, 5, 2)),
-            SNConvWithActivation(4*cnum, 8*cnum, 4, 2, padding=get_pad(64, 5, 2)),
-            SNConvWithActivation(8*cnum, 8*cnum, 4, 2, padding=get_pad(32, 5, 2)),
-            SNConvWithActivation(8*cnum, 8*cnum, 4, 2, padding=get_pad(16, 5, 2)),
-            SNConvWithActivation(8*cnum, 8*cnum, 4, 2, padding=get_pad(8, 5, 2)),
-            Self_Attn(8*cnum, 'relu'),
-            SNConvWithActivation(8*cnum, 8*cnum, 4, 2, padding=get_pad(4, 5, 2)),
-        )
-        self.linear = nn.Linear(8*cnum*2*2, 1)
-
-    def forward(self, input):
-        #print("InpaintSADirciminator input shape")
-        #print(input.shape)
-
-        pos_imgs = torch.cat([imgs, masks, torch.full_like(masks, 1.)], dim=1)
-        neg_imgs = torch.cat([complete_imgs, masks, torch.full_like(masks, 1.)], dim=1)
-        input = torch.cat([pos_imgs, neg_imgs], dim=0)
-
-
-        x = self.discriminator_net(input)
-        x = x.view((x.size(0),-1))
-        #x = self.linear(x)
-        #return x
-        return x, coarse_x
-
-
-class SADiscriminator(nn.Module):
-    """Discriminator, Auxiliary Classifier."""
-
-    def __init__(self, batch_size=64, image_size=64, conv_dim=64):
-        super(Discriminator, self).__init__()
-        self.imsize = image_size
-        layer1 = []
-        layer2 = []
-        layer3 = []
-        last = []
-
-        layer1.append(SpectralNorm(nn.Conv2d(3, conv_dim, 4, 2, 1)))
-        layer1.append(nn.LeakyReLU(0.1))
-
-        curr_dim = conv_dim
-
-        layer2.append(SpectralNorm(nn.Conv2d(curr_dim, curr_dim * 2, 4, 2, 1)))
-        layer2.append(nn.LeakyReLU(0.1))
-        curr_dim = curr_dim * 2
-
-        layer3.append(SpectralNorm(nn.Conv2d(curr_dim, curr_dim * 2, 4, 2, 1)))
-        layer3.append(nn.LeakyReLU(0.1))
-        curr_dim = curr_dim * 2
-
-        if self.imsize == 64:
-            layer4 = []
-            layer4.append(SpectralNorm(nn.Conv2d(curr_dim, curr_dim * 2, 4, 2, 1)))
-            layer4.append(nn.LeakyReLU(0.1))
-            self.l4 = nn.Sequential(*layer4)
-            curr_dim = curr_dim*2
-        self.l1 = nn.Sequential(*layer1)
-        self.l2 = nn.Sequential(*layer2)
-        self.l3 = nn.Sequential(*layer3)
-
-        last.append(nn.Conv2d(curr_dim, 1, 4))
-        self.last = nn.Sequential(*last)
-
-        self.attn1 = Self_Attn(256, 'relu')
-        self.attn2 = Self_Attn(512, 'relu')
-
-    def forward(self, x):
-        out = self.l1(x)
-        out = self.l2(out)
-        out = self.l3(out)
-        out,p1 = self.attn1(out)
-        out=self.l4(out)
-        out,p2 = self.attn2(out)
-        out=self.last(out)
-
-        return out.squeeze(), p1, p2

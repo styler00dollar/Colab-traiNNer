@@ -7,10 +7,10 @@ https://github.com/cszn/KAIR/blob/master/models/network_usrnet.py
 """
 
 from collections import OrderedDict
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 
 '''
 # --------------------------------------------
@@ -597,13 +597,6 @@ class NonLocalBlock2D(nn.Module):
         z = W_y + x
 
         return z
-
-
-import torch
-import torch.nn as nn
-#import models.basicblock as B
-import numpy as np
-#from utils import utils_image as util
 
 
 """

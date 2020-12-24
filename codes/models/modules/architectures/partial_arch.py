@@ -1,188 +1,99 @@
 """
-net.py (17-12-20)
-https://github.com/naoto0804/pytorch-inpainting-with-partial-conv/blob/master/net.py
+model.py (24-12-20)
+https://github.com/jacobaustin123/pytorch-inpainting-partial-conv/blob/master/model.py
 """
-import math
 
+from torch import nn, cuda
+from torchvision import models
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision import models
+from .convolutions import partialconv2d
 
 
-def weights_init(init_type='gaussian'):
-    def init_fun(m):
-        classname = m.__class__.__name__
-        if (classname.find('Conv') == 0 or classname.find(
-                'Linear') == 0) and hasattr(m, 'weight'):
-            if init_type == 'gaussian':
-                nn.init.normal_(m.weight, 0.0, 0.02)
-            elif init_type == 'xavier':
-                nn.init.xavier_normal_(m.weight, gain=math.sqrt(2))
-            elif init_type == 'kaiming':
-                nn.init.kaiming_normal_(m.weight, a=0, mode='fan_in')
-            elif init_type == 'orthogonal':
-                nn.init.orthogonal_(m.weight, gain=math.sqrt(2))
-            elif init_type == 'default':
-                pass
-            else:
-                assert 0, "Unsupported initialization: {}".format(init_type)
-            if hasattr(m, 'bias') and m.bias is not None:
-                nn.init.constant_(m.bias, 0.0)
+class PartialLayer(nn.Module):
+    def __init__(self, in_size, out_size, kernel_size, stride, non_linearity="relu", bn=True, multi_channel=False):
+        super(PartialLayer, self).__init__()
 
-    return init_fun
+        self.conv = partialconv2d.PartialConv2d(in_size, out_size, kernel_size, stride, return_mask=True, padding=(kernel_size - 1) // 2, multi_channel=multi_channel, bias=not bn)
 
+        self.bn = nn.BatchNorm2d(out_size) if bn else None
 
-class VGG16FeatureExtractor(nn.Module):
-    def __init__(self):
-        super().__init__()
-        vgg16 = models.vgg16(pretrained=True)
-        self.enc_1 = nn.Sequential(*vgg16.features[:5])
-        self.enc_2 = nn.Sequential(*vgg16.features[5:10])
-        self.enc_3 = nn.Sequential(*vgg16.features[10:17])
-
-        # fix the encoder
-        for i in range(3):
-            for param in getattr(self, 'enc_{:d}'.format(i + 1)).parameters():
-                param.requires_grad = False
-
-    def forward(self, image):
-        results = [image]
-        for i in range(3):
-            func = getattr(self, 'enc_{:d}'.format(i + 1))
-            results.append(func(results[-1]))
-        return results[1:]
-
-
-class PartialConv(nn.Module):
-    def __init__(self, in_channels=3, out_channels=3, kernel_size=1, stride=1,
-                 padding=0, dilation=1, groups=1, bias=True):
-        super().__init__()
-        self.input_conv = nn.Conv2d(in_channels, out_channels, kernel_size,
-                                    stride, padding, dilation, groups, bias)
-        self.mask_conv = nn.Conv2d(1, out_channels, kernel_size,
-                                   stride, padding, dilation, groups, False)
-        self.input_conv.apply(weights_init('kaiming'))
-
-        torch.nn.init.constant_(self.mask_conv.weight, 1.0)
-
-        # mask is not updated
-        for param in self.mask_conv.parameters():
-            param.requires_grad = False
-
-    def forward(self, input, mask):
-        # http://masc.cs.gmu.edu/wiki/partialconv
-        # C(X) = W^T * X + b, C(0) = b, D(M) = 1 * M + 0 = sum(M)
-        # W^T* (M .* X) / sum(M) + b = [C(M .* X) – C(0)] / D(M) + C(0)
-
-        output = self.input_conv(input * mask)
-        if self.input_conv.bias is not None:
-            output_bias = self.input_conv.bias.view(1, -1, 1, 1).expand_as(
-                output)
+        if non_linearity == "relu":
+            self.non_linearity = nn.ReLU()
+        elif non_linearity == "leaky":
+           self.non_linearity = nn.LeakyReLU(negative_slope=0.2)
+        elif non_linearity == 'sigmoid':
+            self.non_linearity = nn.Sigmoid()
+        elif non_linearity == 'tanh':
+            self.non_linearity = nn.Tanh()
+        elif non_linearity is None:
+            self.non_linearity = None
         else:
-            output_bias = torch.zeros_like(output)
+            raise ValueError("unexpected value for non_linearity")
 
-        with torch.no_grad():
-            output_mask = self.mask_conv(mask)
+    def forward(self, x, mask_in=None, return_mask=True):
+        x, mask = self.conv(x, mask_in=mask_in)
 
-        no_update_holes = output_mask == 0
-        mask_sum = output_mask.masked_fill_(no_update_holes, 1.0)
+        if self.bn:
+            x = self.bn(x)
 
-        output_pre = (output - output_bias) / mask_sum + output_bias
-        output = output_pre.masked_fill_(no_update_holes, 0.0)
+        if self.non_linearity:
+            x = self.non_linearity(x)
 
-        new_mask = torch.ones_like(output)
-        new_mask = new_mask.masked_fill_(no_update_holes, 0.0)
-
-        #return output, new_mask
-        #print(output.shape)
-        return output
-
-
-class PCBActiv(nn.Module):
-    def __init__(self, in_ch, out_ch, bn=True, sample='none-3', activ='relu',
-                 conv_bias=False):
-        super().__init__()
-        if sample == 'down-5':
-            self.conv = PartialConv(in_ch, out_ch, 5, 2, 2, bias=conv_bias)
-        elif sample == 'down-7':
-            self.conv = PartialConv(in_ch, out_ch, 7, 2, 3, bias=conv_bias)
-        elif sample == 'down-3':
-            self.conv = PartialConv(in_ch, out_ch, 3, 2, 1, bias=conv_bias)
+        if return_mask:
+            return x, mask
         else:
-            self.conv = PartialConv(in_ch, out_ch, 3, 1, 1, bias=conv_bias)
-
-        if bn:
-            self.bn = nn.BatchNorm2d(out_ch)
-        if activ == 'relu':
-            self.activation = nn.ReLU()
-        elif activ == 'leaky':
-            self.activation = nn.LeakyReLU(negative_slope=0.2)
-
-    def forward(self, input, input_mask):
-        h, h_mask = self.conv(input, input_mask)
-        if hasattr(self, 'bn'):
-            h = self.bn(h)
-        if hasattr(self, 'activation'):
-            h = self.activation(h)
-        return h, h_mask
+            return x
 
 
-class PConvUNet(nn.Module):
-    def __init__(self, layer_size=7, input_channels=3, upsampling_mode='nearest'):
-        super().__init__()
-        self.freeze_enc_bn = False
-        self.upsampling_mode = upsampling_mode
-        self.layer_size = layer_size
-        self.enc_1 = PCBActiv(input_channels, 64, bn=False, sample='down-7')
-        self.enc_2 = PCBActiv(64, 128, sample='down-5')
-        self.enc_3 = PCBActiv(128, 256, sample='down-5')
-        self.enc_4 = PCBActiv(256, 512, sample='down-3')
-        for i in range(4, self.layer_size):
-            name = 'enc_{:d}'.format(i + 1)
-            setattr(self, name, PCBActiv(512, 512, sample='down-3'))
 
-        for i in range(4, self.layer_size):
-            name = 'dec_{:d}'.format(i + 1)
-            setattr(self, name, PCBActiv(512 + 512, 512, activ='leaky'))
-        self.dec_4 = PCBActiv(512 + 256, 256, activ='leaky')
-        self.dec_3 = PCBActiv(256 + 128, 128, activ='leaky')
-        self.dec_2 = PCBActiv(128 + 64, 64, activ='leaky')
-        self.dec_1 = PCBActiv(64 + input_channels, input_channels,
-                              bn=False, activ=None, conv_bias=True)
+class Model(nn.Module):
+    def __init__(self, freeze_bn=False):
+        super(Model, self).__init__()
 
-    def forward(self, input, input_mask):
-        h_dict = {}  # for the output of enc_N
-        h_mask_dict = {}  # for the output of enc_N
+        self.freeze_bn = freeze_bn # freeze bn layers for fine tuning
 
-        h_dict['h_0'], h_mask_dict['h_0'] = input, input_mask
+        self.conv1 = PartialLayer(3, 64, 7, 2) # encoder for UNET,  use relu for encoder
+        self.conv2 = PartialLayer(64, 128, 5, 2)
+        self.conv3 = PartialLayer(128, 256, 5, 2)
+        self.conv4 = PartialLayer(256, 512, 3, 2)
+        self.conv5 = PartialLayer(512, 512, 3, 2)
+        self.conv6 = PartialLayer(512, 512, 3, 2)
+        self.conv7 = PartialLayer(512, 512, 3, 2)
+        self.conv8 = PartialLayer(512, 512, 3, 2)
 
-        h_key_prev = 'h_0'
-        for i in range(1, self.layer_size + 1):
-            l_key = 'enc_{:d}'.format(i)
-            h_key = 'h_{:d}'.format(i)
-            h_dict[h_key], h_mask_dict[h_key] = getattr(self, l_key)(
-                h_dict[h_key_prev], h_mask_dict[h_key_prev])
-            h_key_prev = h_key
+        self.conv9 = PartialLayer(2 * 512, 512, 3, 1, non_linearity="leaky", multi_channel=True) # decoder for UNET
+        self.conv10 = PartialLayer(2 * 512, 512, 3, 1, non_linearity="leaky", multi_channel=True)
+        self.conv11 = PartialLayer(2 * 512, 512, 3, 1, non_linearity="leaky", multi_channel=True)
+        self.conv12 = PartialLayer(2 * 512, 512, 3, 1, non_linearity="leaky", multi_channel=True)
+        self.conv13 = PartialLayer(512 + 256, 256, 3, 1, non_linearity="leaky", multi_channel=True)
+        self.conv14 = PartialLayer(256 + 128, 128, 3, 1, non_linearity="leaky", multi_channel=True)
+        self.conv15 = PartialLayer(128 + 64, 64, 3, 1, non_linearity="leaky", multi_channel=True)
+        self.conv16 = PartialLayer(64 + 3, 3, 3, 1, non_linearity="tanh", bn=False, multi_channel=True)
+    def concat(self, input, prev):
+        return torch.cat([F.interpolate(input, scale_factor=2), prev], dim=1)
 
-        h_key = 'h_{:d}'.format(self.layer_size)
-        h, h_mask = h_dict[h_key], h_mask_dict[h_key]
+    def repeat(self, mask, size1, size2):
+        return torch.cat([mask[:,0].unsqueeze(1).repeat(1, size1, 1, 1), mask[:,1].unsqueeze(1).repeat(1, size2, 1, 1)], dim=1)
 
-        # concat upsampled output of h_enc_N-1 and dec_N+1, then do dec_N
-        # (exception)
-        #                            input         dec_2            dec_1
-        #                            h_enc_7       h_enc_8          dec_8
+    def forward(self, x, mask):
+        x1, mask1 = self.conv1(x, mask_in=mask)
+        x2, mask2 = self.conv2(x1, mask_in=mask1)
+        x3, mask3 = self.conv3(x2, mask_in=mask2)
+        x4, mask4 = self.conv4(x3, mask_in=mask3)
+        x5, mask5 = self.conv5(x4, mask_in=mask4)
+        x6, mask6 = self.conv6(x5, mask_in=mask5)
+        x7, mask7 = self.conv7(x6, mask_in=mask6)
+        x8, mask8 = self.conv8(x7, mask_in=mask7)
 
-        for i in range(self.layer_size, 0, -1):
-            enc_h_key = 'h_{:d}'.format(i - 1)
-            dec_l_key = 'dec_{:d}'.format(i)
+        x9, mask9 = self.conv9(self.concat(x8, x7), mask_in=self.repeat(self.concat(mask8, mask7), 512, 512))
+        x10, mask10 = self.conv10(self.concat(x9, x6), mask_in=self.repeat(self.concat(mask9, mask6), 512, 512))
+        x11, mask11 = self.conv11(self.concat(x10, x5), mask_in=self.repeat(self.concat(mask10, mask5), 512, 512))
+        x12, mask12 = self.conv12(self.concat(x11, x4), mask_in=self.repeat(self.concat(mask11, mask4), 512, 512))
+        x13, mask13 = self.conv13(self.concat(x12, x3), mask_in=self.repeat(self.concat(mask12, mask3), 512, 256))
+        x14, mask14 = self.conv14(self.concat(x13, x2), mask_in=self.repeat(self.concat(mask13, mask2), 256, 128))
+        x15, mask15 = self.conv15(self.concat(x14, x1), mask_in=self.repeat(self.concat(mask14, mask1), 128, 64))
+        out, mask16 = self.conv16(self.concat(x15, x), mask_in=self.repeat(self.concat(mask15, mask), 64, 3))
 
-            h = F.interpolate(h, scale_factor=2, mode=self.upsampling_mode)
-            h_mask = F.interpolate(
-                h_mask, scale_factor=2, mode='nearest')
-
-            h = torch.cat([h, h_dict[enc_h_key]], dim=1)
-            h_mask = torch.cat([h_mask, h_mask_dict[enc_h_key]], dim=1)
-            h, h_mask = getattr(self, dec_l_key)(h, h_mask)
-
-        return h, h_mask
+        return out

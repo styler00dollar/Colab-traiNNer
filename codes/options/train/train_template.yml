@@ -1,7 +1,7 @@
 name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
 #name: 001_template # remove "debug" to run the real training session.
 use_tb_logger: true
-model: CSA #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN | PRVS | CRA | USRNet | atrous
+model: PRVS #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN | PRVS | CRA | USRNet | atrous
 scale: 1
 gpu_ids: [0]
 use_amp: false
@@ -79,7 +79,7 @@ datasets:
     center_crop: False # Will centergrop LR and HR images and keep aspect ratio
     resize_HR_dimension: False # Downscale lr and hr to given HR value (if you don't set this to true and the image is bigger than needed, random crop will be applied. Should be used with center crop)
 
-    training_with_canny: False # ONLY needed for EdgeConnect and PRVS
+    training_with_canny: True # ONLY needed for EdgeConnect and PRVS
     training_with_canny_SR: False # ONLY needed for sisr
     noise_estimation: False # ONLY enable this for USRNet
 
@@ -102,7 +102,7 @@ datasets:
     #dataroot_kernels: '/content/kernels_4x/kernelGAN/' # if kernels exist, downscale will happen with them, if not, then lr_downscale_types will be applied
     lr_downscale_types: ["linear", "cubic"] # select from ["nearest", "linear", "cubic", "area", "lanczos4", "linear_exact", "matlab_bicubic"] #scale_algos #scaling interpolation options
 
-    training_with_canny: False # ONLY needed for EdgeConnect and PRVS
+    training_with_canny: True # ONLY needed for EdgeConnect and PRVS
     training_with_canny_SR: False # ONLY needed for sisr
     noise_estimation: False # ONLY enable this for USRNet
 
@@ -186,6 +186,13 @@ network_G:
 
     # USRNet
     #which_model_G: USRNet
+    #in_nc=4
+    #out_nc=3
+    #nc=[64, 128, 256, 512]
+    #nb=2
+    #act_mode='R'
+    #downsample_mode='strideconv'
+    #upsample_mode='convtranspose'
 
     # ----Inpainting Generators----
     # DFNet (needs 2^x image input and validation) (2019)
@@ -205,9 +212,15 @@ network_G:
     # EdgeConnect (2019)
     #which_model_G: EdgeConnect
     #use_spectral_norm: True
+    #residual_blocks_edge: 8
+    #residual_blocks_inpaint: 8
 
     # CSA (2019)
-    which_model_G: CSA
+    #which_model_G: CSA
+    #c_img: 3
+    #norm: 'instance'
+    #act_en: 'leaky_relu'
+    #act_de: 'relu'
 
     # RN (2020)
     #which_model_G: RN
@@ -261,7 +274,7 @@ network_G:
     #which_model_G: crfill
     #cnum: 48
 
-    # DeepDFNet
+    # DeepDFNet (experimental)
     #which_model_G: DeepDFNet
     #in_channels:  4
     #out_channels:  3
@@ -287,6 +300,8 @@ network_G:
 
     # LBAM (2019)
     #which_model_G: LBAM
+    #inputChannels: 4
+    #outputChannels: 3
 
     # RFR (2020)
     #which_model_G: RFR
@@ -295,10 +310,12 @@ network_G:
     #which_model_G: FRRN
 
     # PRVS (2019)
-    #which_model_G: PRVS
+    which_model_G: PRVS
 
     # CRA (needs hr size 512) (2020)
     #which_model_G: CRA
+    #activation: 'elu'
+    #norm: 'none'
 
     # atrous (2020)
     #which_model_G: atrous

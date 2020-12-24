@@ -253,43 +253,16 @@ class CSA(nn.Module):
     def forward(self, x, mask):
         return x
 
-from torchvision.utils import save_image
 
 class InpaintNet(nn.Module):
-    def __init__(self):
+    def __init__(self, c_img=3, norm='instance', act_en='leaky_relu', act_de='relu'):
         super().__init__()
 
-        self.coarse = CoarseNet()
-        self.refine = RefineNet()
+        self.coarse = CoarseNet(c_img=c_img, norm=norm, act_en=act_en, act_de=act_de)
+        self.refine = RefineNet(c_img=c_img, norm=norm, act_en=act_en, act_de=act_de)
 
     def forward(self, image, mask):
         out_c = self.coarse(image)
         out_c = image * (1. - mask) + out_c * mask
-
-
         out_r, csa, csa_d = self.refine(out_c, image)
-
-        #save_image(out_r, "out_r.png")
-        #out_r = image * (1. - mask) + out_r * mask
-
-        """
-        #return out_c, out_r, csa, csa_d
-        print("image.shape")
-        print(image.shape)
-
-        print("mask.shape")
-        print(mask.shape)
-
-        print("out_c.shape")
-        print(out_c.shape)
-        save_image(out_c, 'out_c.png')
-
-        print("out_r.shape")
-        print(out_r.shape)
-        save_image(out_r, 'out_r.png')
-
-        print("csa.shape")
-        print(csa.shape)
-        save_image(csa, 'csa.png')
-        """
         return out_c, out_r, csa, csa_d

@@ -5,7 +5,7 @@ https://github.com/jingyuanli001/PRVS-Image-Inpainting/blob/master/model.py
 PRVSNet.py (18-12-20)
 https://github.com/jingyuanli001/PRVS-Image-Inpainting/blob/master/modules/PRVSNet.py
 
-partialconv2d.py (18-12-20)
+partialconv2d.py (18-12-20) # using their partconv2d to avoid dimension errors
 https://github.com/jingyuanli001/PRVS-Image-Inpainting/blob/master/modules/partialconv2d.py
 
 PConvLayer.py (18-12-20)
@@ -21,51 +21,9 @@ https://github.com/jingyuanli001/PRVS-Image-Inpainting/blob/master/modules/Atten
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-class AttentionModule(nn.Module):
-
-    def __init__(self, patch_size = 3, propagate_size = 3, stride = 1):
-        super(AttentionModule, self).__init__()
-        self.patch_size = patch_size
-        self.propagate_size = propagate_size
-        self.stride = stride
-        self.prop_kernels = None
-
-    def forward(self, foreground, masks):
-        ###assume the masked area has value 1
-        bz, nc, w, h = foreground.size()
-        if masks.size(3) != foreground.size(3):
-            masks = F.interpolate(masks, foreground.size()[2:])
-        background = foreground.clone()
-        background = background * masks
-        background = F.pad(background, [self.patch_size//2, self.patch_size//2, self.patch_size//2, self.patch_size//2])
-        conv_kernels_all = background.unfold(2, self.patch_size, self.stride).unfold(3, self.patch_size, self.stride).contiguous().view(bz, nc, -1, self.patch_size, self.patch_size)
-        conv_kernels_all = conv_kernels_all.transpose(2, 1)
-        output_tensor = []
-        for i in range(bz):
-            mask = masks[i:i+1]
-            feature_map = foreground[i:i+1]
-            #form convolutional kernels
-            conv_kernels = conv_kernels_all[i] + 0.0000001
-            norm_factor = torch.sum(conv_kernels**2, [1, 2, 3], keepdim = True)**0.5
-            conv_kernels = conv_kernels/norm_factor
-
-            conv_result = F.conv2d(feature_map, conv_kernels, padding = self.patch_size//2)
-            if self.propagate_size != 1:
-                if self.prop_kernels is None:
-                    self.prop_kernels = torch.ones([conv_result.size(1), 1, self.propagate_size, self.propagate_size])
-                    self.prop_kernels.requires_grad = False
-                    self.prop_kernels = self.prop_kernels.cuda()
-                conv_result = F.conv2d(conv_result, self.prop_kernels, stride = 1, padding = 1, groups = conv_result.size(1))
-            attention_scores = F.softmax(conv_result, dim = 1)
-            ##propagate the scores
-            recovered_foreground = F.conv_transpose2d(attention_scores, conv_kernels, stride = 1, padding = self.patch_size//2)
-            #average the recovered value, at the same time make non-masked area 0
-            recovered_foreground = (recovered_foreground * (1 - mask))/(self.patch_size ** 2)
-            #recover the image
-            final_output = recovered_foreground + feature_map * mask
-            output_tensor.append(final_output)
-        return torch.cat(output_tensor, dim = 0)
+import math
+from torchvision import models
+#from .convolutions import partialconv2d
 
 ###############################################################################
 # BSD 3-Clause License
@@ -74,11 +32,6 @@ class AttentionModule(nn.Module):
 #
 # Author & Contact: Guilin Liu (guilinl@nvidia.com)
 ###############################################################################
-
-import torch
-import torch.nn.functional as F
-from torch import nn
-
 
 class PartialConv2d(nn.Conv2d):
     def __init__(self, *args, **kwargs):
@@ -148,11 +101,54 @@ class PartialConv2d(nn.Conv2d):
             return output
 
 
-#from modules.partialconv2d import PartialConv2d
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+
 PartialConv = PartialConv2d
+
+class AttentionModule(nn.Module):
+
+    def __init__(self, patch_size = 3, propagate_size = 3, stride = 1):
+        super(AttentionModule, self).__init__()
+        self.patch_size = patch_size
+        self.propagate_size = propagate_size
+        self.stride = stride
+        self.prop_kernels = None
+
+    def forward(self, foreground, masks):
+        ###assume the masked area has value 1
+        bz, nc, w, h = foreground.size()
+        if masks.size(3) != foreground.size(3):
+            masks = F.interpolate(masks, foreground.size()[2:])
+        background = foreground.clone()
+        background = background * masks
+        background = F.pad(background, [self.patch_size//2, self.patch_size//2, self.patch_size//2, self.patch_size//2])
+        conv_kernels_all = background.unfold(2, self.patch_size, self.stride).unfold(3, self.patch_size, self.stride).contiguous().view(bz, nc, -1, self.patch_size, self.patch_size)
+        conv_kernels_all = conv_kernels_all.transpose(2, 1)
+        output_tensor = []
+        for i in range(bz):
+            mask = masks[i:i+1]
+            feature_map = foreground[i:i+1]
+            #form convolutional kernels
+            conv_kernels = conv_kernels_all[i] + 0.0000001
+            norm_factor = torch.sum(conv_kernels**2, [1, 2, 3], keepdim = True)**0.5
+            conv_kernels = conv_kernels/norm_factor
+
+            conv_result = F.conv2d(feature_map, conv_kernels, padding = self.patch_size//2)
+            if self.propagate_size != 1:
+                if self.prop_kernels is None:
+                    self.prop_kernels = torch.ones([conv_result.size(1), 1, self.propagate_size, self.propagate_size])
+                    self.prop_kernels.requires_grad = False
+                    self.prop_kernels = self.prop_kernels.cuda()
+                conv_result = F.conv2d(conv_result, self.prop_kernels, stride = 1, padding = 1, groups = conv_result.size(1))
+            attention_scores = F.softmax(conv_result, dim = 1)
+            ##propagate the scores
+            recovered_foreground = F.conv_transpose2d(attention_scores, conv_kernels, stride = 1, padding = self.patch_size//2)
+            #average the recovered value, at the same time make non-masked area 0
+            recovered_foreground = (recovered_foreground * (1 - mask))/(self.patch_size ** 2)
+            #recover the image
+            final_output = recovered_foreground + feature_map * mask
+            output_tensor.append(final_output)
+        return torch.cat(output_tensor, dim = 0)
+
 
 class Bottleneck(nn.Module):
     expansion = 4
@@ -239,12 +235,6 @@ class VSRLayer(nn.Module):
         return feat_out, feat_mask*mask_updated[:,0:1,:,:], edge_reconstructed
 
 
-
-#from modules.partialconv2d import PartialConv2d
-import torch.nn as nn
-import torch.nn.functional as F
-PartialConv = PartialConv2d
-
 class PConvLayer(nn.Module):
     def __init__(self, in_ch, out_ch, bn=True, sample='none-3', activ='relu',
                  conv_bias=False, deconv = False):
@@ -278,73 +268,6 @@ class PConvLayer(nn.Module):
             h = self.activation(h)
         h_mask = F.interpolate(h_mask, size = h.size()[2:])
         return h, h_mask
-
-
-
-import math
-#from modules.partialconv2d import PartialConv2d
-#from modules.PConvLayer import PConvLayer
-#from modules.VSRLayer import VSRLayer
-#import modules.Attention as Attention
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torchvision import models
-PartialConv = PartialConv2d
-
-def weights_init(init_type='gaussian'):
-    def init_fun(m):
-        classname = m.__class__.__name__
-        if (classname.find('Conv') == 0 or classname.find(
-                'Linear') == 0) and hasattr(m, 'weight'):
-            if init_type == 'gaussian':
-                nn.init.normal_(m.weight, 0.0, 0.02)
-            elif init_type == 'xavier':
-                nn.init.xavier_normal_(m.weight, gain=math.sqrt(2))
-            elif init_type == 'kaiming':
-                nn.init.kaiming_normal_(m.weight, a=0, mode='fan_in')
-            elif init_type == 'orthogonal':
-                nn.init.orthogonal_(m.weight, gain=math.sqrt(2))
-            elif init_type == 'default':
-                pass
-            else:
-                assert 0, "Unsupported initialization: {}".format(init_type)
-            if hasattr(m, 'bias') and m.bias is not None:
-                nn.init.constant_(m.bias, 0.0)
-
-    return init_fun
-
-class BaseNetwork(nn.Module):
-    def __init__(self):
-        super(BaseNetwork, self).__init__()
-
-    def init_weights(self, init_type='normal', gain=0.02):
-        '''
-        initialize network's weights
-        init_type: normal | xavier | kaiming | orthogonal
-        https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/9451e70673400885567d08a9e97ade2524c700d0/models/networks.py#L39
-        '''
-
-        def init_func(m):
-            classname = m.__class__.__name__
-            if hasattr(m, 'weight') and (classname.find('Conv') != -1 or classname.find('Linear') != -1):
-                if init_type == 'normal':
-                    nn.init.normal_(m.weight.data, 0.0, gain)
-                elif init_type == 'xavier':
-                    nn.init.xavier_normal_(m.weight.data, gain=gain)
-                elif init_type == 'kaiming':
-                    nn.init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
-                elif init_type == 'orthogonal':
-                    nn.init.orthogonal_(m.weight.data, gain=gain)
-
-                if hasattr(m, 'bias') and m.bias is not None:
-                    nn.init.constant_(m.bias.data, 0.0)
-
-            elif classname.find('BatchNorm2d') != -1:
-                nn.init.normal_(m.weight.data, 1.0, gain)
-                nn.init.constant_(m.bias.data, 0.0)
-
-        self.apply(init_func)
 
 class VGG16FeatureExtractor(nn.Module):
     def __init__(self):
@@ -395,7 +318,7 @@ class Bottleneck(nn.Module):
 
         return out
 
-class PRVSNet(BaseNetwork):
+class PRVSNet(nn.Module):
     def __init__(self, layer_size=8, input_channels=3, att = False):
         super().__init__()
         self.layer_size = layer_size
@@ -422,12 +345,6 @@ class PRVSNet(BaseNetwork):
         self.output = nn.Conv2d(128, 3, 1)
 
     def forward(self, input, input_mask, input_edge):
-        """
-        input_edge = input_edge * input_mask[:,0:1,:,:]
-        input_mask = torch.cat([input_mask]*3, dim = 1)
-        input_edge = torch.cat([input_edge]*3, dim = 1)
-        """
-
         input = input * input_mask[:,0:1,:,:]
         input_edge = input_edge * input_mask[:,0:1,:,:]
         input_mask = torch.cat([input_mask]*3, dim = 1)
@@ -473,4 +390,3 @@ class PRVSNet(BaseNetwork):
         h_out = torch.cat([h_out, h], dim = 1)
         h_out = self.output(h_out)
         return h_out, h_mask, h_edge_list[-2], h_edge_list[-1]
-        #return h_out

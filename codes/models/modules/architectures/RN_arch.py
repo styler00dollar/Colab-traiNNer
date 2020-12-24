@@ -8,15 +8,16 @@ https://github.com/geekyutao/RN/blob/a3cf1fccc08f22fcf4b336503a8853748720fd67/rn
 module_util.py (15-12-20)
 https://github.com/geekyutao/RN/blob/a3cf1fccc08f22fcf4b336503a8853748720fd67/module_util.py
 """
+
+from torchvision.transforms import *
 import logging
-logger = logging.getLogger('base')
-
-
+import os
 import torch
 import torch.nn as nn
-import torch.nn.init as init
 import torch.nn.functional as F
-
+import torch.nn.init as init
+import torch.optim as optim
+logger = logging.getLogger('base')
 
 def rn_initialize_weights(net_l, scale=1):
     if not isinstance(net_l, list):
@@ -42,9 +43,6 @@ def rn_initialize_weights(net_l, scale=1):
     logger.info('RN Initialization method [kaiming]')
 
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 class RN_binarylabel(nn.Module):
     def __init__(self, feature_channels):
@@ -174,18 +172,6 @@ class RN_L(nn.Module):
         return rn_x
 
 
-
-
-import os
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torchvision.transforms import *
-import torch.nn.functional as F
-
-#from rn import RN_B, RN_L
-
-
 class G_Net(nn.Module):
     def __init__(self, input_channels=3, residual_blocks=8, threshold=0.8):
         super(G_Net, self).__init__()
@@ -260,54 +246,6 @@ class G_Net(nn.Module):
         x = (torch.tanh(x) + 1) / 2
         # x = x*mask+gt*(1-mask)
         return x
-
-
-# original D
-class D_Net(nn.Module):
-    def __init__(self, in_channels, use_sigmoid=True, use_spectral_norm=True):
-        super(D_Net, self).__init__()
-        self.use_sigmoid = use_sigmoid
-
-        self.conv1 = self.features = nn.Sequential(
-            spectral_norm(nn.Conv2d(in_channels=in_channels, out_channels=64, kernel_size=4, stride=2, padding=1, bias=not use_spectral_norm), use_spectral_norm),
-            nn.LeakyReLU(0.2, inplace=True),
-        )
-
-        self.conv2 = nn.Sequential(
-            spectral_norm(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=4, stride=2, padding=1, bias=not use_spectral_norm), use_spectral_norm),
-            nn.LeakyReLU(0.2, inplace=True),
-        )
-
-        self.conv3 = nn.Sequential(
-            spectral_norm(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=4, stride=2, padding=1, bias=not use_spectral_norm), use_spectral_norm),
-            nn.LeakyReLU(0.2, inplace=True),
-        )
-
-        self.conv4 = nn.Sequential(
-            spectral_norm(nn.Conv2d(in_channels=256, out_channels=512, kernel_size=4, stride=1, padding=1, bias=not use_spectral_norm), use_spectral_norm),
-            nn.LeakyReLU(0.2, inplace=True),
-        )
-
-        self.conv5 = nn.Sequential(
-            spectral_norm(nn.Conv2d(in_channels=512, out_channels=1, kernel_size=4, stride=1, padding=1, bias=not use_spectral_norm), use_spectral_norm),
-        )
-
-
-    def forward(self, x):
-        conv1 = self.conv1(x)
-        conv2 = self.conv2(conv1)
-        conv3 = self.conv3(conv2)
-        conv4 = self.conv4(conv3)
-        conv5 = self.conv5(conv4)
-
-        outputs = conv5
-        if self.use_sigmoid:
-            outputs = torch.sigmoid(conv5)
-
-        return outputs, [conv1, conv2, conv3, conv4, conv5]
-
-
-
 
 
 class ResnetBlock(nn.Module):

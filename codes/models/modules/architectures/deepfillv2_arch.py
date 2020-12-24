@@ -5,12 +5,17 @@ https://github.com/zhaoyuzhi/deepfillv2/blob/master/deepfillv2/network.py
 network_module.py (15-12-20)
 https://github.com/zhaoyuzhi/deepfillv2/blob/master/deepfillv2/network_module.py
 """
-import torch
-from torch import nn
-from torch.nn import functional as F
-from torch.nn import Parameter
 
+#from network_module import *
 from .convolutions import partialconv2d
+from torch import nn
+from torch.nn import Parameter
+from torch.nn import functional as F
+import logging
+import torch
+import torch.nn as nn
+import torch.nn.init as init
+logger = logging.getLogger('base')
 
 #-----------------------------------------------
 #                Normal ConvBlock
@@ -267,16 +272,6 @@ class SpectralNorm(nn.Module):
         self._update_u_v()
         return self.module.forward(*args)
 
-
-import logging
-logger = logging.getLogger('base')
-
-
-import torch
-import torch.nn as nn
-import torch.nn.init as init
-
-#from network_module import *
 
 def deepfillv2_weights_init(net, init_type = 'kaiming', init_gain = 0.02):
     #Initialize network weights.

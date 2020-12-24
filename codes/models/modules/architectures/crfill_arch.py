@@ -6,13 +6,12 @@ utils.py (16-12-20)
 https://github.com/zengxianyu/crfill/blob/4ed07a6a373398fcaa4c45fe926c83b20116b967/networks/utils.py
 """
 
-
+from torch.nn.functional import normalize
+import numpy as np
+import pdb
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import pdb
-import numpy as np
-from torch.nn.functional import normalize
 
 
 def weight_init(m):
@@ -148,16 +147,6 @@ def batch_transposeconv2d(x, weight, bias=None, stride=1, padding=0, output_padd
     return out
 
 
-
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import pdb
-import numpy as np
-from torch.nn.functional import normalize
-#from .utils import weight_init, gen_conv, gen_deconv, dis_conv
-
 class InpaintGenerator(nn.Module):
     def __init__(self, cnum=48):
         super(InpaintGenerator, self).__init__()
@@ -279,30 +268,4 @@ class InpaintGenerator(nn.Module):
         x = self.allconv17(x)
         x_stage2 = torch.tanh(x)
 
-        #return x_stage1, x_stage2
         return x_stage2, x_stage1
-
-"""
-class InpaintDiscriminator(nn.Module):
-    def __init__(self, cnum=64):
-        super(InpaintDiscriminator, self).__init__()
-        self.conv1 = nn.utils.spectral_norm(dis_conv(4, cnum))
-        self.conv2 = nn.utils.spectral_norm(dis_conv(cnum, cnum*2))
-        self.conv3 = nn.utils.spectral_norm(dis_conv(cnum*2, cnum*4))
-        self.conv4 = nn.utils.spectral_norm(dis_conv(cnum*4, cnum*4))
-        self.conv5 = nn.utils.spectral_norm(dis_conv(cnum*4, cnum*4))
-        self.conv6 = nn.utils.spectral_norm(dis_conv(cnum*4, cnum*4))
-        self.apply(weight_init)
-
-    def forward(self, x):
-        bsize, ch, height, width = x.shape
-        ones_x = torch.ones(bsize, 1, height, width).to(x.device)
-        x = torch.cat([x, ones_x], 1)
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        x = self.conv4(x)
-        x = self.conv5(x)
-        x = self.conv6(x)
-        return x
-"""

@@ -179,13 +179,15 @@ def define_G(opt, step=0):
             blend_layers=opt_net['blend_layers'], conv_type=opt_net['conv_type'])
     elif which_model == 'EdgeConnect':
         from models.modules.architectures import EdgeConnect_arch
-        netG = EdgeConnect_arch.EdgeConnectModel(use_spectral_norm=opt_net['use_spectral_norm'])
+        netG = EdgeConnect_arch.EdgeConnectModel(residual_blocks_edge=opt_net['residual_blocks_edge'],
+            residual_blocks_inpaint=opt_net['residual_blocks_inpaint'], use_spectral_norm=opt_net['use_spectral_norm'])
     elif which_model == 'CSA':
         from models.modules.architectures import CSA_arch
-        netG = CSA_arch.InpaintNet()
+        netG = CSA_arch.InpaintNet(c_img=opt_net['c_img'],
+        norm=opt_net['norm'], act_en=opt_net['act_en'], act_de=opt_net['act_de'])
     elif which_model == 'RN':
         from models.modules.architectures import RN_arch
-        netG = RN_arch.G_Net(input_channels=opt_net['input_channels'], residual_blocks=opt_net['residual_blocks'], threshold=opt_net['threshold'])
+        netG = RN_arch.G_Net(inPConvUNetput_channels=opt_net['input_channels'], residual_blocks=opt_net['residual_blocks'], threshold=opt_net['threshold'])
         # using rn init to avoid errors
         RN_arch = RN_arch.rn_initialize_weights(netG, scale=0.1)
     elif which_model == 'deepfillv1':
@@ -225,7 +227,7 @@ def define_G(opt, step=0):
         DeepDFNet_arch.deepfillv2_weights_init(netG)
     elif which_model == 'partial':
         from models.modules.architectures import partial_arch
-        netG = partial_arch.PartialConv()
+        netG = partial_arch.Model()
     elif which_model == 'DMFN':
         from models.modules.architectures import DMFN_arch
         netG = DMFN_arch.InpaintingGenerator(in_nc=opt_net['in_nc'],
@@ -236,7 +238,7 @@ def define_G(opt, step=0):
         netG = pennet_arch.InpaintGenerator()
     elif which_model == 'LBAM':
         from models.modules.architectures import LBAM_arch
-        netG = LBAM_arch.LBAMModel()
+        netG = LBAM_arch.LBAMModel(inputChannels=opt_net['inputChannels'], outputChannels=opt_net['outputChannels'])
     elif which_model == 'RFR':
         from models.modules.architectures import RFR_arch
         netG = RFR_arch.RFRNet()
@@ -248,10 +250,12 @@ def define_G(opt, step=0):
         netG = PRVS_arch.PRVSNet()
     elif which_model == 'CRA':
         from models.modules.architectures import CRA_arch
-        netG = CRA_arch.GatedGenerator()
+        netG = CRA_arch.GatedGenerator(activation=opt_net['activation'], norm=opt_net['norm'])
     elif which_model == 'USRNet':
         from models.modules.architectures import USRNet_arch
-        netG = USRNet_arch.USRNet()
+        netG = USRNet_arch.USRNet(in_nc=opt_net['in_nc'], out_nc=opt_net['out_nc'],
+          nb=opt_net['nb'], act_mode=opt_net['act_mode'], downsample_mode=opt_net['downsample_mode'],
+          upsample_mode=opt_net['upsample_mode'])
     elif which_model == 'atrous':
         from models.modules.architectures import atrous_arch
         netG = atrous_arch.AtrousInpainter()

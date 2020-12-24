@@ -5,6 +5,10 @@ https://github.com/knazeri/edge-connect/blob/master/src/edge_connect.py
 
 import torch
 import torch.nn as nn
+import os
+import torch.optim as optim
+
+from torchvision.utils import save_image
 
 class InpaintGenerator(nn.Module):
     def __init__(self, residual_blocks=8, init_weights=True):
@@ -132,20 +136,11 @@ def spectral_norm(module, mode=True):
 
     return module
 
-
-
-import os
-import torch
-import torch.nn as nn
-import torch.optim as optim
-
-from torchvision.utils import save_image
-
 class EdgeConnectModel(nn.Module):
-    def __init__(self, use_spectral_norm=True):
+    def __init__(self, residual_blocks_edge=8, residual_blocks_inpaint=8, use_spectral_norm=True):
         super().__init__()
-        self.EdgeGenerator = EdgeGenerator(use_spectral_norm=use_spectral_norm)
-        self.InpaintGenerator = InpaintGenerator()
+        self.EdgeGenerator = EdgeGenerator(residual_blocks=residual_blocks_edge, use_spectral_norm=use_spectral_norm)
+        self.InpaintGenerator = InpaintGenerator(residual_blocks=residual_blocks_inpaint)
 
     def forward(self, images, edges, grayscale, masks):
         # edge

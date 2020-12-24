@@ -15,93 +15,24 @@ task.py (16-12-20)
 https://github.com/lyndonzheng/Pluralistic-Inpainting/blob/1ca1855615fed8b686ca218c6494f455860f9996/util/task.py
 """
 
+from PIL import Image
+from random import randint
+from torch import nn
+from torch.nn import Parameter
+from torch.nn import init
+from torch.optim import lr_scheduler
+import copy
+import cv2
+import functools
+import logging
+import numpy as np
+import random
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
-from random import randint
-import numpy as np
-import cv2
-from PIL import Image
-import random
+logger = logging.getLogger('base')
 
-###################################################################
-# random mask generation
-###################################################################
-
-
-def random_regular_mask(img):
-    """Generates a random regular hole"""
-    mask = torch.ones_like(img)
-    s = img.size()
-    N_mask = random.randint(1, 5)
-    limx = s[1] - s[1] / (N_mask + 1)
-    limy = s[2] - s[2] / (N_mask + 1)
-    for _ in range(N_mask):
-        x = random.randint(0, int(limx))
-        y = random.randint(0, int(limy))
-        range_x = x + random.randint(int(s[1] / (N_mask + 7)), int(s[1] - x))
-        range_y = y + random.randint(int(s[2] / (N_mask + 7)), int(s[2] - y))
-        mask[:, int(x):int(range_x), int(y):int(range_y)] = 0
-    return mask
-
-
-def center_mask(img):
-    """Generates a center hole with 1/4*W and 1/4*H"""
-    mask = torch.ones_like(img)
-    size = img.size()
-    x = int(size[1] / 4)
-    y = int(size[2] / 4)
-    range_x = int(size[1] * 3 / 4)
-    range_y = int(size[2] * 3 / 4)
-    mask[:, x:range_x, y:range_y] = 0
-
-    return mask
-
-
-def random_irregular_mask(img):
-    """Generates a random irregular mask with lines, circles and elipses"""
-    transform = transforms.Compose([transforms.ToTensor()])
-    mask = torch.ones_like(img)
-    size = img.size()
-    img = np.zeros((size[1], size[2], 1), np.uint8)
-
-    # Set size scale
-    max_width = 20
-    if size[1] < 64 or size[2] < 64:
-        raise Exception("Width and Height of mask must be at least 64!")
-
-    number = random.randint(16, 64)
-    for _ in range(number):
-        model = random.random()
-        if model < 0.6:
-            # Draw random lines
-            x1, x2 = randint(1, size[1]), randint(1, size[1])
-            y1, y2 = randint(1, size[2]), randint(1, size[2])
-            thickness = randint(4, max_width)
-            cv2.line(img, (x1, y1), (x2, y2), (1, 1, 1), thickness)
-
-        elif model > 0.6 and model < 0.8:
-            # Draw random circles
-            x1, y1 = randint(1, size[1]), randint(1, size[2])
-            radius = randint(4, max_width)
-            cv2.circle(img, (x1, y1), radius, (1, 1, 1), -1)
-
-        elif model > 0.8:
-            # Draw random ellipses
-            x1, y1 = randint(1, size[1]), randint(1, size[2])
-            s1, s2 = randint(1, size[1]), randint(1, size[2])
-            a1, a2, a3 = randint(3, 180), randint(3, 180), randint(3, 180)
-            thickness = randint(4, max_width)
-            cv2.ellipse(img, (x1, y1), (s1, s2), a1, a2, a3, (1, 1, 1), thickness)
-
-    img = img.reshape(size[2], size[1])
-    img = Image.fromarray(img*255)
-
-    img_mask = transform(img)
-    for j in range(size[0]):
-        mask[j, :, :] = img_mask < 1
-
-    return mask
 
 ###################################################################
 # multi scale for image generation
@@ -130,14 +61,6 @@ def scale_pyramid(img, num_scales):
 
     scaled_imgs.reverse()
     return scaled_imgs
-
-
-
-import torch
-from torch import nn
-from torch.nn import Parameter
-import torch.nn.functional as F
-import copy
 
 
 ####################################################################################################
@@ -208,108 +131,8 @@ class SpectralNorm(nn.Module):
 
 
 ####################################################################################################
-# adversarial loss for different gan mode
-####################################################################################################
-
-
-class GANLoss(nn.Module):
-    """Define different GAN objectives.
-    The GANLoss class abstracts away the need to create the target label tensor
-    that has the same size as the input.
-    """
-
-    def __init__(self, gan_mode, target_real_label=1.0, target_fake_label=0.0):
-        """ Initialize the GANLoss class.
-        Parameters:
-            gan_mode (str) - - the type of GAN objective. It currently supports vanilla, lsgan, and wgangp.
-            target_real_label (bool) - - label for a real image
-            target_fake_label (bool) - - label of a fake image
-        Note: Do not use sigmoid as the last layer of Discriminator.
-        LSGAN needs no sigmoid. vanilla GANs will handle it with BCEWithLogitsLoss.
-        """
-        super(GANLoss, self).__init__()
-        self.register_buffer('real_label', torch.tensor(target_real_label))
-        self.register_buffer('fake_label', torch.tensor(target_fake_label))
-        self.gan_mode = gan_mode
-        if gan_mode == 'lsgan':
-            self.loss = nn.MSELoss()
-        elif gan_mode == 'vanilla':
-            self.loss = nn.BCEWithLogitsLoss()
-        elif gan_mode == 'hinge':
-            self.loss = nn.ReLU()
-        elif gan_mode == 'wgangp':
-            self.loss = None
-        else:
-            raise NotImplementedError('gan mode %s not implemented' % gan_mode)
-
-    def __call__(self, prediction, target_is_real, is_disc=False):
-        """Calculate loss given Discriminator's output and grount truth labels.
-        Parameters:
-            prediction (tensor) - - tpyically the prediction output from a discriminator
-            target_is_real (bool) - - if the ground truth label is for real images or fake images
-        Returns:
-            the calculated loss.
-        """
-        if self.gan_mode in ['lsgan', 'vanilla']:
-            labels = (self.real_label if target_is_real else self.fake_label).expand_as(prediction).type_as(prediction)
-            loss = self.loss(prediction, labels)
-        elif self.gan_mode in ['hinge', 'wgangp']:
-            if is_disc:
-                if target_is_real:
-                    prediction = -prediction
-                if self.gan_mode == 'hinge':
-                    loss = self.loss(1 + prediction).mean()
-                elif self.gan_mode == 'wgangp':
-                    loss = prediction.mean()
-            else:
-                loss = -prediction.mean()
-        return loss
-
-
-def cal_gradient_penalty(netD, real_data, fake_data, type='mixed', constant=1.0, lambda_gp=10.0):
-    """Calculate the gradient penalty loss, used in WGAN-GP paper https://arxiv.org/abs/1704.00028
-    Arguments:
-        netD (network)              -- discriminator network
-        real_data (tensor array)    -- real images
-        fake_data (tensor array)    -- generated images from the generator
-        type (str)                  -- if we mix real and fake data or not [real | fake | mixed].
-        constant (float)            -- the constant used in formula ( | |gradient||_2 - constant)^2
-        lambda_gp (float)           -- weight for this loss
-    Returns the gradient penalty loss
-    """
-    if lambda_gp > 0.0:
-        if type == 'real':   # either use real images, fake images, or a linear interpolation of two.
-            interpolatesv = real_data
-        elif type == 'fake':
-            interpolatesv = fake_data
-        elif type == 'mixed':
-            alpha = torch.rand(real_data.shape[0], 1)
-            alpha = alpha.expand(real_data.shape[0], real_data.nelement() // real_data.shape[0]).contiguous().view(*real_data.shape)
-            alpha = alpha.type_as(real_data)
-            interpolatesv = alpha * real_data + ((1 - alpha) * fake_data)
-        else:
-            raise NotImplementedError('{} not implemented'.format(type))
-        interpolatesv.requires_grad_(True)
-        disc_interpolates = netD(interpolatesv)
-        gradients = torch.autograd.grad(outputs=disc_interpolates, inputs=interpolatesv,
-                                        grad_outputs=torch.ones(disc_interpolates.size()).type_as(real_data),
-                                        create_graph=True, retain_graph=True, only_inputs=True)
-        gradients = gradients[0].view(real_data.size(0), -1)  # flat the data
-        gradient_penalty = (((gradients + 1e-16).norm(2, dim=1) - constant) ** 2).mean() * lambda_gp        # added eps
-        return gradient_penalty, gradients
-    else:
-        return 0.0, None
-
-
-####################################################################################################
 # neural style transform loss from neural_style_tutorial of pytorch
 ####################################################################################################
-
-
-def ContentLoss(input, target):
-    target = target.detach()
-    loss = F.l1_loss(input, target)
-    return loss
 
 
 def GramMatrix(input):
@@ -318,13 +141,6 @@ def GramMatrix(input):
     features_t = torch.transpose(features, 1, 2)
     G = torch.bmm(features, features_t).div(s[1]*s[2]*s[3])
     return G
-
-
-def StyleLoss(input, target):
-    target = GramMatrix(target).detach()
-    input = GramMatrix(input)
-    loss = F.l1_loss(input, target)
-    return loss
 
 
 def img_crop(input, size=224):
@@ -341,37 +157,6 @@ class Normalization(nn.Module):
     def forward(self, input):
         return (input-self.mean) / self.std
 
-
-class get_features(nn.Module):
-    def __init__(self, cnn):
-        super(get_features, self).__init__()
-
-        vgg = copy.deepcopy(cnn)
-
-        self.conv1 = nn.Sequential(vgg[0], vgg[1], vgg[2], vgg[3], vgg[4])
-        self.conv2 = nn.Sequential(vgg[5], vgg[6], vgg[7], vgg[8], vgg[9])
-        self.conv3 = nn.Sequential(vgg[10], vgg[11], vgg[12], vgg[13], vgg[14], vgg[15], vgg[16])
-        self.conv4 = nn.Sequential(vgg[17], vgg[18], vgg[19], vgg[20], vgg[21], vgg[22], vgg[23])
-        self.conv5 = nn.Sequential(vgg[24], vgg[25], vgg[26], vgg[27], vgg[28], vgg[29], vgg[30])
-
-    def forward(self, input, layers):
-        input = img_crop(input)
-        output = []
-        for i in range(1, layers):
-            layer = getattr(self, 'conv'+str(i))
-            input = layer(input)
-            output.append(input)
-        return output
-
-
-import torch
-import torch.nn as nn
-from torch.nn import init
-import functools
-from torch.optim import lr_scheduler
-#from .external_function import SpectralNorm
-import logging
-logger = logging.getLogger('base')
 
 ######################################################################################
 # base function for network structure
@@ -430,23 +215,6 @@ def get_nonlinearity_layer(activation_type='PReLU'):
     else:
         raise NotImplementedError('activation layer [%s] is not found' % activation_type)
     return nonlinearity_layer
-
-
-def get_scheduler(optimizer, opt):
-    """Get the training learning rate for different epoch"""
-    if opt.lr_policy == 'lambda':
-        def lambda_rule(epoch):
-            lr_l = 1.0 - max(0, epoch+1+1+opt.iter_count-opt.niter) / float(opt.niter_decay+1)
-            return lr_l
-        scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_rule)
-    elif opt.lr_policy == 'step':
-        scheduler = lr_scheduler.StepLR(optimizer, step_size=opt.lr_decay_iters, gamma=0.1)
-    elif opt.lr_policy == 'exponent':
-        scheduler = lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
-    else:
-        raise NotImplementedError('learning rate policy [%s] is not implemented', opt.lr_policy)
-    return scheduler
-
 
 def print_network(net):
     """print the network"""
@@ -953,12 +721,6 @@ class get_features(nn.Module):
         return output
 
 
-
-#from .base_function import *
-#from .external_function import SpectralNorm
-import torch.nn.functional as F
-
-
 ##############################################################################################################
 # Network function
 ##############################################################################################################
@@ -1197,7 +959,6 @@ class PluralisticGenerator(nn.Module):
         p_distribution, q_distribution, kl_rec, kl_g = 0, 0, 0, 0
         self.distribution = []
         for distribution in distributions:
-            print(len(distribution))
             p_mu, p_sigma, q_mu, q_sigma = distribution
             # the assumption distribution for different mask regions
             m_distribution = torch.distributions.Normal(torch.zeros_like(p_mu), m_sigma * torch.ones_like(p_sigma))
@@ -1228,41 +989,12 @@ class PluralisticGenerator(nn.Module):
         z_q = q_distribution.rsample()
         z = torch.cat([z_p, z_q], dim=0)
         return z, f_m, f_e, mask
-    #def scale_img(img, size):
-    #    scaled_img = torch.nn.functional.interpolate(img, size=size, mode='bilinear', align_corners=True)
-    #    return scaled_img
 
     def forward(self, images, img_inverted, masks):
       distributions, f = self.net_E(images, img_inverted)
       p_distribution, q_distribution, kl_rec, kl_g = self.get_distribution(distributions, masks)
       z, f_m, f_e, mask = self.get_G_inputs(p_distribution, q_distribution, f, masks)
       results, attn = self.net_G(z, f_m, f_e, mask)
-      """
-      p_mu, p_sigma, q_mu, q_sigma = distribution
-
-      q_distribution = torch.distributions.Normal(distribution[-1][0], distribution[-1][1])
-      p_distribution = torch.distributions.Normal(p_mu, p_sigma)
-
-
-      z = q_distribution.sample()
-
-      z, f_m, f_e, mask = self.get_G_inputs(p_distribution, q_distribution, f)
-      results, attn = self.net_G(z, f_m, f_e, mask)
-      """
-      """
-      self.img_rec = []
-      self.img_g = []
-      for result in results:
-          img_rec, img_g = result.chunk(2)
-          self.img_rec.append(img_rec)
-          self.img_g.append(img_g)
-      """
-      """
-      # encoder kl loss
-          self.loss_kl_rec = self.kl_rec.mean()
-          self.loss_kl_g = self.kl_g.mean()
-      """
-
 
       self.img_rec = []
       self.img_g = []
@@ -1270,19 +1002,5 @@ class PluralisticGenerator(nn.Module):
           img_rec, img_g = result.chunk(2)
           self.img_rec.append(img_rec)
           self.img_g.append(img_g)
-      self.img_out = (1-masks) * images[-1].detach() + masks * images
 
-      return self.img_out, kl_rec, kl_g
-
-
-      """
-      # old working version
-      distribution, f = self.net_E(images)
-      q_distribution = torch.distributions.Normal(distribution[-1][0], distribution[-1][1])
-      z = q_distribution.sample()
-
-      scale_mask = torch.nn.functional.interpolate(masks, size=[f[2].size(2), f[2].size(3)], mode='bilinear', align_corners=True)
-
-      output, attn = self.net_G(z, f_m=f[-1], f_e=f[2], mask=scale_mask.chunk(3, dim=1)[0])
-      return output[0]
-      """
+      return self.img_g[-1].detach(), kl_rec, kl_g

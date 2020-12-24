@@ -301,6 +301,7 @@ class inpaintModel(BaseModel):
               # special
               elif self.which_model_G == 'Pluralistic':
                 self.fake_H, self.kl_rec, self.kl_g = self.netG(self.var_L, img_inverted, mask)
+                save_image(self.fake_H, "self.fake_H_pluralistic.png")
 
               elif self.which_model_G == 'EdgeConnect':
                 self.fake_H, self.other_img = self.netG(self.var_L, self.canny_data, self.grayscale_data, mask)
@@ -531,10 +532,11 @@ class inpaintModel(BaseModel):
         """
 
         self.mask = data['green_mask'].float().to(self.device).unsqueeze(0)
+
+        if self.which_model_G == 'Pluralistic':
+          img_inverted = self.var_L * (1-self.mask)
+
         self.var_L = self.var_L * self.mask
-        #print("self.mask")
-        #print(self.mask)
-        #self.var_L = self.var_L.float().cuda()
 
         self.netG.eval()
         with torch.no_grad():
