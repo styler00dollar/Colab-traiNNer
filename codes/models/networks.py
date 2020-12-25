@@ -259,6 +259,9 @@ def define_G(opt, step=0):
     elif which_model == 'atrous':
         from models.modules.architectures import atrous_arch
         netG = atrous_arch.AtrousInpainter()
+    elif which_model == 'MEDFE':
+        from models.modules.architectures import MEDFE_arch
+        netG = MEDFE_arch.MEDFEGenerator()
     else:
         raise NotImplementedError('Generator model [{:s}] not recognized'.format(which_model))
 

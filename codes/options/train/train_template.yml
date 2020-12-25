@@ -1,7 +1,7 @@
 name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
 #name: 001_template # remove "debug" to run the real training session.
 use_tb_logger: true
-model: PRVS #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN | PRVS | CRA | USRNet | atrous
+model: MEDFE #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN | PRVS | CRA | USRNet | atrous | MEDFE
 scale: 1
 gpu_ids: [0]
 use_amp: false
@@ -24,9 +24,9 @@ datasets:
     subset_file: null
     use_shuffle: true
     znorm: false # true | false # To normalize images in [-1, 1] range. Default = None (range [0,1]). Can use with activation function like tanh.
-    n_workers: 2 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
-    batch_size: 2
-    virtual_batch_size: 2
+    n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
+    batch_size: 1
+    virtual_batch_size: 1
     HR_size: 256 # patch size. Default: 128. Needs to be coordinated with the patch size of the features network
     image_channels: 3 # number of channels to load images in
 
@@ -310,7 +310,7 @@ network_G:
     #which_model_G: FRRN
 
     # PRVS (2019)
-    which_model_G: PRVS
+    #which_model_G: PRVS
 
     # CRA (needs hr size 512) (2020)
     #which_model_G: CRA
@@ -319,6 +319,9 @@ network_G:
 
     # atrous (2020)
     #which_model_G: atrous
+
+    # MEDFE (batch_size 1) (2020)
+    which_model_G: MEDFE
 
 # Discriminator options:
 network_D:
@@ -468,6 +471,6 @@ train:
     metrics: 'psnr,ssim,lpips' # select from: "psnr,ssim,lpips" or a combination separated by comma ","
 
 logger:
-    print_freq: 100 #200
+    print_freq: 25 #200
     save_checkpoint_freq: 5e3
     overwrite_chkp: false
