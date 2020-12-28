@@ -303,7 +303,7 @@ network_G:
     #inputChannels: 4
     #outputChannels: 3
 
-    # RFR (2020)
+    # RFR (use_swa: false) (2020)
     #which_model_G: RFR
 
     # FRRN (2019)
@@ -312,7 +312,7 @@ network_G:
     # PRVS (2019)
     #which_model_G: PRVS
 
-    # CRA (needs hr size 512) (2020)
+    # CRA (HR_size: 512) (2020)
     #which_model_G: CRA
     #activation: 'elu'
     #norm: 'none'
@@ -320,7 +320,7 @@ network_G:
     # atrous (2020)
     #which_model_G: atrous
 
-    # MEDFE (batch_size 1) (2020)
+    # MEDFE (batch_size: 1) (2020)
     which_model_G: MEDFE
 
 # Discriminator options:
