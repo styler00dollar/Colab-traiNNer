@@ -180,7 +180,8 @@ def define_G(opt, step=0):
     elif which_model == 'EdgeConnect':
         from models.modules.architectures import EdgeConnect_arch
         netG = EdgeConnect_arch.EdgeConnectModel(residual_blocks_edge=opt_net['residual_blocks_edge'],
-            residual_blocks_inpaint=opt_net['residual_blocks_inpaint'], use_spectral_norm=opt_net['use_spectral_norm'])
+            residual_blocks_inpaint=opt_net['residual_blocks_inpaint'], use_spectral_norm=opt_net['use_spectral_norm'],
+            conv_type_edge=opt_net['conv_type_edge'], conv_type_inpaint=opt_net['conv_type_inpaint'])
     elif which_model == 'CSA':
         from models.modules.architectures import CSA_arch
         netG = CSA_arch.InpaintNet(c_img=opt_net['c_img'],
@@ -241,7 +242,7 @@ def define_G(opt, step=0):
         netG = LBAM_arch.LBAMModel(inputChannels=opt_net['inputChannels'], outputChannels=opt_net['outputChannels'])
     elif which_model == 'RFR':
         from models.modules.architectures import RFR_arch
-        netG = RFR_arch.RFRNet()
+        netG = RFR_arch.RFRNet(conv_type=opt_net['conv_type'])
     elif which_model == 'FRRN':
         from models.modules.architectures import FRRN_arch
         netG = FRRN_arch.FRRNet()

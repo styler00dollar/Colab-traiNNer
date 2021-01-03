@@ -7,6 +7,7 @@ import torch.nn.functional as F
 #from utils import resize_like
 
 from .convolutions import partialconv2d
+from models.modules.architectures.convolutions.deformconv2d import DeformConv2d
 
 def resize_like(x, target, mode='bilinear'):
     return F.interpolate(x, target.shape[-2:], mode=mode, align_corners=False)
@@ -65,6 +66,17 @@ class Conv2dSame(nn.Module):
               self.conv = nn.Sequential(
                   nn.ConstantPad2d(padding*2, 0),
                   partialconv2d.PartialConv2d(in_channels, out_channels, kernel_size, stride, 0)
+              )
+
+
+        elif conv_type == 'deform':
+          if type(padding) is not tuple:
+              self.conv = partialconv2d.PartialConv2d(
+                  in_channels, out_channels, kernel_size, stride, padding)
+          else:
+              self.conv = nn.Sequential(
+                  nn.ConstantPad2d(padding*2, 0),
+                  DeformConv2d(in_channels, out_channels, kernel_size, stride, 0)
               )
 
 
@@ -218,9 +230,6 @@ class DFNet(nn.Module):
             blend_layers=[0, 1, 2, 3, 4, 5], conv_type = 'normal'):
         super().__init__()
 
-        #if conv_type == 'partial':
-        #  from .convolutions import partialconv2d
-
         c_init = c_img + c_mask
 
         self.n_en = len(en_ksize)
@@ -272,8 +281,6 @@ class DFNet(nn.Module):
 
     def forward(self, img_miss, mask):
 
-        #save_image(img_miss, "img_miss.png")
-
         out = torch.cat([img_miss, mask], dim=1)
         out_en = [out]
 
@@ -281,16 +288,10 @@ class DFNet(nn.Module):
             out = encode(out)
             out_en.append(out)
 
-
         results = []
-        #alphas = []
-        #raws = []
         for i, (decode, fuse) in enumerate(zip(self.de, self.fuse)):
             out = decode(out, out_en[-i-2])
             if fuse:
                 result, alpha, raw = fuse(img_miss, out)
                 results.append(result)
-                #alphas.append(alpha)
-                #raws.append(raw)
-
         return results[::-1][0]

@@ -363,7 +363,7 @@ class inpaintModel(BaseModel):
                 # edge-connect
                 if self.which_model_G == 'EdgeConnect':
                   L1Loss = nn.L1Loss()
-                  l1_edge = L1Loss(self.other_img, self.var_H)
+                  l1_edge = L1Loss(self.other_img, self.canny_data)
 
                   self.log_dict.update(l1_edge=l1_edge)
                   loss_results.append(l1_edge)

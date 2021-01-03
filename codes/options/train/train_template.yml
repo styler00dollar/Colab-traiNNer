@@ -1,7 +1,7 @@
 name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
 #name: 001_template # remove "debug" to run the real training session.
 use_tb_logger: true
-model: MEDFE #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN | PRVS | CRA | USRNet | atrous | MEDFE
+model: EdgeConnect #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN | PRVS | CRA | USRNet | atrous | MEDFE
 scale: 1
 gpu_ids: [0]
 use_amp: false
@@ -25,7 +25,7 @@ datasets:
     use_shuffle: true
     znorm: false # true | false # To normalize images in [-1, 1] range. Default = None (range [0,1]). Can use with activation function like tanh.
     n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
-    batch_size: 1
+    batch_size: 2
     virtual_batch_size: 1
     HR_size: 256 # patch size. Default: 128. Needs to be coordinated with the patch size of the features network
     image_channels: 3 # number of channels to load images in
@@ -195,7 +195,7 @@ network_G:
     #upsample_mode='convtranspose'
 
     # ----Inpainting Generators----
-    # DFNet (needs 2^x image input and validation) (2019)
+    # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
     #which_model_G: DFNet
     #c_img: 3
     #c_mask: 1
@@ -207,13 +207,15 @@ network_G:
     #en_ksize: [7, 5, 5, 3, 3, 3, 3, 3]
     #de_ksize: [3, 3, 3, 3, 3, 3, 3, 3]
     #blend_layers: [0, 1, 2, 3, 4, 5]
-    #conv_type: partial # partial | normal
+    #conv_type: deform # partial | normal | deform
 
     # EdgeConnect (2019)
-    #which_model_G: EdgeConnect
-    #use_spectral_norm: True
-    #residual_blocks_edge: 8
-    #residual_blocks_inpaint: 8
+    which_model_G: EdgeConnect
+    use_spectral_norm: True
+    residual_blocks_edge: 8
+    residual_blocks_inpaint: 8
+    conv_type_edge: 'normal' # normal | partial | deform (has no spectral_norm)
+    conv_type_inpaint: 'normal' # normal | partial | deform
 
     # CSA (2019)
     #which_model_G: CSA
@@ -305,6 +307,7 @@ network_G:
 
     # RFR (use_swa: false) (2020)
     #which_model_G: RFR
+    #conv_type: deform # partial | deform
 
     # FRRN (2019)
     #which_model_G: FRRN
@@ -321,7 +324,7 @@ network_G:
     #which_model_G: atrous
 
     # MEDFE (batch_size: 1) (2020)
-    which_model_G: MEDFE
+    #which_model_G: MEDFE
 
 # Discriminator options:
 network_D:

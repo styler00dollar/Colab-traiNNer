@@ -14,6 +14,7 @@ from torchvision import models
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from models.modules.architectures.convolutions.deformconv2d import DeformConv2d
 
 class KnowledgeConsistentAttention(nn.Module):
     def __init__(self, patch_size = 3, propagate_size = 3, stride = 1):
@@ -256,30 +257,58 @@ class RFRModule(nn.Module):
                 h = self.att(h, mask)
         return h
 
+
+
 class RFRNet(nn.Module):
-    def __init__(self):
+    def __init__(self, conv_type):
         super(RFRNet, self).__init__()
-        self.Pconv1 = PartialConv2d(3, 64, 7, 2, 3, multi_channel = True, bias = False)
+
+        self.conv_type = conv_type
+        if self.conv_type == 'partial':
+          self.conv1 = PartialConv2d(3, 64, 7, 2, 3, multi_channel = True, bias = False)
+          self.conv2 = PartialConv2d(64, 64, 7, 1, 3, multi_channel = True, bias = False)
+          self.conv21 = PartialConv2d(64, 64, 7, 1, 3, multi_channel = True, bias = False)
+          self.conv22 = PartialConv2d(64, 64, 7, 1, 3, multi_channel = True, bias = False)
+          self.tail1 = PartialConv2d(67, 32, 3, 1, 1, multi_channel = True, bias = False)
+          # original code uses conv2d
+          self.out = nn.Conv2d(64,3,3,1,1, bias = False)
+        elif self.conv_type == 'deform':
+          self.conv1 = DeformConv2d(3, 64, 7, 2, 3)
+          self.conv2 = DeformConv2d(64, 64, 7, 1, 3)
+          self.conv21 = DeformConv2d(64, 64, 7, 1, 3)
+          self.conv22 = DeformConv2d(64, 64, 7, 1, 3)
+          self.tail1 = DeformConv2d(67, 32, 3, 1, 1)
+          # original code uses conv2d
+          self.out = nn.Conv2d(64,3,3,1,1, bias = False)
+        else:
+          print("conv_type not found")
+
         self.bn1 = nn.BatchNorm2d(64)
-        self.Pconv2 = PartialConv2d(64, 64, 7, 1, 3, multi_channel = True, bias = False)
         self.bn20 = nn.BatchNorm2d(64)
-        self.Pconv21 = PartialConv2d(64, 64, 7, 1, 3, multi_channel = True, bias = False)
-        self.Pconv22 = PartialConv2d(64, 64, 7, 1, 3, multi_channel = True, bias = False)
         self.bn2 = nn.BatchNorm2d(64)
         self.RFRModule = RFRModule()
         self.Tconv = nn.ConvTranspose2d(64, 64, 4, 2, 1, bias = False)
         self.bn3 = nn.BatchNorm2d(64)
-        self.tail1 = PartialConv2d(67, 32, 3, 1, 1, multi_channel = True, bias = False)
+
         self.tail2 = Bottleneck(32,8)
-        self.out = nn.Conv2d(64,3,3,1,1, bias = False)
 
     def forward(self, in_image, mask):
         #in_image = torch.cat((in_image, mask), dim=1)
         mask =torch.cat([mask,mask,mask],1)
+        if self.conv_type == 'partial':
+          x1, m1 = self.conv1(in_image, mask)
+        elif self.conv_type == 'deform':
+          x1 = self.conv1(in_image)
+          m1 = self.conv1(mask)
 
-        x1, m1 = self.Pconv1(in_image, mask)
         x1 = F.relu(self.bn1(x1), inplace = True)
-        x1, m1 = self.Pconv2(x1, m1)
+
+        if self.conv_type == 'partial':
+          x1, m1 = self.conv2(x1, m1)
+        elif self.conv_type == 'deform':
+          x1 = self.conv2(x1)
+          m1 = self.conv2(m1)
+
         x1 = F.relu(self.bn20(x1), inplace = True)
         x2 = x1
         x2, m2 = x1, m1
@@ -290,8 +319,15 @@ class RFRNet(nn.Module):
         self.RFRModule.att.att.masks_prev = None
 
         for i in range(6):
-            x2, m2 = self.Pconv21(x2, m2)
-            x2, m2 = self.Pconv22(x2, m2)
+            if self.conv_type == 'partial':
+              x2, m2 = self.conv21(x2, m2)
+              x2, m2 = self.conv22(x2, m2)
+            elif self.conv_type == 'deform':
+              x2 = self.conv21(x2)
+              m2 = self.conv21(m2)
+              x2 = self.conv22(x2)
+              m2 = self.conv22(m2)
+
             x2 = F.leaky_relu(self.bn2(x2), inplace = True)
             x2 = self.RFRModule(x2, m2[:,0:1,:,:])
             x2 = x2 * m2
@@ -308,7 +344,12 @@ class RFRNet(nn.Module):
         m4 = F.interpolate(m3, scale_factor = 2)
         x5 = torch.cat([in_image, x4], dim = 1)
         m5 = torch.cat([mask, m4], dim = 1)
-        x5, _ = self.tail1(x5, m5)
+
+        if self.conv_type == 'partial':
+          x5, _ = self.tail1(x5, m5)
+        elif self.conv_type == 'deform':
+          x5 = self.tail1(x5)
+
         x5 = F.leaky_relu(x5, inplace = True)
         x6 = self.tail2(x5)
         x6 = torch.cat([x5,x6], dim = 1)
