@@ -1,7 +1,9 @@
+#@title train_template.yml
+%%writefile /content/BasicSR/codes/options/train/train_template.yml
 name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
 #name: 001_template # remove "debug" to run the real training session.
 use_tb_logger: true
-model: EdgeConnect #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN | PRVS | CRA | USRNet | atrous | MEDFE
+model: AdaFill #srragan | sr | srgan | ppon | asrragan | DFNet | EdgeConnect | CSA | RN | deepfillv1 | deepfillv2 | Adaptive | Global | Pluralistic | crfill | DeepDFNet | partial | DMFN | pennet | LBAM | RFR | FRRN | PRVS | CRA | USRNet | atrous | MEDFE | AdaFill
 scale: 1
 gpu_ids: [0]
 use_amp: false
@@ -79,7 +81,7 @@ datasets:
     center_crop: False # Will centergrop LR and HR images and keep aspect ratio
     resize_HR_dimension: False # Downscale lr and hr to given HR value (if you don't set this to true and the image is bigger than needed, random crop will be applied. Should be used with center crop)
 
-    training_with_canny: True # ONLY needed for EdgeConnect and PRVS
+    training_with_canny: False # ONLY needed for EdgeConnect and PRVS
     training_with_canny_SR: False # ONLY needed for sisr
     noise_estimation: False # ONLY enable this for USRNet
 
@@ -102,7 +104,7 @@ datasets:
     #dataroot_kernels: '/content/kernels_4x/kernelGAN/' # if kernels exist, downscale will happen with them, if not, then lr_downscale_types will be applied
     lr_downscale_types: ["linear", "cubic"] # select from ["nearest", "linear", "cubic", "area", "lanczos4", "linear_exact", "matlab_bicubic"] #scale_algos #scaling interpolation options
 
-    training_with_canny: True # ONLY needed for EdgeConnect and PRVS
+    training_with_canny: False # ONLY needed for EdgeConnect and PRVS
     training_with_canny_SR: False # ONLY needed for sisr
     noise_estimation: False # ONLY enable this for USRNet
 
@@ -210,12 +212,12 @@ network_G:
     #conv_type: deform # partial | normal | deform
 
     # EdgeConnect (2019)
-    which_model_G: EdgeConnect
-    use_spectral_norm: True
-    residual_blocks_edge: 8
-    residual_blocks_inpaint: 8
-    conv_type_edge: 'normal' # normal | partial | deform (has no spectral_norm)
-    conv_type_inpaint: 'normal' # normal | partial | deform
+    #which_model_G: EdgeConnect
+    #use_spectral_norm: True
+    #residual_blocks_edge: 8
+    #residual_blocks_inpaint: 8
+    #conv_type_edge: 'normal' # normal | partial | deform (has no spectral_norm)
+    #conv_type_inpaint: 'normal' # normal | partial | deform
 
     # CSA (2019)
     #which_model_G: CSA
@@ -326,6 +328,9 @@ network_G:
     # MEDFE (batch_size: 1) (2020)
     #which_model_G: MEDFE
 
+    # AdaFill (2021)
+    which_model_G: AdaFill
+
 # Discriminator options:
 network_D:
     # ESRGAN (default)| PPON:
@@ -340,10 +345,10 @@ network_D:
 
 # Schedulers options:
 train:
-    lr_G: 0.0001 # 2e-4 # starting lr_g #Test, default: 1e-4
+    lr_G: 0.0001 #0.0001 # 2e-4 # starting lr_g #Test, default: 1e-4
     weight_decay_G: 0
     beta1_G: 0.9
-    lr_D: 0.0001 # 2e-4 # starting lr_d #Test, default: 1e-4
+    lr_D: 0.0001 #0.0001 # 2e-4 # starting lr_d #Test, default: 1e-4
     weight_decay_D: 0
     beta1_D: 0.9
 

@@ -263,10 +263,13 @@ def define_G(opt, step=0):
     elif which_model == 'MEDFE':
         from models.modules.architectures import MEDFE_arch
         netG = MEDFE_arch.MEDFEGenerator()
+    elif which_model == 'AdaFill':
+        from models.modules.architectures import AdaFill_arch
+        netG = AdaFill_arch.InpaintNet()
     else:
         raise NotImplementedError('Generator model [{:s}] not recognized'.format(which_model))
 
-    if opt['is_train'] and which_model != 'MRRDB_net' and which_model != 'RN' and which_model != 'Pluralistic'and which_model != 'deepfillv2' and which_model != 'DeepDFNet':
+    if opt['is_train'] and which_model != 'MRRDB_net' and which_model != 'RN' and which_model != 'Pluralistic'and which_model != 'deepfillv2' and which_model != 'DeepDFNet' and which_model != 'Hypergraph':
         # Note: MRRDB_net initializes the modules during init, no need to initialize again here
         # pluralistic, rn and deepfillv2 already does init in a different place
         init_weights(netG, init_type='kaiming', scale=0.1)

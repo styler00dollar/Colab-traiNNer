@@ -292,7 +292,7 @@ class inpaintModel(BaseModel):
         ### Network forward, generate inpainted fake
         with self.cast():
               # normal
-              if self.which_model_G == 'MEDFE' or self.which_model_G == 'RFR' or self.which_model_G == 'LBAM' or self.which_model_G == 'DMFN' or self.which_model_G == 'partial' or self.which_model_G == 'Adaptive' or self.which_model_G == 'DFNet' or self.which_model_G == 'RN':
+              if self.which_model_G == 'AdaFill' or self.which_model_G == 'MEDFE' or self.which_model_G == 'RFR' or self.which_model_G == 'LBAM' or self.which_model_G == 'DMFN' or self.which_model_G == 'partial' or self.which_model_G == 'Adaptive' or self.which_model_G == 'DFNet' or self.which_model_G == 'RN':
                 self.fake_H = self.netG(self.var_L, mask)
               # 2 rgb images
               elif self.which_model_G == 'CRA' or self.which_model_G == 'pennet' or self.which_model_G == 'deepfillv1' or self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill' or self.which_model_G == 'DeepDFNet':
@@ -542,7 +542,7 @@ class inpaintModel(BaseModel):
         with torch.no_grad():
             if self.is_train:
               # normal
-              if self.which_model_G == 'MEDFE' or self.which_model_G == 'RFR' or self.which_model_G == 'LBAM' or self.which_model_G == 'DMFN' or self.which_model_G == 'partial' or self.which_model_G == 'Adaptive' or self.which_model_G == 'DFNet' or self.which_model_G == 'RN':
+              if self.which_model_G == 'AdaFill' or self.which_model_G == 'MEDFE' or self.which_model_G == 'RFR' or self.which_model_G == 'LBAM' or self.which_model_G == 'DMFN' or self.which_model_G == 'partial' or self.which_model_G == 'Adaptive' or self.which_model_G == 'DFNet' or self.which_model_G == 'RN':
                 self.fake_H = self.netG(self.var_L, self.mask)
               # 2 rgb images
               elif self.which_model_G == 'CRA' or self.which_model_G == 'pennet' or self.which_model_G == 'deepfillv1' or self.which_model_G == 'deepfillv2' or self.which_model_G == 'Global' or self.which_model_G == 'crfill' or self.which_model_G == 'DeepDFNet':
