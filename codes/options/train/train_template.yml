@@ -1,5 +1,3 @@
-#@title train_template.yml
-%%writefile /content/BasicSR/codes/options/train/train_template.yml
 name: debug_001_template # use "debug" or "debug_nochkp" in the name to run a test session and check everything is working. Does validation and state saving every 8 iterations.
 #name: 001_template # remove "debug" to run the real training session.
 use_tb_logger: true
