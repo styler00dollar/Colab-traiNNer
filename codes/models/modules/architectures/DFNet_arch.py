@@ -47,7 +47,6 @@ class Conv2dSame(nn.Module):
         padding = self.conv_same_pad(kernel_size, stride)
 
         if conv_type == 'normal':
-          print("OOOF")
           # original
           if type(padding) is not tuple:
               self.conv = nn.Conv2d(
