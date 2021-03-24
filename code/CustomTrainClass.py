@@ -1,12 +1,18 @@
-from vic.loss import CharbonnierLoss, GANLoss, GradientPenaltyLoss, HFENLoss, TVLoss, GradientLoss, ElasticLoss, RelativeL1, L1CosineSim, ClipL1, MaskedL1Loss, MultiscalePixelLoss, FFTloss, OFLoss, L1_regularization, ColorLoss, AverageLoss, GPLoss, CPLoss, SPL_ComputeWithTrace, SPLoss, Contextual_Loss, StyleLoss
-from vic.perceptual_loss import PerceptualLoss
-from metrics import *
+from loss.loss import CharbonnierLoss, GANLoss, GradientPenaltyLoss, HFENLoss, TVLoss, GradientLoss, ElasticLoss, RelativeL1, L1CosineSim, ClipL1, MaskedL1Loss, MultiscalePixelLoss, FFTloss, OFLoss, L1_regularization, ColorLoss, AverageLoss, GPLoss, CPLoss, SPL_ComputeWithTrace, SPLoss, Contextual_Loss, StyleLoss
+from loss.perceptual_loss import PerceptualLoss
+from loss.metrics import *
 from torchvision.utils import save_image
 from torch.autograd import Variable
+import pytorch_lightning as pl
 
 from tensorboardX import SummaryWriter
 logdir='/content/'
 writer = SummaryWriter(logdir=logdir)
+
+from init import weights_init
+
+# import discriminators
+from arch.discriminators import context_encoder
 
 from adamp import AdamP
 #from adamp import SGDP
@@ -16,6 +22,7 @@ class CustomTrainClass(pl.LightningModule):
     super().__init__()
     ############################
     # generators with one output, no AMP means nan loss during training
+    from arch.rrdb_arch import RRDBNet
     self.netG = RRDBNet(in_nc=3, out_nc=3, nf=128, nb=8, gc=32, upscale=4, norm_type=None,
                 act_type='leakyrelu', mode='CNA', upsample_mode='upconv', convtype='Conv2D',
                 finalact=None, gaussian_noise=True, plus=False,

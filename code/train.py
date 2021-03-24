@@ -22,6 +22,7 @@ image_size=400 #@param
 amount_tiles=3 #@param
 #############################################
 # Dataloader
+from data.dataloader import DFNetDataModule
 #############################################
 # Inpainting
 # normal training
@@ -40,6 +41,7 @@ dm = DFNetDataModule(batch_size=batch_size, dir_lr = dir_lr, dir_hr = dir_hr, va
 #############################################
 # Loading a Model
 #############################################
+from CustomTrainClass import CustomTrainClass
 model = CustomTrainClass()
 
 #@markdown Loading a pretrain pth
@@ -81,6 +83,7 @@ pl.Trainer.epoch = checkpoint['epoch']
 # Also maybe useful:
 # auto_scale_batch_size='binsearch'
 # stochastic_weight_avg=True
+from checkpoint import CheckpointEveryNSteps
 
 # Warning: stochastic_weight_avg **can cause crashing after an epoch**. Test if it crashes first if you reach next epoch. Not all generators are tested.
 trainer = pl.Trainer(logger=None, gpus=gpus, max_epochs=max_epochs, progress_bar_refresh_rate=progress_bar_refresh_rate, default_root_dir=default_root_dir, callbacks=[CheckpointEveryNSteps(save_step_frequency=save_step_frequency, save_path=save_path)])

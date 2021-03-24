@@ -6,10 +6,9 @@ import math
 import torch
 import torch.nn as nn
 #import torchvision
-#from . import block as B
+from . import block as B
 import functools
 #from . import spectral_norm as SN
-
 
 ####################
 # RRDBNet Generator (original architecture)
@@ -24,14 +23,14 @@ class RRDBNet(nn.Module):
         if upscale == 3:
             n_upscale = 1
 
-        fea_conv = conv_block(in_nc, nf, kernel_size=3, norm_type=None, act_type=None, convtype=convtype)
+        fea_conv = B.conv_block(in_nc, nf, kernel_size=3, norm_type=None, act_type=None, convtype=convtype)
         rb_blocks = [RRDB(nf, nr, kernel_size=3, gc=32, stride=1, bias=1, pad_type='zero', \
             norm_type=norm_type, act_type=act_type, mode='CNA', convtype=convtype, \
             gaussian_noise=gaussian_noise, plus=plus) for _ in range(nb)]
-        LR_conv = conv_block(nf, nf, kernel_size=3, norm_type=norm_type, act_type=None, mode=mode, convtype=convtype)
+        LR_conv = B.conv_block(nf, nf, kernel_size=3, norm_type=norm_type, act_type=None, mode=mode, convtype=convtype)
 
         if upsample_mode == 'upconv':
-            upsample_block = upconv_block
+            upsample_block = B.upconv_block
         elif upsample_mode == 'pixelshuffle':
             upsample_block = pixelshuffle_block
         else:
@@ -40,13 +39,13 @@ class RRDBNet(nn.Module):
             upsampler = upsample_block(nf, nf, 3, act_type=act_type, convtype=convtype)
         else:
             upsampler = [upsample_block(nf, nf, act_type=act_type, convtype=convtype) for _ in range(n_upscale)]
-        HR_conv0 = conv_block(nf, nf, kernel_size=3, norm_type=None, act_type=act_type, convtype=convtype)
-        HR_conv1 = conv_block(nf, out_nc, kernel_size=3, norm_type=None, act_type=None, convtype=convtype)
+        HR_conv0 = B.conv_block(nf, nf, kernel_size=3, norm_type=None, act_type=act_type, convtype=convtype)
+        HR_conv1 = B.conv_block(nf, out_nc, kernel_size=3, norm_type=None, act_type=None, convtype=convtype)
 
         # Note: this option adds new parameters to the architecture, another option is to use "outm" in the forward
         outact = act(finalact) if finalact else None
 
-        self.model = sequential(fea_conv, ShortcutBlock(sequential(*rb_blocks, LR_conv)),\
+        self.model = B.sequential(fea_conv, B.ShortcutBlock(B.sequential(*rb_blocks, LR_conv)),\
             *upsampler, HR_conv0, HR_conv1, outact)
 
     def forward(self, x, outm=None):
@@ -127,27 +126,27 @@ class ResidualDenseBlock_5C(nn.Module):
         super(ResidualDenseBlock_5C, self).__init__()
 
         ## +
-        self.noise = GaussianNoise() if gaussian_noise else None
+        self.noise = B.GaussianNoise() if gaussian_noise else None
         self.conv1x1 = conv1x1(nf, gc) if plus else None
         ## +
 
-        self.conv1 = conv_block(nf, gc, kernel_size, stride, bias=bias, pad_type=pad_type, \
+        self.conv1 = B.conv_block(nf, gc, kernel_size, stride, bias=bias, pad_type=pad_type, \
             norm_type=norm_type, act_type=act_type, mode=mode, convtype=convtype, \
             spectral_norm=spectral_norm)
-        self.conv2 = conv_block(nf+gc, gc, kernel_size, stride, bias=bias, pad_type=pad_type, \
+        self.conv2 = B.conv_block(nf+gc, gc, kernel_size, stride, bias=bias, pad_type=pad_type, \
             norm_type=norm_type, act_type=act_type, mode=mode, convtype=convtype, \
             spectral_norm=spectral_norm)
-        self.conv3 = conv_block(nf+2*gc, gc, kernel_size, stride, bias=bias, pad_type=pad_type, \
+        self.conv3 = B.conv_block(nf+2*gc, gc, kernel_size, stride, bias=bias, pad_type=pad_type, \
             norm_type=norm_type, act_type=act_type, mode=mode, convtype=convtype, \
             spectral_norm=spectral_norm)
-        self.conv4 = conv_block(nf+3*gc, gc, kernel_size, stride, bias=bias, pad_type=pad_type, \
+        self.conv4 = B.conv_block(nf+3*gc, gc, kernel_size, stride, bias=bias, pad_type=pad_type, \
             norm_type=norm_type, act_type=act_type, mode=mode, convtype=convtype, \
             spectral_norm=spectral_norm)
         if mode == 'CNA':
             last_act = None
         else:
             last_act = act_type
-        self.conv5 = conv_block(nf+4*gc, nf, 3, stride, bias=bias, pad_type=pad_type, \
+        self.conv5 = B.conv_block(nf+4*gc, nf, 3, stride, bias=bias, pad_type=pad_type, \
             norm_type=norm_type, act_type=last_act, mode=mode, convtype=convtype, \
             spectral_norm=spectral_norm)
 
