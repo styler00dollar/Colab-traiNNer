@@ -13,6 +13,7 @@ from init import weights_init
 
 # import discriminators
 from arch.discriminators import context_encoder
+import os
 
 from adamp import AdamP
 #from adamp import SGDP
@@ -388,7 +389,7 @@ class CustomTrainClass(pl.LightningModule):
       #train_batch[2] = torch.nn.functional.interpolate(train_batch[2], (128,128), align_corners=False, mode='bilinear')
       #out = torch.nn.functional.interpolate(out, (128,128), align_corners=False, mode='bilinear')
 
-      Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
+      Tensor = torch.cuda.FloatTensor #if cuda else torch.FloatTensor
       valid = Variable(Tensor(out.shape).fill_(1.0), requires_grad=False)
       fake = Variable(Tensor(out.shape).fill_(0.0), requires_grad=False)
       dis_real_loss = self.MSELoss(train_batch[1], valid)

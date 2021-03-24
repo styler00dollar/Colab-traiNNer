@@ -1,6 +1,7 @@
 #https://github.com/PyTorchLightning/pytorch-lightning/issues/2534
 import os
 import pytorch_lightning as pl
+import torch
 
 class CheckpointEveryNSteps(pl.Callback):
     """
