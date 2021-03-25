@@ -43,7 +43,11 @@ class RRDBNet(nn.Module):
         HR_conv1 = B.conv_block(nf, out_nc, kernel_size=3, norm_type=None, act_type=None, convtype=convtype)
 
         # Note: this option adds new parameters to the architecture, another option is to use "outm" in the forward
-        outact = act(finalact) if finalact else None
+        #outact = B.act(finalact) if finalact is not None else None
+        if finalact == 'None':
+          outact = None
+        else:
+          outact = B.act(finalact)
 
         self.model = B.sequential(fea_conv, B.ShortcutBlock(B.sequential(*rb_blocks, LR_conv)),\
             *upsampler, HR_conv0, HR_conv1, outact)

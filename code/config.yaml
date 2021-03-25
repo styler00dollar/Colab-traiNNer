@@ -1,0 +1,469 @@
+name: template
+scale: 4
+gpus: 1
+tpu_cores: 8
+use_tpu: False
+use_amp: false
+use_swa: false
+progress_bar_refresh_rate: 20
+default_root_dir: '/content/'
+
+# Dataset options:
+datasets:
+  train:
+    mode: DS_lrhr # DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
+    dataroot_HR: '/content/hr' # Original, with a single directory
+    dataroot_LR: '/content/lr' # Original, with a single directory
+
+    n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
+    batch_size: 1
+    batch_size_DL: 1
+    HR_size: 256 # patch size. Default: 128. Needs to be coordinated with the patch size of the features network
+    image_channels: 3 # number of channels to load images in
+
+    masks: '/content/masks/'
+    max_epochs: 200
+    save_step_frequency: 1000
+
+    # batch
+    image_size: 400
+    amount_tiles: 3
+
+  val:
+    mode: DS_lrhr_val # DS_inpaint_val | DS_lrhr_val
+    dataroot_HR: '/content/val_hr'
+    dataroot_LR: '/content/val_lr'
+
+path:
+    pretrain_model_G: # '/content/Checkpoint_0_0_D.pth'
+    checkpoint_path: #'/content/Checkpoint_0_0.ckpt'
+    checkpoint_save_path: '/content/'
+    validation_output_path: '/content/validation_output'
+    log_path: '/content/'
+
+# Generator options:
+network_G:
+    # ESRGAN:
+    netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch)
+    norm_type: null
+    mode: CNA
+    nf: 32 # of discrim filters in the first conv layer
+    nb: 8
+    in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
+    out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
+    gc: 32
+    group: 1
+    convtype: Conv2D # Conv2D | PartialConv2D
+    net_act: leakyrelu # swish | leakyrelu
+    gaussian: true # true | false
+    plus: false # true | false
+    finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
+    upsample_mode: 'upconv'
+    nr: 3
+
+    # ASRGAN:
+    #which_model_G: asr_resnet # asr_resnet | asr_cnn
+    #nf: 64
+
+    # PPON:
+    #netG: ppon # | ppon
+    ##norm_type: null
+    #mode: CNA
+    #nf: 64
+    #nb: 24
+    #in_nc: 3
+    #out_nc: 3
+    ##gc: 32
+    #group: 1
+    ##convtype: Conv2D #Conv2D | PartialConv2D
+
+    # SRGAN:
+    #netG: sr_resnet # RRDB_net | sr_resnet
+    #norm_type: null
+    #mode: CNA
+    #nf: 64
+    #nb: 16
+    #in_nc: 3
+    #out_nc: 3
+
+    # SR:
+    #netG: RRDB_net # RRDB_net | sr_resnet
+    #norm_type: null
+    #mode: CNA
+    #nf: 64
+    #nb: 23
+    #in_nc: 3
+    #out_nc: 3
+    #gc: 32
+    #group: 1
+
+    # PAN:
+    # netG: pan_net
+    # in_nc: 3
+    # out_nc: 3
+    # nf: 40
+    # unf: 24
+    # nb: 16
+    # self_attention: true
+    # double_scpa: false
+
+    # edge-informed-sisr
+    #which_model_G: sisr
+    #use_spectral_norm: True
+
+    # USRNet
+    #netG: USRNet
+    #in_nc=4
+    #out_nc=3
+    #nc=[64, 128, 256, 512]
+    #nb=2
+    #act_mode='R'
+    #downsample_mode='strideconv'
+    #upsample_mode='convtranspose'
+
+    # ----Inpainting Generators----
+    # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
+    #netG: DFNet
+    #c_img: 3
+    #c_mask: 1
+    #c_alpha: 3
+    #mode: nearest
+    #norm: batch
+    #act_en: relu
+    #act_de: leaky_relu
+    #en_ksize: [7, 5, 5, 3, 3, 3, 3, 3]
+    #de_ksize: [3, 3, 3, 3, 3, 3, 3, 3]
+    #blend_layers: [0, 1, 2, 3, 4, 5]
+    #conv_type: deform # partial | normal | deform
+
+    # EdgeConnect (2019)
+    #netG: EdgeConnect
+    #use_spectral_norm: True
+    #residual_blocks_edge: 8
+    #residual_blocks_inpaint: 8
+    #conv_type_edge: 'normal' # normal | partial | deform (has no spectral_norm)
+    #conv_type_inpaint: 'normal' # normal | partial | deform
+
+    # CSA (2019)
+    #netG: CSA
+    #c_img: 3
+    #norm: 'instance'
+    #act_en: 'leaky_relu'
+    #act_de: 'relu'
+
+    # RN (2020)
+    #netG: RN
+    #input_channels: 3
+    #residual_blocks: 8
+    #threshold: 0.8
+
+    # deepfillv1 (2018)
+    #netG:  deepfillv1
+
+    # deepfillv2 (2019)
+    #netG: deepfillv2
+    #in_channels:  4
+    #out_channels:  3
+    #latent_channels:  64
+    #pad_type:  'zero'
+    #activation:  'lrelu'
+    #norm: 'in'
+    #conv_type: partial # partial | normal
+
+    # Adaptive (2020)
+    #netG: Adaptive
+    #in_channels: 3
+    #residual_blocks: 1
+    #init_weights: True
+
+    # Global (2020)
+    #netG: Global
+    #input_dim: 5
+    #ngf: 32
+    #use_cuda: True
+    #device_ids: [0]
+
+    # Pluralistic (2019)
+    #netG: Pluralistic
+    #ngf_E: 32
+    #z_nc_E: 128
+    #img_f_E: 128
+    #layers_E: 5
+    #norm_E: 'none'
+    #activation_E: 'LeakyReLU'
+    #ngf_G: 32
+    #z_nc_G: 128
+    #img_f_G: 128
+    #L_G: 0
+    #output_scale_G: 1
+    #norm_G: 'instance'
+    #activation_G: 'LeakyReLU'
+
+    # crfill (2020)
+    #netG: crfill
+    #cnum: 48
+
+    # DeepDFNet (experimental)
+    #netG: DeepDFNet
+    #in_channels:  4
+    #out_channels:  3
+    #latent_channels:  64
+    #pad_type:  'zero'
+    #activation:  'lrelu'
+    #norm: 'in'
+
+    # partial (2018)
+    #netG: partial
+
+    # DMFN (2020)
+    #netG: DMFN
+    #in_nc: 4
+    #out_nc: 3
+    #nf: 64
+    #n_res: 8
+    #norm: 'in'
+    #activation: 'relu'
+
+    # pennet (2019)
+    #netG: pennet
+
+    # LBAM (2019)
+    #netG: LBAM
+    #inputChannels: 4
+    #outputChannels: 3
+
+    # RFR (use_swa: false) (2020)
+    #netG: RFR
+    #conv_type: deform # partial | deform
+
+    # FRRN (2019)
+    #netG: FRRN
+
+    # PRVS (2019)
+    #netG: PRVS
+
+    # CRA (HR_size: 512) (2020)
+    #netG: CRA
+    #activation: 'elu'
+    #norm: 'none'
+
+    # atrous (2020)
+    #netG: atrous
+
+    # MEDFE (batch_size: 1) (2020)
+    #netG: MEDFE
+
+    # AdaFill (2021)
+    #netG: AdaFill
+
+# Discriminator options:
+network_D:
+    # VGG
+    #netD: VGG
+    #size: 256
+    #in_nc: 3
+    #base_nf: 64
+    #norm_type: 'batch'
+    #act_type: 'leakyrelu'
+    #mode: 'CNA'
+    #convtype: 'Conv2D'
+    #arch: 'ESRGAN'
+
+    # VGG fea
+    #netD: VGG_fea
+    #size: 256
+    #in_nc: 3
+    #base_nf: 64
+    #norm_type: 'batch'
+    #act_type: 'leakyrelu'
+    #mode: 'CNA'
+    #convtype: 'Conv2D'
+    #arch: 'ESRGAN'
+    #spectral_norm: False
+    #self_attention: False
+    #max_pool: False
+    #poolsize: 4
+
+
+    #netD: VGG_128_SN
+
+    # VGGFeatureExtractor
+    #netD: VGGFeatureExtractor
+    #feature_layer: 34
+    #use_bn: False
+    #use_input_norm: True
+    #device: 'cpu'
+    #z_norm: False
+
+    # PatchGAN
+    #netD: NLayerDiscriminator
+    #input_nc: 3
+    #ndf: 64
+    #n_layers: 3
+    #norm_layer: nn.BatchNorm2d
+    #use_sigmoid: False
+    #getIntermFeat: False
+    #patch: True
+    #use_spectral_norm: False
+
+    # Multiscale
+    #netD: MultiscaleDiscriminator
+    #input_nc: 3
+    #ndf: 64
+    #n_layers: 3
+    #norm_layer: nn.BatchNorm2d
+    #se_sigmoid: False
+    #num_D: 3
+    #getIntermFeat: False
+
+    # ResNet
+    #netD: Discriminator_ResNet_128
+    #in_nc: 3
+    #base_nf: 64
+    #norm_type: 'batch'
+    #act_type: 'leakyrelu'
+    #mode: 'CNA'
+
+    #netD: ResNet101FeatureExtractor
+    #use_input_norm: True
+    #device: 'cpu'
+    #z_norm: False
+
+    # MINC
+    #netD: MINCNet
+
+    # Pixel
+    #netD: PixelDiscriminator
+    #input_nc: 3
+    #ndf: 64
+    #norm_layer: nn.BatchNorm2d
+
+    # EfficientNet
+    #netD: EfficientNet
+    #EfficientNet_pretrain: 'efficientnet-b0'
+
+    # ResNeSt
+    #netD: ResNeSt
+    #ResNeSt_pretrain: 'resnest50' # ["resnest50", "resnest101", "resnest200", "resnest269"]
+
+    # Transformer
+    #netD: TranformerDiscriminator
+    #img_size: 256
+    #patch_size: 1
+    #in_chans: 3
+    #num_classes: 1
+    #embed_dim: 64
+    #depth: 7
+    #num_heads: 4
+    #mlp_ratio: 4.
+    #qkv_bias: False
+    #qk_scale: None
+    #drop_rate: 0.
+    #attn_drop_rate: 0.
+    #drop_path_rate: 0.
+    #hybrid_backbone: None
+    #norm_layer: nn.LayerNorm
+
+    netD: context_encoder
+
+train:
+    scheduler: AdamP # AdamP, Adam, SGDP
+    lr: 0.0001
+
+    # AdamP
+    betas0: 0.9
+    betas1: 0.999
+    weight_decay: 1e-2
+
+    # SGDP
+    weight_decay: 1e-5
+    momentum: 0.9
+    nesterov: True
+
+    # Losses:
+    # HFENLoss
+    HFEN_weight: 0
+    loss_f: L1CosineSim()
+    kernel: 'log'
+    kernel_size: 15
+    sigma: 2.5
+    norm: False
+
+    # Elastic
+    Elatic_weight: 0
+    a: 0.2
+    reduction_elastic: 'mean'
+
+    # Relative L1
+    Relative_l1_weight: 0
+    eps: .01
+    reduction_realtive: 'mean'
+
+    # L1CosineSim
+    L1CosineSim_weight: 1
+    loss_lambda: 5
+    reduction_L1CosineSim: 'mean'
+
+    # ClipL1
+    ClipL1_weight: 0
+    clip_min: 0.0
+    clip_max: 10.0
+
+    # FFTLoss
+    FFTLoss_weight: 0
+    loss_f: L1Loss
+    reduction_fft: 'mean'
+
+    OFLoss_weight: 0
+
+    # GPLoss
+    GPLoss_weight: 0
+    trace: False
+    spl_denorm: False
+
+    # CPLoss
+    CPLoss_weight: 0
+    rgb: True
+    yuv: True
+    yuvgrad: True
+    trace: False
+    spl_denorm: False
+    yuv_denorm: False
+
+    StyleLoss_weight: 0
+
+    # TVLoss
+    TVLoss_weight: 0
+    tv_type: 'tv'
+    p: 1
+
+    # PerceptualLoss (only single gpu)
+    PerceptualLoss_weight: 0
+    model: 'net-lin'
+    net: 'alex'
+    colorspace: 'rgb'
+    spatial: False
+    use_gpu: True
+    gpu_ids: [0]
+    #model_path: None # todo
+
+    # Contextual_Loss
+    Contexual_weight: 0
+    layers_weights: {'conv_1_1': 1.0, 'conv_3_2': 1.0}
+    crop_quarter: False
+    max_1d_size: 100,
+    distance_type: 'cosine'
+    b: 1.0
+    band_width: 0.5
+    use_vgg: True
+    net_contextual: 'vgg19'
+    calc_type: 'regular'
+
+    stage1_weight: 1 # only if the network outputs 2 images
+
+    # Differentiable Augmentation for Data-Efficient GAN Training
+    diffaug: True
+    policy: 'color,translation,cutout'
+
+    # Metrics
+    metrics: None # PSNR | SSIM | AE | MSE

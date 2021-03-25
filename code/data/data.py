@@ -597,7 +597,7 @@ class DS_lrhr(Dataset):
         hr_image = torch.from_numpy(hr_image).permute(2, 0, 1)/255
         lr_image = torch.from_numpy(lr_image).permute(2, 0, 1)/255
 
-        return lr_image, hr_image
+        return 0, lr_image, hr_image
 
 
 class DS_lrhr_val(Dataset):
@@ -749,7 +749,7 @@ class DS_lrhr_batch_oft(Dataset):
             image_lr2 = torch.from_numpy(image_lr2).unsqueeze(2).permute(2, 0, 1).unsqueeze(0)/255
             image_lr = torch.cat((image_lr, image_lr2), dim=0)
 
-        return image_lr, image_hr
+        return 0, image_lr, image_hr
 
 
 class DS_lrhr_batch_oft_val(Dataset):
