@@ -23,7 +23,7 @@ datasets:
 
     masks: '/content/masks/'
     max_epochs: 200
-    save_step_frequency: 1000
+    save_step_frequency: 100
 
     # batch
     image_size: 400

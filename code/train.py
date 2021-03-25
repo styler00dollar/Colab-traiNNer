@@ -86,30 +86,34 @@ if cfg['path']['checkpoint_path'] is not None:
 # Also maybe useful:
 # auto_scale_batch_size='binsearch'
 # stochastic_weight_avg=True
+
+# disable validation
+# limit_val_batches=0
+
 from checkpoint import CheckpointEveryNSteps
 
 # Warning: stochastic_weight_avg **can cause crashing after an epoch**. Test if it crashes first if you reach next epoch. Not all generators are tested.
 if cfg['use_tpu'] == False and cfg['use_amp'] == False:
-  trainer = pl.Trainer(logger=None, gpus=gpus, max_epochs=max_epochs, progress_bar_refresh_rate=progress_bar_refresh_rate, default_root_dir=default_root_dir, callbacks=[CheckpointEveryNSteps(save_step_frequency=save_step_frequency, save_path=save_path)])
+  trainer = pl.Trainer(check_val_every_n_epoch=9999999, logger=None, gpus=gpus, max_epochs=max_epochs, progress_bar_refresh_rate=progress_bar_refresh_rate, default_root_dir=default_root_dir, callbacks=[CheckpointEveryNSteps(save_step_frequency=save_step_frequency, save_path=save_path)])
 # GPU with AMP (amp_level='O1' = mixed precision, 'O2' = Almost FP16, 'O3' = FP16)
 # https://nvidia.github.io/apex/amp.html?highlight=opt_level#o1-mixed-precision-recommended-for-typical-use
 if cfg['use_tpu'] == False and cfg['use_amp'] == True:
-  trainer = pl.Trainer(logger=None, gpus=1, precision=16, amp_level='O1', max_epochs=10, progress_bar_refresh_rate=20, default_root_dir='/content/', callbacks=[CheckpointEveryNSteps(save_step_frequency=1000, save_path='/content/')])
+  trainer = pl.Trainer(check_val_every_n_epoch=9999999, logger=None, gpus=1, precision=16, amp_level='O1', max_epochs=10, progress_bar_refresh_rate=20, default_root_dir='/content/', callbacks=[CheckpointEveryNSteps(save_step_frequency=save_step_frequency, save_path='/content/')])
 
 # 2+ GPUS (locally, not inside Google Colab)
 # Recommended: Pytorch 1.8+. 1.7.1 seems to have dataloader issues and ddp only works if code is run within console.
 if cfg['use_tpu'] == False and cfg['gpus'] > 1 and cfg['use_amp'] == False:
-  trainer = pl.Trainer(logger=None, gpus=cfg['gpus'], distributed_backend='dp', max_epochs=10, progress_bar_refresh_rate=20, default_root_dir='/content/', callbacks=[CheckpointEveryNSteps(save_step_frequency=100, save_path='/content/')])
+  trainer = pl.Trainer(check_val_every_n_epoch=9999999, logger=None, gpus=cfg['gpus'], distributed_backend='dp', max_epochs=10, progress_bar_refresh_rate=20, default_root_dir='/content/', callbacks=[CheckpointEveryNSteps(save_step_frequency=save_step_frequency, save_path='/content/')])
 
 if cfg['use_tpu'] == False and cfg['gpus'] > 1 and cfg['use_amp'] == True:
-  trainer = pl.Trainer(logger=None, gpus=cfg['gpus'], precision=16, distributed_backend='dp', max_epochs=10, progress_bar_refresh_rate=20, default_root_dir='/content/', callbacks=[CheckpointEveryNSteps(save_step_frequency=100, save_path='/content/')])
+  trainer = pl.Trainer(check_val_every_n_epoch=9999999, logger=None, gpus=cfg['gpus'], precision=16, distributed_backend='dp', max_epochs=10, progress_bar_refresh_rate=20, default_root_dir='/content/', callbacks=[CheckpointEveryNSteps(save_step_frequency=save_step_frequency, save_path='/content/')])
 
 # TPU
 if cfg['use_tpu'] == True and cfg['use_amp'] == False:
-  trainer = pl.Trainer(logger=None, tpu_cores=cfg['tpu_cores'], max_epochs=max_epochs, progress_bar_refresh_rate=progress_bar_refresh_rate, default_root_dir=default_root_dir, callbacks=[CheckpointEveryNSteps(save_step_frequency=save_step_frequency, save_path=save_path)])
+  trainer = pl.Trainer(check_val_every_n_epoch=9999999, logger=None, tpu_cores=cfg['tpu_cores'], max_epochs=max_epochs, progress_bar_refresh_rate=progress_bar_refresh_rate, default_root_dir=default_root_dir, callbacks=[CheckpointEveryNSteps(save_step_frequency=save_step_frequency, save_path=save_path)])
 
 if cfg['use_tpu'] == True and cfg['use_amp'] == True:
-  trainer = pl.Trainer(logger=None, tpu_cores=cfg['tpu_cores'], precision=16, max_epochs=max_epochs, progress_bar_refresh_rate=progress_bar_refresh_rate, default_root_dir=default_root_dir, callbacks=[CheckpointEveryNSteps(save_step_frequency=save_step_frequency, save_path=save_path)])
+  trainer = pl.Trainer(check_val_every_n_epoch=9999999, logger=None, tpu_cores=cfg['tpu_cores'], precision=16, max_epochs=max_epochs, progress_bar_refresh_rate=progress_bar_refresh_rate, default_root_dir=default_root_dir, callbacks=[CheckpointEveryNSteps(save_step_frequency=save_step_frequency, save_path=save_path)])
 
 
 

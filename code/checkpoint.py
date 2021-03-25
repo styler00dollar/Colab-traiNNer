@@ -3,6 +3,11 @@ import os
 import pytorch_lightning as pl
 import torch
 
+import yaml
+
+with open("config.yaml", "r") as ymlfile:
+    cfg = yaml.safe_load(ymlfile)
+
 class CheckpointEveryNSteps(pl.Callback):
     """
     Save a checkpoint every N steps, instead of Lightning's default that checkpoints
@@ -39,17 +44,19 @@ class CheckpointEveryNSteps(pl.Callback):
             else:
                 filename = f"{self.prefix}_{epoch}_{global_step}.ckpt"
             #ckpt_path = os.path.join(trainer.checkpoint_callback.dirpath, filename)
-            ckpt_path = os.path.join(self.save_path, filename)
+            ckpt_path = os.path.join(cfg['path']['checkpoint_save_path'], filename)
             trainer.save_checkpoint(ckpt_path)
 
             # saving normal .pth models
             #https://github.com/PyTorchLightning/pytorch-lightning/issues/4114
-            torch.save(trainer.model.netG.state_dict(), f"{self.prefix}_{epoch}_{global_step}_G.pth")
-            torch.save(trainer.model.netD.state_dict(), f"{self.prefix}_{epoch}_{global_step}_D.pth")
+            torch.save(trainer.model.netG.state_dict(), os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_G.pth"))
+            torch.save(trainer.model.netD.state_dict(), os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_D.pth"))
 
             # run validation once checkpoint was made
             trainer.run_evaluation()
 
+    #def on_epoch_end(self, trainer: pl.Trainer, _):
+    #    print("Epoch completed.")
 
     def on_train_end(self, trainer, pl_module):
         epoch = trainer.current_epoch
@@ -57,5 +64,9 @@ class CheckpointEveryNSteps(pl.Callback):
         ckpt_path = os.path.join(self.save_path, f"{self.prefix}_{epoch}_{global_step}.ckpt")
         trainer.save_checkpoint(ckpt_path)
         print("Checkpoint " + f"{self.prefix}_{epoch}_{global_step}.ckpt" + " saved.")
+
+        torch.save(trainer.model.netG.state_dict(), os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_G.pth"))
+        torch.save(trainer.model.netD.state_dict(), os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_D.pth"))
+        print("Checkpoint " + f"{self.prefix}_{epoch}_{global_step}_G.pth" + "and" + f"{self.prefix}_{epoch}_{global_step}_D.pth" + "saved")
 
 #Trainer(callbacks=[CheckpointEveryNSteps()])
