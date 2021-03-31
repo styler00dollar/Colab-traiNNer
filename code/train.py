@@ -1,5 +1,5 @@
 import pytorch_lightning as pl
-
+import torch
 import yaml
 
 with open("config.yaml", "r") as ymlfile:
@@ -84,11 +84,9 @@ if cfg['use_tpu'] == True and cfg['use_amp'] == False:
 if cfg['use_tpu'] == True and cfg['use_amp'] == True:
   trainer = pl.Trainer(check_val_every_n_epoch=9999999, logger=None, tpu_cores=cfg['tpu_cores'], precision=16, max_epochs=cfg['datasets']['train']['max_epochs'], progress_bar_refresh_rate=cfg['progress_bar_refresh_rate'], default_root_dir=cfg['default_root_dir'], callbacks=[CheckpointEveryNSteps(save_step_frequency=cfg['datasets']['train']['save_step_frequency'], save_path=cfg['path']['checkpoint_save_path'])])
 
-
-
 # Loading a pretrain pth
 if cfg['path']['pretrain_model_G']:
-  trainer.model.netG.load_state_dict(torch.load(cfg['path']['pretrain_model_G']))
+  model.netG.load_state_dict(torch.load(cfg['path']['pretrain_model_G']))
 
 #############################################
 
