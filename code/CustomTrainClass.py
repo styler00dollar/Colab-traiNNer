@@ -318,7 +318,6 @@ class CustomTrainClass(pl.LightningModule):
       # train generator
       ############################
       if cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
-
         # generate fake (1 output)
         out = self(train_batch[0],train_batch[1])
 
@@ -530,12 +529,22 @@ class CustomTrainClass(pl.LightningModule):
       return total_loss+d_loss
 
   def configure_optimizers(self):
-      if cfg['train']['scheduler'] == 'Adam':
-        optimizer = torch.optim.Adam(self.netG.parameters(), lr=cfg['train']['lr'])
-      if cfg['train']['scheduler'] == 'AdamP':
-        optimizer = AdamP(self.netG.parameters(), lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
-      if cfg['train']['scheduler'] == 'SGDP':
-        optimizer = SGDP(self.netG.parameters(), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
+      if cfg['network_G']['finetune'] is None or cfg['network_G']['finetune'] == False:
+        if cfg['train']['scheduler'] == 'Adam':
+          optimizer = torch.optim.Adam(self.netG.parameters(), lr=cfg['train']['lr'])
+        if cfg['train']['scheduler'] == 'AdamP':
+          optimizer = AdamP(self.netG.parameters(), lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
+        if cfg['train']['scheduler'] == 'SGDP':
+          optimizer = SGDP(self.netG.parameters(), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
+
+      if cfg['network_G']['finetune'] == True:
+        if cfg['train']['scheduler'] == 'Adam':
+          optimizer = torch.optim.Adam(filter(lambda p:p.requires_grad, self.netG.parameters()), lr=cfg['train']['lr'])
+        if cfg['train']['scheduler'] == 'AdamP':
+          optimizer = AdamP(filter(lambda p:p.requires_grad, self.netG.parameters()), lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
+        if cfg['train']['scheduler'] == 'SGDP':
+          optimizer = SGDP(filter(lambda p:p.requires_grad, self.netG.parameters()), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
+
       return optimizer
 
   def validation_step(self, train_batch, train_idx):
@@ -551,7 +560,6 @@ class CustomTrainClass(pl.LightningModule):
 
     #########################
     if cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
-
       # generate fake (one output generator)
       out = self(train_batch[0],train_batch[1])
       # masking, taking original content from HR
