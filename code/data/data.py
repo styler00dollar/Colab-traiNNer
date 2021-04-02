@@ -22,7 +22,8 @@ class DS_inpaint(Dataset):
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
                 path = os.path.join(root, fname)
-                self.samples.append(path)
+                if ".png" in path or ".jpg" in path or ".webp" in path:
+                  self.samples.append(path)
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + root)
 
@@ -130,7 +131,8 @@ class DS_inpaint_val(Dataset):
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
                 path = os.path.join(root, fname)
-                self.samples.append(path)
+                if ".png" in path or ".jpg" in path or ".webp" in path:
+                  self.samples.append(path)
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + root)
 
@@ -190,7 +192,8 @@ class DS_inpaint_tiled(Dataset):
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
                 path = os.path.join(root, fname)
-                self.samples.append(path)
+                if ".png" in path or ".jpg" in path or ".webp" in path:
+                  self.samples.append(path)
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + root)
 
@@ -265,6 +268,8 @@ class DS_inpaint_tiled(Dataset):
           return masked, mask, sample
 
 
+
+
     @staticmethod
     def random_mask(height=256, width=256,
                     min_stroke=1, max_stroke=4,
@@ -307,7 +312,8 @@ class DS_inpaint_tiled_val(Dataset):
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
                 path = os.path.join(root, fname)
-                self.samples.append(path)
+                if ".png" in path or ".jpg" in path or ".webp" in path:
+                  self.samples.append(path)
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + root)
 
@@ -365,7 +371,8 @@ class DS_inpaint_tiled_batch(Dataset):
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
                 path = os.path.join(root, fname)
-                self.samples.append(path)
+                if ".png" in path or ".jpg" in path or ".webp" in path:
+                  self.samples.append(path)
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + root)
 
@@ -468,7 +475,6 @@ class DS_inpaint_tiled_batch(Dataset):
         # apply mask
         masked = sample_add * mask_add
 
-
         # EdgeConnect
         if cfg['network_G']['netG'] == 'EdgeConnect':
           return masked, mask, sample, edges, grayscale
@@ -479,6 +485,10 @@ class DS_inpaint_tiled_batch(Dataset):
 
         else:
           return masked, mask_add, sample_add
+
+
+
+
 
     @staticmethod
     def random_mask(height=256, width=256,
@@ -522,7 +532,8 @@ class DS_inpaint_tiled_batch_val(Dataset):
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
                 path = os.path.join(root, fname)
-                self.samples.append(path)
+                if ".png" in path or ".jpg" in path or ".webp" in path:
+                  self.samples.append(path)
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + root)
 
@@ -553,7 +564,6 @@ class DS_inpaint_tiled_batch_val(Dataset):
         # train_batch[1] = mask
         # train_batch[2] = path
 
-
         # EdgeConnect
         if cfg['network_G']['netG'] == 'EdgeConnect':
           return sample, green_mask, sample_path, edges, grayscale
@@ -578,7 +588,8 @@ class DS_lrhr(Dataset):
         for hr_path, _, fnames in sorted(os.walk(hr_path)):
             for fname in sorted(fnames):
                 path = os.path.join(hr_path, fname)
-                self.samples.append(path)
+                if ".png" in path or ".jpg" in path or ".webp" in path:
+                  self.samples.append(path)
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + hr_path)
         self.hr_size = hr_size
@@ -621,7 +632,8 @@ class DS_lrhr_val(Dataset):
         for hr_path, _, fnames in sorted(os.walk(hr_path)):
             for fname in sorted(fnames):
                 path = os.path.join(hr_path, fname)
-                self.samples.append(path)
+                if ".png" in path or ".jpg" in path or ".webp" in path:
+                  self.samples.append(path)
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + hr_path)
 
@@ -664,7 +676,8 @@ class DS_lrhr_batch_oft(Dataset):
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
                 path = os.path.join(root, fname)
-                self.samples.append(path)
+                if ".png" in path or ".jpg" in path or ".webp" in path:
+                  self.samples.append(path)
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + root)
 
@@ -764,7 +777,8 @@ class DS_lrhr_batch_oft_val(Dataset):
         for hr_path, _, fnames in sorted(os.walk(hr_path)):
             for fname in sorted(fnames):
                 path = os.path.join(hr_path, fname)
-                self.samples.append(path)
+                if ".png" in path or ".jpg" in path or ".webp" in path:
+                  self.samples.append(path)
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + hr_path)
 

@@ -11,15 +11,12 @@ from torch.autograd import Variable
 import pytorch_lightning as pl
 
 from tensorboardX import SummaryWriter
-logdir='/content/'
-writer = SummaryWriter(logdir=logdir)
+writer = SummaryWriter(logdir=cfg['path']['log_path'])
 
 from init import weights_init
 
 import os
 
-from adamp import AdamP
-#from adamp import SGDP
 
 class CustomTrainClass(pl.LightningModule):
   def __init__(self):
@@ -315,6 +312,12 @@ class CustomTrainClass(pl.LightningModule):
       # train_batch[1] = lr
       # train_batch[2] = hr
 
+      if cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
+        # reducing dimension
+        train_batch[0] = torch.squeeze(train_batch[0], 0)
+        train_batch[1] = torch.squeeze(train_batch[1], 0)
+        train_batch[2] = torch.squeeze(train_batch[2], 0)
+
       # train generator
       ############################
       if cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
@@ -533,16 +536,20 @@ class CustomTrainClass(pl.LightningModule):
         if cfg['train']['scheduler'] == 'Adam':
           optimizer = torch.optim.Adam(self.netG.parameters(), lr=cfg['train']['lr'])
         if cfg['train']['scheduler'] == 'AdamP':
+          from adamp import AdamP
           optimizer = AdamP(self.netG.parameters(), lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
         if cfg['train']['scheduler'] == 'SGDP':
+          from adamp import SGDP
           optimizer = SGDP(self.netG.parameters(), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
 
       if cfg['network_G']['finetune'] == True:
         if cfg['train']['scheduler'] == 'Adam':
           optimizer = torch.optim.Adam(filter(lambda p:p.requires_grad, self.netG.parameters()), lr=cfg['train']['lr'])
         if cfg['train']['scheduler'] == 'AdamP':
+          from adamp import AdamP
           optimizer = AdamP(filter(lambda p:p.requires_grad, self.netG.parameters()), lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
         if cfg['train']['scheduler'] == 'SGDP':
+          from adamp import SGDP
           optimizer = SGDP(filter(lambda p:p.requires_grad, self.netG.parameters()), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
 
       return optimizer
