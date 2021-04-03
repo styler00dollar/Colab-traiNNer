@@ -67,6 +67,6 @@ class CheckpointEveryNSteps(pl.Callback):
 
         torch.save(trainer.model.netG.state_dict(), os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_G.pth"))
         torch.save(trainer.model.netD.state_dict(), os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_D.pth"))
-        print("Checkpoint " + f"{self.prefix}_{epoch}_{global_step}_G.pth" + "and" + f"{self.prefix}_{epoch}_{global_step}_D.pth" + "saved")
+        print("Checkpoint " + f"{self.prefix}_{epoch}_{global_step}_G.pth" + " and " + f"{self.prefix}_{epoch}_{global_step}_D.pth" + "saved")
 
 #Trainer(callbacks=[CheckpointEveryNSteps()])

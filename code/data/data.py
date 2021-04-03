@@ -4,7 +4,6 @@ with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
 import os
-from torchvision import transforms
 import cv2
 import numpy as np
 from PIL import Image
@@ -16,81 +15,8 @@ import cv2
 import random
 import glob
 
-class DS_inpaint(Dataset):
-    def __init__(self, root, mask_dir, transform=None, size=256):
-        self.samples = []
-        for root, _, fnames in sorted(os.walk(root)):
-            for fname in sorted(fnames):
-                path = os.path.join(root, fname)
-                if ".png" in path or ".jpg" in path or ".webp" in path:
-                  self.samples.append(path)
-        if len(self.samples) == 0:
-            raise RuntimeError("Found 0 files in subfolders of: " + root)
 
-        self.transform = transform
-        self.mask_dir = mask_dir
-        self.files = glob.glob(self.mask_dir + '/**/*.png', recursive=True)
-        files_jpg = glob.glob(self.mask_dir + '/**/*.jpg', recursive=True)
-        self.files.extend(files_jpg)
-
-        self.size = size
-
-    def __len__(self):
-        return len(self.samples)
-
-    def __getitem__(self, index):
-        sample_path = self.samples[index]
-        sample = Image.open(sample_path).convert('RGB')
-
-        if self.transform:
-            sample = self.transform(sample)
-
-        # if edges are required
-        if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS':
-          grayscale = cv2.cvtColor(np.array(sample), cv2.COLOR_RGB2GRAY)
-          edges = cv2.Canny(grayscale,100,150)
-          grayscale = torch.from_numpy(grayscale).unsqueeze(0)/255
-          edges = torch.from_numpy(edges).unsqueeze(0)
-
-        if random.uniform(0, 1) < 0.5:
-          # generating mask automatically with 50% chance
-          mask = DS_inpaint.random_mask(height=self.size, width=self.size)
-          mask = torch.from_numpy(mask)
-
-        else:
-          # load random mask from folder
-          mask = cv2.imread(random.choice([x for x in self.files]), cv2.IMREAD_UNCHANGED)
-          mask = cv2.resize(mask, (self.size,self.size), interpolation=cv2.INTER_NEAREST)
-
-          # flip mask randomly
-          if 0.3 < random.uniform(0, 1) <= 0.66:
-            mask = np.flip(mask, axis=0)
-          elif 0.66 < random.uniform(0, 1) <= 1:
-            mask = np.flip(mask, axis=1)
-
-          mask = torch.from_numpy(mask.astype(np.float32)).unsqueeze(0)/255
-
-        #sample = torch.from_numpy(sample)
-        sample = transforms.ToTensor()(sample)
-
-        # apply mask
-        masked = sample * mask
-
-
-        # EdgeConnect
-        if cfg['network_G']['netG'] == 'EdgeConnect':
-          return masked, mask, sample, edges, grayscale
-
-        # PRVS
-        elif cfg['network_G']['netG'] == 'PRVS':
-          return masked, mask, sample, edges
-
-        else:
-          return masked, mask, sample
-
-
-    @staticmethod
-    def random_mask(height=256, width=256,
+def random_mask(height=256, width=256,
                     min_stroke=1, max_stroke=4,
                     min_vertex=1, max_vertex=12,
                     min_brush_width_divisor=16, max_brush_width_divisor=10):
@@ -125,8 +51,8 @@ class DS_inpaint(Dataset):
 
 
 
-class DS_inpaint_val(Dataset):
-    def __init__(self, root, transform=None):
+class DS_inpaint(Dataset):
+    def __init__(self, root, mask_dir, HR_size=256):
         self.samples = []
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
@@ -136,7 +62,73 @@ class DS_inpaint_val(Dataset):
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + root)
 
-        self.transform = transform
+        self.mask_dir = mask_dir
+        self.files = glob.glob(self.mask_dir + '/**/*.png', recursive=True)
+        files_jpg = glob.glob(self.mask_dir + '/**/*.jpg', recursive=True)
+        self.files.extend(files_jpg)
+
+        self.HR_size = HR_size
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, index):
+        sample_path = self.samples[index]
+        sample = Image.open(sample_path).convert('RGB')
+
+        # if edges are required
+        if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS':
+          grayscale = cv2.cvtColor(np.array(sample), cv2.COLOR_RGB2GRAY)
+          edges = cv2.Canny(grayscale,100,150)
+          grayscale = torch.from_numpy(grayscale).unsqueeze(0)/255
+          edges = torch.from_numpy(edges).unsqueeze(0)
+
+        if random.uniform(0, 1) < 0.5:
+          # generating mask automatically with 50% chance
+          mask = random_mask(height=self.HR_size, width=self.HR_size)
+          mask = torch.from_numpy(mask)
+
+        else:
+          # load random mask from folder
+          mask = cv2.imread(random.choice([x for x in self.files]), cv2.IMREAD_UNCHANGED)
+          mask = cv2.resize(mask, (self.HR_size,self.HR_size), interpolation=cv2.INTER_NEAREST)
+
+          # flip mask randomly
+          if 0.3 < random.uniform(0, 1) <= 0.66:
+            mask = np.flip(mask, axis=0)
+          elif 0.66 < random.uniform(0, 1) <= 1:
+            mask = np.flip(mask, axis=1)
+
+          mask = torch.from_numpy(mask.astype(np.float32)).unsqueeze(0)/255
+
+        # apply mask
+        masked = sample * mask
+
+
+        # EdgeConnect
+        if cfg['network_G']['netG'] == 'EdgeConnect':
+          return masked, mask, sample, edges, grayscale
+
+        # PRVS
+        elif cfg['network_G']['netG'] == 'PRVS':
+          return masked, mask, sample, edges
+
+        else:
+          return masked, mask, sample
+
+
+
+
+class DS_inpaint_val(Dataset):
+    def __init__(self, root):
+        self.samples = []
+        for root, _, fnames in sorted(os.walk(root)):
+            for fname in sorted(fnames):
+                path = os.path.join(root, fname)
+                if ".png" in path or ".jpg" in path or ".webp" in path:
+                  self.samples.append(path)
+        if len(self.samples) == 0:
+            raise RuntimeError("Found 0 files in subfolders of: " + root)
 
     def __len__(self):
         return len(self.samples)
@@ -178,16 +170,8 @@ class DS_inpaint_val(Dataset):
 
 
 
-
-
-
-
-
-
-
-
 class DS_inpaint_tiled(Dataset):
-    def __init__(self, root, mask_dir, transform=None, size=256):
+    def __init__(self, root, mask_dir, image_size=256, amount_tiles = 16, canny_min = 100, canny_max = 150):
         self.samples = []
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
@@ -197,50 +181,47 @@ class DS_inpaint_tiled(Dataset):
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + root)
 
-        self.transform = transform
         self.mask_dir = mask_dir
         self.files = glob.glob(self.mask_dir + '/**/*.png', recursive=True)
         files_jpg = glob.glob(self.mask_dir + '/**/*.jpg', recursive=True)
         self.files.extend(files_jpg)
 
-        self.size = size
+        self.image_size = image_size
+        self.amount_tiles = amount_tiles
+
+        # for edges
+        self.canny_min = canny_min
+        self.canny_max = canny_max
 
     def __len__(self):
         return len(self.samples)
 
     def __getitem__(self, index):
         sample_path = self.samples[index]
-        #sample = Image.open(sample_path).convert('RGB')
         sample = cv2.imread(sample_path)
 
+        x_rand = random.randint(0,self.amount_tiles-1)
+        y_rand = random.randint(0,self.amount_tiles-1)
 
-        x_rand = random.randint(0,15)
-        y_rand = random.randint(0,15)
-
-        sample = sample[x_rand*256:(x_rand+1)*256, y_rand*256:(y_rand+1)*256]
+        sample = sample[x_rand*self.image_size:(x_rand+1)*self.image_size, y_rand*self.image_size:(y_rand+1)*self.image_size]
         sample = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
-
-        #sample = torch.from_numpy(sample)
-
-        #if self.transform:
-        #    sample = self.transform(sample)
 
         # if edges are required
         if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS':
           grayscale = cv2.cvtColor(np.array(sample), cv2.COLOR_RGB2GRAY)
-          edges = cv2.Canny(grayscale,100,150)
+          edges = cv2.Canny(grayscale,self.canny_min,self.canny_max)
           grayscale = torch.from_numpy(grayscale).unsqueeze(0)/255
           edges = torch.from_numpy(edges).unsqueeze(0)
 
         if random.uniform(0, 1) < 0.5:
           # generating mask automatically with 50% chance
-          mask = DS_inpaint_tiled.random_mask(height=self.size, width=self.size)
+          mask = random_mask(height=self.image_size, width=self.image_size)
           mask = torch.from_numpy(mask)
 
         else:
           # load random mask from folder
           mask = cv2.imread(random.choice([x for x in self.files]), cv2.IMREAD_UNCHANGED)
-          mask = cv2.resize(mask, (self.size,self.size), interpolation=cv2.INTER_NEAREST)
+          mask = cv2.resize(mask, (self.image_size,self.image_size), interpolation=cv2.INTER_NEAREST)
 
           # flip mask randomly
           if 0.3 < random.uniform(0, 1) <= 0.66:
@@ -251,7 +232,6 @@ class DS_inpaint_tiled(Dataset):
           mask = torch.from_numpy(mask.astype(np.float32)).unsqueeze(0)/255
 
         sample = torch.from_numpy(sample).permute(2, 0, 1)/255
-        #sample = transforms.ToTensor()(sample)
 
         # apply mask
         masked = sample * mask
@@ -269,45 +249,8 @@ class DS_inpaint_tiled(Dataset):
 
 
 
-
-    @staticmethod
-    def random_mask(height=256, width=256,
-                    min_stroke=1, max_stroke=4,
-                    min_vertex=1, max_vertex=12,
-                    min_brush_width_divisor=16, max_brush_width_divisor=10):
-        mask = np.ones((height, width))
-
-        min_brush_width = height // min_brush_width_divisor
-        max_brush_width = height // max_brush_width_divisor
-        max_angle = 2*np.pi
-        num_stroke = np.random.randint(min_stroke, max_stroke+1)
-        average_length = np.sqrt(height*height + width*width) / 8
-
-        for _ in range(num_stroke):
-            num_vertex = np.random.randint(min_vertex, max_vertex+1)
-            start_x = np.random.randint(width)
-            start_y = np.random.randint(height)
-
-            for _ in range(num_vertex):
-                angle = np.random.uniform(max_angle)
-                length = np.clip(np.random.normal(average_length, average_length//2), 0, 2*average_length)
-                brush_width = np.random.randint(min_brush_width, max_brush_width+1)
-                end_x = (start_x + length * np.sin(angle)).astype(np.int32)
-                end_y = (start_y + length * np.cos(angle)).astype(np.int32)
-
-                cv2.line(mask, (start_y, start_x), (end_y, end_x), 0., brush_width)
-
-                start_x, start_y = end_x, end_y
-        if np.random.random() < 0.5:
-            mask = np.fliplr(mask)
-        if np.random.random() < 0.5:
-            mask = np.flipud(mask)
-        return mask.reshape((1,)+mask.shape).astype(np.float32)
-
-
-
 class DS_inpaint_tiled_val(Dataset):
-    def __init__(self, root, transform=None):
+    def __init__(self, root):
         self.samples = []
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
@@ -317,21 +260,18 @@ class DS_inpaint_tiled_val(Dataset):
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + root)
 
-        self.transform = transform
-
     def __len__(self):
         return len(self.samples)
 
     def __getitem__(self, index):
         sample_path = self.samples[index]
-        #sample = Image.open(sample_path).convert('RGB')
         sample = cv2.imread(sample_path)
         sample = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
 
         # if edges are required
         if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS':
           grayscale = cv2.cvtColor(sample, cv2.COLOR_RGB2GRAY)
-          edges = cv2.Canny(grayscale,100,150)
+          edges = cv2.Canny(grayscale,self.canny_min,self.canny_max)
           grayscale = torch.from_numpy(grayscale).unsqueeze(0)
           edges = torch.from_numpy(edges).unsqueeze(0)
 
@@ -362,11 +302,8 @@ class DS_inpaint_tiled_val(Dataset):
 
 
 
-
-
-
 class DS_inpaint_tiled_batch(Dataset):
-    def __init__(self, root, mask_dir, transform=None, size=256, batch_size_DL = 3):
+    def __init__(self, root, mask_dir, image_size=256, amount_tiles = 16, batch_size_DL = 3, canny_min = 100, canny_max = 150):
         self.samples = []
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
@@ -376,14 +313,18 @@ class DS_inpaint_tiled_batch(Dataset):
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + root)
 
-        self.transform = transform
         self.mask_dir = mask_dir
         self.files = glob.glob(self.mask_dir + '/**/*.png', recursive=True)
         files_jpg = glob.glob(self.mask_dir + '/**/*.jpg', recursive=True)
         self.files.extend(files_jpg)
 
-        self.size = size
-        self.batch_size = batch_size_DL
+        self.image_size = image_size
+        self.batch_size_DL = batch_size_DL
+        self.amount_tiles = amount_tiles
+
+        # for edges
+        self.canny_min = canny_min
+        self.canny_max = canny_max
 
     def __len__(self):
         return len(self.samples)
@@ -392,14 +333,13 @@ class DS_inpaint_tiled_batch(Dataset):
         sample_path = self.samples[index]
         sample = cv2.imread(sample_path)
 
-        #batch_size = 10
         pos_total = []
         self.total_size = 0
 
         while True:
           # determine random position
-          x_rand = random.randint(0,15)
-          y_rand = random.randint(0,15)
+          x_rand = random.randint(0,self.amount_tiles-1)
+          y_rand = random.randint(0,self.amount_tiles-1)
 
           pos_rand = [x_rand, y_rand]
 
@@ -408,33 +348,39 @@ class DS_inpaint_tiled_batch(Dataset):
             self.total_size += 1
 
           # return batchsize
-          if self.total_size == self.batch_size:
+          if self.total_size == self.batch_size_DL:
             break
+
 
         self.total_size = 0
         for i in pos_total:
           # creating sample if for start
           if self.total_size == 0:
-            sample_add = sample[i[0]*256:(i[0]+1)*256, i[1]*256:(i[1]+1)*256]
+            sample_add = sample[i[0]*self.image_size:(i[0]+1)*self.image_size, i[1]*self.image_size:(i[1]+1)*self.image_size]
             sample_add = cv2.cvtColor(sample_add, cv2.COLOR_BGR2RGB)
+
+
             sample_add = torch.from_numpy(sample_add).permute(2, 0, 1).unsqueeze(0)/255
 
             # if edges are required
             if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS':
               grayscale = cv2.cvtColor(np.array(sample_add), cv2.COLOR_RGB2GRAY)
-              edges = cv2.Canny(grayscale,100,150)
+              edges = cv2.Canny(grayscale,self.canny_min,self.canny_max)
               grayscale = torch.from_numpy(grayscale).unsqueeze(0)/255
               edges = torch.from_numpy(edges).unsqueeze(0)
 
 
             self.total_size += 1
           else:
-            sample_add2 = sample[i[0]*256:(i[0]+1)*256, i[1]*256:(i[1]+1)*256]
+            sample_add2 = sample[i[0]*self.image_size:(i[0]+1)*self.image_size, i[1]*self.image_size:(i[1]+1)*self.image_size]
             sample_add2 = cv2.cvtColor(sample_add2, cv2.COLOR_BGR2RGB)
+
+
+
             # if edges are required
             if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS':
               grayscale = cv2.cvtColor(np.array(sample_add2), cv2.COLOR_RGB2GRAY)
-              edges = cv2.Canny(grayscale,100,150)
+              edges = cv2.Canny(grayscale,self.canny_min,self.canny_max)
               grayscale = torch.from_numpy(grayscale).unsqueeze(0)/255
               edges = torch.from_numpy(edges).unsqueeze(0)
 
@@ -444,18 +390,18 @@ class DS_inpaint_tiled_batch(Dataset):
         # getting mask batch
 
         self.total_size = 0
-        for i in range(self.batch_size):
+        for i in range(self.batch_size_DL):
           # randommly loading one mask
 
           if random.uniform(0, 1) < 0.5:
             # generating mask automatically with 50% chance
-            mask = DS_inpaint_tiled_batch.random_mask(height=self.size, width=self.size)
+            mask = random_mask(height=self.image_size, width=self.image_size)
             mask = torch.from_numpy(mask.astype(np.float32)).unsqueeze(0)
 
           else:
             # load random mask from folder
             mask = cv2.imread(random.choice([x for x in self.files]), cv2.IMREAD_UNCHANGED)
-            mask = cv2.resize(mask, (self.size,self.size), interpolation=cv2.INTER_NEAREST)
+            mask = cv2.resize(mask, (self.image_size,self.image_size), interpolation=cv2.INTER_NEAREST)
 
             # flip mask randomly
             if 0.3 < random.uniform(0, 1) <= 0.66:
@@ -490,44 +436,8 @@ class DS_inpaint_tiled_batch(Dataset):
 
 
 
-    @staticmethod
-    def random_mask(height=256, width=256,
-                    min_stroke=1, max_stroke=4,
-                    min_vertex=1, max_vertex=12,
-                    min_brush_width_divisor=16, max_brush_width_divisor=10):
-        mask = np.ones((height, width))
-
-        min_brush_width = height // min_brush_width_divisor
-        max_brush_width = height // max_brush_width_divisor
-        max_angle = 2*np.pi
-        num_stroke = np.random.randint(min_stroke, max_stroke+1)
-        average_length = np.sqrt(height*height + width*width) / 8
-
-        for _ in range(num_stroke):
-            num_vertex = np.random.randint(min_vertex, max_vertex+1)
-            start_x = np.random.randint(width)
-            start_y = np.random.randint(height)
-
-            for _ in range(num_vertex):
-                angle = np.random.uniform(max_angle)
-                length = np.clip(np.random.normal(average_length, average_length//2), 0, 2*average_length)
-                brush_width = np.random.randint(min_brush_width, max_brush_width+1)
-                end_x = (start_x + length * np.sin(angle)).astype(np.int32)
-                end_y = (start_y + length * np.cos(angle)).astype(np.int32)
-
-                cv2.line(mask, (start_y, start_x), (end_y, end_x), 0., brush_width)
-
-                start_x, start_y = end_x, end_y
-        if np.random.random() < 0.5:
-            mask = np.fliplr(mask)
-        if np.random.random() < 0.5:
-            mask = np.flipud(mask)
-        return mask.reshape((1,)+mask.shape).astype(np.float32)
-
-
-
 class DS_inpaint_tiled_batch_val(Dataset):
-    def __init__(self, root, transform=None):
+    def __init__(self, root, canny_min = 100, canny_max = 150):
         self.samples = []
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
@@ -537,21 +447,22 @@ class DS_inpaint_tiled_batch_val(Dataset):
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + root)
 
-        self.transform = transform
+        # for edges
+        self.canny_min = canny_min
+        self.canny_max = canny_max
 
     def __len__(self):
         return len(self.samples)
 
     def __getitem__(self, index):
         sample_path = self.samples[index]
-        #sample = Image.open(sample_path).convert('RGB')
         sample = cv2.imread(sample_path)
         sample = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
 
         # if edges are required
         if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS':
           grayscale = cv2.cvtColor(sample, cv2.COLOR_RGB2GRAY)
-          edges = cv2.Canny(grayscale,100,150)
+          edges = cv2.Canny(grayscale,self.canny_min,self.canny_max)
           grayscale = torch.from_numpy(grayscale).unsqueeze(0)
           edges = torch.from_numpy(edges).unsqueeze(0)
 
@@ -583,7 +494,7 @@ class DS_inpaint_tiled_batch_val(Dataset):
 
 
 class DS_lrhr(Dataset):
-    def __init__(self, lr_path, hr_path, hr_size, scale):
+    def __init__(self, lr_path, hr_path, hr_size = 256, scale = 4, transform = None):
         self.samples = []
         for hr_path, _, fnames in sorted(os.walk(hr_path)):
             for fname in sorted(fnames):
@@ -671,7 +582,7 @@ class DS_lrhr_val(Dataset):
 
 
 class DS_lrhr_batch_oft(Dataset):
-    def __init__(self, root, transform=None, size=256, batch_size_DL = 3, scale=4, image_size=400, amount_tiles=3):
+    def __init__(self, root, image_size=256, batch_size_DL = 3, scale=4, amount_tiles=3):
         self.samples = []
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
@@ -681,13 +592,12 @@ class DS_lrhr_batch_oft(Dataset):
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + root)
 
-        self.transform = transform
 
-        #self.size = size
         self.image_size = image_size # how big one tile is
         self.scale = scale
-        self.batch_size = batch_size_DL
         self.interpolation_method = [cv2.INTER_NEAREST, cv2.INTER_LINEAR, cv2.INTER_AREA, cv2.INTER_CUBIC, cv2.INTER_LANCZOS4]
+
+        self.batch_size = batch_size_DL
         self.amount_tiles = amount_tiles
 
     def __len__(self):
@@ -748,14 +658,11 @@ class DS_lrhr_batch_oft(Dataset):
             # cropping from hr image
             image_hr2 = sample[i[0]*self.image_size:(i[0]+1)*self.image_size, i[1]*self.image_size:(i[1]+1)*self.image_size]
             # creating lr on the fly
-            #image_lr2 = cv2.resize(image_hr2, (int(self.image_size/self.scale), int(self.image_size/self.scale)), interpolation=random.choice(self.interpolation_method))
-            #image_lr2 = image_lr2[i[0]*(self.image_size/self.scale):(i[0]+1)*(self.image_size/self.scale), i[1]*(self.image_size/self.scale):(i[1]+1)*(self.image_size/self.scale)]
             image_lr2 = cv2.resize(image_hr2, (int(self.image_size/self.scale), int(self.image_size/self.scale)), interpolation=random.choice(self.interpolation_method))
 
 
-
             # if edges are required
-            """pr
+            """
             grayscale = cv2.cvtColor(np.array(sample_add2), cv2.COLOR_RGB2GRAY)
             edges = cv2.Canny(grayscale,100,150)
             grayscale = torch.from_numpy(grayscale).unsqueeze(0)/255
@@ -795,7 +702,6 @@ class DS_lrhr_batch_oft_val(Dataset):
         # getting lr image
         lr_path = os.path.join(self.lr_path, os.path.basename(hr_path))
         lr_image = cv2.imread(lr_path, cv2.IMREAD_GRAYSCALE)
-
 
 
         hr_image = torch.from_numpy(hr_image).unsqueeze(2).permute(2, 0, 1).unsqueeze(0)/255
