@@ -78,7 +78,8 @@ class CustomTrainClass(pl.LightningModule):
       from arch.RN_arch import G_Net, rn_initialize_weights
       self.netG = G_Net(input_channels=cfg['network_G']['input_channels'], residual_blocks=cfg['network_G']['residual_blocks'], threshold=cfg['network_G']['threshold'])
       # using rn init to avoid errors
-      RN_arch = rn_initialize_weights(self.netG, scale=0.1)
+      if self.global_step == 0:
+        RN_arch = rn_initialize_weights(self.netG, scale=0.1)
 
 
     # DSNet
@@ -162,7 +163,8 @@ class CustomTrainClass(pl.LightningModule):
       from arch.Deoldify_arch import Unet34
       self.netG = Unet34()
 
-    weights_init(self.netG, 'kaiming')
+    if self.global_step == 0:
+      weights_init(self.netG, 'kaiming')
     ############################
 
 
@@ -259,7 +261,8 @@ class CustomTrainClass(pl.LightningModule):
                   drop_path_rate=cfg['network_D']['drop_path_rate'], hybrid_backbone=cfg['network_D']['hybrid_backbone'], norm_layer=cfg['network_D']['norm_layer'])
 
     if cfg['network_D']['netD'] != 'TranformerDiscriminator':
-      weights_init(self.netD, 'kaiming')
+      if self.global_step == 0:
+        weights_init(self.netD, 'kaiming')
 
 
     # loss functions
@@ -566,7 +569,7 @@ class CustomTrainClass(pl.LightningModule):
     # train_batch[2] = lr_path
 
     #########################
-    if cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
+    if cfg['network_G']['netG'] == 'aotgan' or cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
       # generate fake (one output generator)
       out = self(train_batch[0],train_batch[1])
       # masking, taking original content from HR
