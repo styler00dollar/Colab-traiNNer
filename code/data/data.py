@@ -74,7 +74,8 @@ class DS_inpaint(Dataset):
 
     def __getitem__(self, index):
         sample_path = self.samples[index]
-        sample = Image.open(sample_path).convert('RGB')
+        sample = cv2.imread(sample_path)
+        sample = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
 
         # if edges are required
         if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS':
@@ -100,6 +101,8 @@ class DS_inpaint(Dataset):
             mask = np.flip(mask, axis=1)
 
           mask = torch.from_numpy(mask.astype(np.float32)).unsqueeze(0)/255
+
+        sample = torch.from_numpy(sample).permute(2, 0, 1)/255
 
         # apply mask
         masked = sample * mask
