@@ -59,9 +59,9 @@ class DFNetDataModule(pl.LightningDataModule):
 
         elif cfg['datasets']['train']['mode'] == 'DS_lrhr_batch_oft':
           from .data import DS_lrhr_batch_oft,DS_lrhr_batch_oft_val
-          self.DFNetdataset_train = DS_lrhr_batch_oft(self.dir_hr, self.mask_dir, self.image_size, self.batch_size_DL, self.scale, self.image_size, self.amount_tiles)
-          self.DFNetdataset_validation = DS_lrhr_batch_oft_val(self.val_hr)
-          self.DFNetdataset_test = DS_lrhr_batch_oft_val(self.val_lr)
+          self.DFNetdataset_train = DS_lrhr_batch_oft(self.dir_hr, self.image_size, self.batch_size_DL, self.scale, self.amount_tiles)
+          self.DFNetdataset_validation = DS_lrhr_batch_oft_val(self.val_lr, self.val_hr)
+          self.DFNetdataset_test = DS_lrhr_batch_oft_val(self.val_lr, self.val_hr)
 
         else:
           print("Mode not found.")

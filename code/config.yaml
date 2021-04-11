@@ -382,6 +382,8 @@ train:
     nesterov: True
 
     # Losses:
+    L1Loss_weight: 0
+
     # HFENLoss
     HFEN_weight: 0
     loss_f: L1CosineSim()

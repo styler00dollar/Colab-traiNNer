@@ -707,8 +707,8 @@ class DS_lrhr_batch_oft_val(Dataset):
         lr_image = cv2.imread(lr_path, cv2.IMREAD_GRAYSCALE)
 
 
-        hr_image = torch.from_numpy(hr_image).unsqueeze(2).permute(2, 0, 1).unsqueeze(0)/255
-        lr_image = torch.from_numpy(lr_image).unsqueeze(2).permute(2, 0, 1).unsqueeze(0)/255
+        hr_image = torch.from_numpy(hr_image).unsqueeze(2).permute(2, 0, 1)/255
+        lr_image = torch.from_numpy(lr_image).unsqueeze(2).permute(2, 0, 1)/255
 
 
         return lr_image, hr_image, lr_path

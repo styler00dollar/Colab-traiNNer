@@ -176,13 +176,13 @@ class CustomTrainClass(pl.LightningModule):
 
 
     # VGG
-    if cfg['network_D']['netD'] == 'Discriminator_VGG':
+    if cfg['network_D']['netD'] == 'VGG':
       from arch.discriminators import Discriminator_VGG
       self.netD = Discriminator_VGG(size=cfg['network_D']['size'], in_nc=cfg['network_D']['in_nc'], base_nf=cfg['network_D']['base_nf'], norm_type=cfg['network_D']['norm_type'], act_type=cfg['network_D']['act_type'], mode=cfg['network_D']['mode'], convtype=cfg['network_D']['convtype'], arch=cfg['network_D']['arch'])
 
 
 
-    if cfg['network_D']['netD'] == 'Discriminator_VGG_fea':
+    if cfg['network_D']['netD'] == 'VGG_fea':
       from arch.discriminators import Discriminator_VGG_fea
       self.netD = Discriminator_VGG_fea(size=cfg['network_D']['size'], in_nc=cfg['network_D']['in_nc'], base_nf=cfg['network_D']['base_nf'], norm_type=cfg['network_D']['norm_type'], act_type=cfg['network_D']['act_type'], mode=cfg['network_D']['mode'], convtype=cfg['network_D']['convtype'],
         arch=cfg['network_D']['arch'], spectral_norm=cfg['network_D']['spectral_norm'], self_attention = cfg['network_D']['self_attention'], max_pool=cfg['network_D']['max_pool'], poolsize = cfg['network_D']['poolsize'])
@@ -315,7 +315,7 @@ class CustomTrainClass(pl.LightningModule):
       # train_batch[1] = lr
       # train_batch[2] = hr
 
-      if cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
+      if cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch' or cfg['datasets']['train']['mode'] == 'DS_lrhr_batch_oft':
         # reducing dimension
         train_batch[0] = torch.squeeze(train_batch[0], 0)
         train_batch[1] = torch.squeeze(train_batch[1], 0)
@@ -381,6 +381,11 @@ class CustomTrainClass(pl.LightningModule):
       ############################
       # loss calculation
       total_loss = 0
+      if cfg['train']['L1Loss_weight'] > 0:
+        L1Loss_forward = cfg['train']['L1Loss_weight']*self.L1Loss(out, train_batch[2])
+        total_loss += L1Loss_forward
+        writer.add_scalar('loss/L1', L1Loss_forward, self.trainer.global_step)
+
       if cfg['train']['HFEN_weight'] > 0:
         HFENLoss_forward = cfg['train']['HFEN_weight']*self.HFENLoss(out, train_batch[2])
         total_loss += HFENLoss_forward
