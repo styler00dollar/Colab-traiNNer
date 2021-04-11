@@ -13,6 +13,7 @@ def preparing(args, netG, val_L, mask, device):
       netG.half()
       val_L = val_L.type(torch.cuda.HalfTensor)
       mask = mask.type(torch.cuda.HalfTensor)
+    model.eval()
     return netG, val_L, mask
 
 def edge(val_L):
@@ -143,6 +144,7 @@ def main():
 
       netG, val_L, mask = preparing(args, netG, val_L, mask, device)
       netG = netG.to(device)
+      model.eval()
 
       fake, _, _ = netG(val_L, img_inverted, mask)
 
@@ -154,14 +156,14 @@ def main():
 
       val_L_gray, val_L_canny = edge(val_L)
       netG, val_L, mask = preparing(args, netG, val_L, mask, device)
-
+      model.eval()
       fake, _ = netG(val_L, val_L_canny, val_L_gray, mask)
 
     elif which_model == 'FRRN':
       from models.modules.architectures import FRRN_arch
       netG = FRRN_arch.FRRNet()
       netG, val_L, mask = preparing(args, netG, val_L, mask, device)
-
+      model.eval()
       fake, _, _ = netG(val_L, mask)
 
     elif which_model == 'PRVS':
@@ -170,7 +172,7 @@ def main():
 
       val_L_gray, val_L_canny = edge(val_L)
       netG, val_L, mask = preparing(args, netG, val_L, mask, device)
-
+      model.eval()
       fake, _ ,_, _ = netG(val_L, mask, val_L_canny)
 
     elif which_model == 'CSA':
@@ -180,14 +182,14 @@ def main():
 
       netG.load_state_dict(torch.load(args.model_path))
       netG, val_L, mask = preparing(args, netG, val_L, mask, device)
-
+      model.eval()
       _, fake, _, _ = netG(val_L, mask)
 
     elif which_model == 'atrous':
       from models.modules.architectures import atrous_arch
       netG = atrous_arch.AtrousInpainter()
       netG, val_L, mask = preparing(args, netG, val_L, mask, device)
-
+      model.eval()
       fake = netG(val_L)
 
     else:
