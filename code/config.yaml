@@ -257,6 +257,12 @@ network_G:
     # AdaFill (2021)
     #netG: AdaFill
 
+    # context_encoder (2021)
+    #netG: context_encoder
+
+    # MANet (2021) (batch_size: 2+, no AMP)
+    #netG: MANet
+
 # Discriminator options:
 network_D:
     # VGG
