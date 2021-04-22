@@ -608,8 +608,11 @@ class DS_lrhr_batch_oft(Dataset):
 
     def __getitem__(self, index):
         sample_path = self.samples[index]
-        sample = cv2.imread(sample_path, cv2.IMREAD_GRAYSCALE)
 
+        if cfg['datasets']['train']['grayscale'] == True:
+          sample = cv2.imread(sample_path, cv2.IMREAD_GRAYSCALE)
+        else: 
+          sample = cv2.imread(sample_path)
 
         pos_total = []
 
@@ -638,23 +641,16 @@ class DS_lrhr_batch_oft(Dataset):
             # cropping from hr image
             image_hr = sample[i[0]*self.image_size:(i[0]+1)*self.image_size, i[1]*self.image_size:(i[1]+1)*self.image_size]
             # creating lr on the fly
-            #image_lr = cv2.resize(image_hr, (int(self.image_size/self.scale), int(self.image_size/self.scale)), interpolation=random.choice(self.interpolation_method))
             image_lr = cv2.resize(image_hr, (int(self.image_size/self.scale), int(self.image_size/self.scale)), interpolation=random.choice(self.interpolation_method))
-            #image_lr = image_lr[i[0]*(self.image_size/self.scale):(i[0]+1)*(self.image_size/self.scale), i[1]*(self.image_size/self.scale):(i[1]+1)*(self.image_size/self.scale)]
 
 
             # creating torch tensor
-            image_hr = torch.from_numpy(image_hr).unsqueeze(2).permute(2, 0, 1).unsqueeze(0)/255
-            image_lr = torch.from_numpy(image_lr).unsqueeze(2).permute(2, 0, 1).unsqueeze(0)/255
-
-
-            # if edges are required
-            """
-            grayscale = cv2.cvtColor(np.array(sample_add), cv2.COLOR_RGB2GRAY)
-            edges = cv2.Canny(grayscale,100,150)
-            grayscale = torch.from_numpy(grayscale).unsqueeze(0)/255
-            edges = torch.from_numpy(edges).unsqueeze(0)
-            """
+            if cfg['datasets']['train']['grayscale'] == True:
+              image_hr = torch.from_numpy(image_hr).unsqueeze(2).permute(2, 0, 1).unsqueeze(0)/255
+              image_lr = torch.from_numpy(image_lr).unsqueeze(2).permute(2, 0, 1).unsqueeze(0)/255
+            else:
+              image_hr = torch.from_numpy(image_hr).permute(2, 0, 1).unsqueeze(0)/255
+              image_lr = torch.from_numpy(image_lr).permute(2, 0, 1).unsqueeze(0)/255
 
             self.total_size += 1
           else:
@@ -663,19 +659,15 @@ class DS_lrhr_batch_oft(Dataset):
             # creating lr on the fly
             image_lr2 = cv2.resize(image_hr2, (int(self.image_size/self.scale), int(self.image_size/self.scale)), interpolation=random.choice(self.interpolation_method))
 
-
-            # if edges are required
-            """
-            grayscale = cv2.cvtColor(np.array(sample_add2), cv2.COLOR_RGB2GRAY)
-            edges = cv2.Canny(grayscale,100,150)
-            grayscale = torch.from_numpy(grayscale).unsqueeze(0)/255
-            edges = torch.from_numpy(edges).unsqueeze(0)
-            """
             # creating torch tensor
-            image_hr2 = torch.from_numpy(image_hr2).unsqueeze(2).permute(2, 0, 1).unsqueeze(0)/255
-            image_hr = torch.cat((image_hr, image_hr2), dim=0)
+            if cfg['datasets']['train']['grayscale'] == True:
+              image_hr2 = torch.from_numpy(image_hr2).unsqueeze(2).permute(2, 0, 1).unsqueeze(0)/255
+              image_lr2 = torch.from_numpy(image_lr2).unsqueeze(2).permute(2, 0, 1).unsqueeze(0)/255
+            else:
+              image_hr2 = torch.from_numpy(image_hr2).permute(2, 0, 1).unsqueeze(0)/255
+              image_lr2 = torch.from_numpy(image_lr2).permute(2, 0, 1).unsqueeze(0)/255
 
-            image_lr2 = torch.from_numpy(image_lr2).unsqueeze(2).permute(2, 0, 1).unsqueeze(0)/255
+            image_hr = torch.cat((image_hr, image_hr2), dim=0)
             image_lr = torch.cat((image_lr, image_lr2), dim=0)
 
         return 0, image_lr, image_hr
@@ -700,15 +692,20 @@ class DS_lrhr_batch_oft_val(Dataset):
     def __getitem__(self, index):
         # getting hr image
         hr_path = self.samples[index]
-        hr_image = cv2.imread(hr_path, cv2.IMREAD_GRAYSCALE)
-
         # getting lr image
         lr_path = os.path.join(self.lr_path, os.path.basename(hr_path))
-        lr_image = cv2.imread(lr_path, cv2.IMREAD_GRAYSCALE)
 
-
-        hr_image = torch.from_numpy(hr_image).unsqueeze(2).permute(2, 0, 1)/255
-        lr_image = torch.from_numpy(lr_image).unsqueeze(2).permute(2, 0, 1)/255
-
+        if cfg['datasets']['train']['grayscale'] == True:
+          hr_image = cv2.imread(hr_path, cv2.IMREAD_GRAYSCALE)
+          lr_image = cv2.imread(lr_path, cv2.IMREAD_GRAYSCALE)
+          hr_image = torch.from_numpy(hr_image).unsqueeze(2).permute(2, 0, 1)/255
+          lr_image = torch.from_numpy(lr_image).unsqueeze(2).permute(2, 0, 1)/255
+        else:
+          hr_image = cv2.imread(hr_path)
+          lr_image = cv2.imread(lr_path)
+          hr_image = torch.from_numpy(hr_image).permute(2, 0, 1)/255
+          lr_image = torch.from_numpy(lr_image).permute(2, 0, 1)/255
+        
+        
 
         return lr_image, hr_image, lr_path

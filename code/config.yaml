@@ -12,12 +12,13 @@ default_root_dir: '/content/'
 datasets:
   train:
     mode: DS_inpaint # DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
+    grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
     dataroot_HR: '/content/hr' # Original, with a single directory. Inpainting will use this directory as source image.
     dataroot_LR: '/content/lr' # Original, with a single directory
 
     n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     batch_size: 1
-    batch_size_DL: 1
+    batch_size_DL: 1 # If a batched/tiled dataloader is used, use this batch parameter instead. Leave normal batch_size at 1.
     HR_size: 256 # patch size. Default: 128. Needs to be coordinated with the patch size of the features network
     image_channels: 3 # number of channels to load images in
 

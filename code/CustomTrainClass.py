@@ -16,7 +16,7 @@ writer = SummaryWriter(logdir=cfg['path']['log_path'])
 from init import weights_init
 
 import os
-
+import numpy as np
 
 class CustomTrainClass(pl.LightningModule):
   def __init__(self):
@@ -175,6 +175,7 @@ class CustomTrainClass(pl.LightningModule):
 
     if self.global_step == 0:
       weights_init(self.netG, 'kaiming')
+      print("Generator weight init complete.")
     ############################
 
 
@@ -270,9 +271,11 @@ class CustomTrainClass(pl.LightningModule):
                   num_heads=cfg['network_D']['num_heads'], mlp_ratio=cfg['network_D']['mlp_ratio'], qkv_bias=cfg['network_D']['qkv_bias'], qk_scale=cfg['network_D']['qk_scale'], drop_rate=cfg['network_D']['drop_rate'], attn_drop_rate=cfg['network_D']['attn_drop_rate'],
                   drop_path_rate=cfg['network_D']['drop_path_rate'], hybrid_backbone=cfg['network_D']['hybrid_backbone'], norm_layer=cfg['network_D']['norm_layer'])
 
-    if cfg['network_D']['netD'] != 'TranformerDiscriminator':
+    # only doing init, if not 'TranformerDiscriminator', 'EfficientNet', 'ResNeSt'
+    if cfg['network_D']['netD'] == 'context_encoder' or cfg['network_D']['netD'] == 'VGG' or cfg['network_D']['netD'] == 'VGG_fea' or cfg['network_D']['netD'] == 'Discriminator_VGG_128_SN' or cfg['network_D']['netD'] == 'VGGFeatureExtractor' or cfg['network_D']['netD'] == 'NLayerDiscriminator' or cfg['network_D']['netD'] == 'MultiscaleDiscriminator' or cfg['network_D']['netD'] == 'Discriminator_ResNet_128' or cfg['network_D']['netD'] == 'ResNet101FeatureExtractor' or cfg['network_D']['netD'] == 'MINCNet' or cfg['network_D']['netD'] == 'PixelDiscriminator':
       if self.global_step == 0:
         weights_init(self.netD, 'kaiming')
+        print("Discriminator weight init complete.")
 
 
     # loss functions
@@ -308,6 +311,16 @@ class CustomTrainClass(pl.LightningModule):
     self.ae_metric = AE()
     self.mse_metric = MSE()
 
+    # logging
+    if 'PSNR' in cfg['train']['metrics']:
+      self.val_psnr = []
+    if 'SSIM' in cfg['train']['metrics']:
+      self.val_ssim = []
+    if 'MSE' in cfg['train']['metrics']:
+      self.val_mse = []
+    if 'LPIPS' in cfg['train']['metrics']:
+      self.val_lpips = []
+
 
   def forward(self, image, masks):
       return self.netG(image, masks)
@@ -330,7 +343,7 @@ class CustomTrainClass(pl.LightningModule):
         train_batch[0] = torch.squeeze(train_batch[0], 0)
         train_batch[1] = torch.squeeze(train_batch[1], 0)
         train_batch[2] = torch.squeeze(train_batch[2], 0)
-
+        
       # train generator
       ############################
       if cfg['network_G']['netG'] == 'MANet' or cfg['network_G']['netG'] == 'context_encoder' or cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
@@ -480,19 +493,16 @@ class CustomTrainClass(pl.LightningModule):
         recon_loss = self.L1Loss(coarse_result, train_batch[2]) + self.L1Loss(out, train_batch[2])
         cons = ConsistencyLoss()
         cons_loss = cons(csa, csa_d, train_batch[2], train_batch[1])
-        self.log('loss/recon_loss', recon_loss)
-        total_loss += recon_loss
-        self.log('loss/cons_loss', cons_loss)
-        total_loss += cons_loss
         writer.add_scalar('loss/recon_loss', recon_loss, self.trainer.global_step)
+        total_loss += recon_loss
         writer.add_scalar('loss/cons_loss', cons_loss, self.trainer.global_step)
+        total_loss += cons_loss
 
       # EdgeConnect
       # train_batch[3] = edges
       # train_batch[4] = grayscale
       if cfg['network_G']['netG'] == 'EdgeConnect':
         l1_edge = self.L1Loss(other_img, train_batch[3])
-        self.log('loss/l1_edge', l1_edge)
         total_loss += l1_edge
         writer.add_scalar('loss/l1_edge', l1_edge, self.trainer.global_step)
 
@@ -501,9 +511,7 @@ class CustomTrainClass(pl.LightningModule):
       if cfg['network_G']['netG'] == 'PVRS':
         edge_big_l1 = self.L1Loss(edge_big, train_batch[3])
         edge_small_l1 = self.L1Loss(edge_small, torch.nn.functional.interpolate(train_batch[3], scale_factor = 0.5))
-        self.log('loss/edge_big_l1', edge_big_l1)
         total_loss += edge_big_l1
-        self.log('loss/edge_small_l1', edge_small_l1)
         total_loss += edge_small_l1
         writer.add_scalar('loss/edge_big_l1', edge_big_l1, self.trainer.global_step)
         writer.add_scalar('loss/edge_small_l1', edge_small_l1, self.trainer.global_step)
@@ -514,12 +522,10 @@ class CustomTrainClass(pl.LightningModule):
         mid_l1_loss = 0
         for idx in range(len(mid_x) - 1):
             mid_l1_loss += self.L1Loss(mid_x[idx] * mid_mask[idx], train_batch[2] * mid_mask[idx])
-        self.log('loss/mid_l1_loss', mid_l1_loss)
         total_loss += mid_l1_loss
         writer.add_scalar('loss/mid_l1_loss', mid_l1_loss, self.trainer.global_step)
 
 
-      #self.log('loss/g_loss', total_loss)
       writer.add_scalar('loss/g_loss', total_loss, self.trainer.global_step)
 
       #return total_loss
@@ -544,7 +550,6 @@ class CustomTrainClass(pl.LightningModule):
       dis_fake_loss = self.MSELoss(out, fake)
 
       d_loss = (dis_real_loss + dis_fake_loss) / 2
-      #self.log('loss/d_loss', d_loss)
       writer.add_scalar('loss/d_loss', d_loss, self.trainer.global_step)
 
       return total_loss+d_loss
@@ -626,15 +631,14 @@ class CustomTrainClass(pl.LightningModule):
       out = self.netG(train_batch[0])
 
     # Validation metrics work, but they need an origial source image.
-    # Change dataloader to provide LR and HR if you want metrics.
     if 'PSNR' in cfg['train']['metrics']:
-      self.log('metrics/PSNR', self.psnr_metric(train_batch[1], out))
+      self.val_psnr.append(self.psnr_metric(train_batch[1], out).item())
     if 'SSIM' in cfg['train']['metrics']:
-      self.log('metrics/SSIM', self.ssim_metric(train_batch[1], out))
+      self.val_ssim.append(self.ssim_metric(train_batch[1], out).item())
     if 'MSE' in cfg['train']['metrics']:
-      self.log('metrics/MSE', self.mse_metric(train_batch[1], out))
+      self.val_mse.append(self.mse_metric(train_batch[1], out).item())
     if 'LPIPS' in cfg['train']['metrics']:
-      self.log('metrics/LPIPS', self.PerceptualLoss(out, train_batch[1]))
+      self.val_lpips.append(self.PerceptualLoss(out, train_batch[1]).item())
 
     validation_output = cfg['path']['validation_output_path']
 
@@ -651,6 +655,25 @@ class CustomTrainClass(pl.LightningModule):
       save_image(out[counter], os.path.join(validation_output, filename, str(self.trainer.global_step) + '.png'))
 
       counter += 1
+
+  def validation_epoch_end(self, val_step_outputs):
+
+    if 'PSNR' in cfg['train']['metrics']:
+      val_psnr = np.mean(self.val_psnr)
+      writer.add_scalar('metrics/PSNR', val_psnr, self.trainer.global_step)
+      self.val_psnr = []
+    if 'SSIM' in cfg['train']['metrics']:
+      val_ssim = np.mean(self.val_ssim)
+      writer.add_scalar('metrics/SSIM', val_ssim, self.trainer.global_step)
+      self.val_ssim = []
+    if 'MSE' in cfg['train']['metrics']:
+      val_mse = np.mean(self.val_mse)
+      writer.add_scalar('metrics/MSE', val_mse, self.trainer.global_step)
+      self.val_mse = []
+    if 'LPIPS' in cfg['train']['metrics']:
+      val_lpips = np.mean(self.val_lpips)
+      writer.add_scalar('metrics/LPIPS', val_lpips, self.trainer.global_step)
+      self.val_lpips = []
 
   def test_step(self, train_batch, train_idx):
     # inpainting
