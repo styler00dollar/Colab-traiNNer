@@ -173,9 +173,10 @@ class CustomTrainClass(pl.LightningModule):
       from arch.Deoldify_arch import Unet34
       self.netG = Unet34()
 
-    if self.global_step == 0:
-      weights_init(self.netG, 'kaiming')
-      print("Generator weight init complete.")
+    if cfg['path']['checkpoint_path'] is not None:
+      if self.global_step == 0:
+        weights_init(self.netG, 'kaiming')
+        print("Generator weight init complete.")
     ############################
 
 
