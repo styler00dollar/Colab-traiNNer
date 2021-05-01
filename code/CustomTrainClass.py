@@ -711,6 +711,15 @@ class CustomTrainClass(pl.LightningModule):
 
         #return total_loss
         #########################
+
+        # Try to fool the discriminator
+        Tensor = torch.cuda.FloatTensor #if cuda else torch.FloatTensor
+        fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1)
+        d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(out), fake)
+        
+        writer.add_scalar('loss/d_loss_fool', d_loss_fool, self.trainer.global_step)
+        total_loss += d_loss_fool
+
         return total_loss
 
 
@@ -731,7 +740,7 @@ class CustomTrainClass(pl.LightningModule):
 
 
         # Total loss
-        d_loss = (dis_real_loss + dis_fake_loss) / 2
+        d_loss = cfg["network_D"]["d_loss_weight"] * ((dis_real_loss + dis_fake_loss) / 2)
 
         writer.add_scalar('loss/d_loss', d_loss, self.trainer.global_step)
 
