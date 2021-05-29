@@ -1,3 +1,5 @@
+#@title config.yaml
+%%writefile /content/Colab-BasicSR/code/config.yaml
 name: template
 scale: 1
 gpus: 1
@@ -6,7 +8,7 @@ use_tpu: False
 use_amp: False
 use_swa: False
 progress_bar_refresh_rate: 20
-default_root_dir: '/content/'
+default_root_dir: '/content/drive/MyDrive/Colab-BasicSR/GLEAN/'
 
 # Dataset options:
 datasets:
@@ -17,16 +19,16 @@ datasets:
     # DS_lrhr: loads lr from dataroot_LR and hr from dataroot_HR
     # DS_lrhr_batch_oft: loads grayscale-hr (3x3 400px) from dataroot_LR and generates lr by downscaling otf randomly
 
-    mode: DS_inpaint # DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
+    mode: DS_lrhr # DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
     grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
-    dataroot_HR: '/content/hr' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/lr' # Original, with a single directory
+    dataroot_HR: '/content/val_hr/' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/content/val_lr/' # Original, with a single directory
 
     n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     batch_size: 1
-    batch_size_DL: 9
-    HR_size: 256 # The resolution the network will get. Random crop gets applied if that resolution does not match.
-    image_channels: 1 # number of channels to load images in
+    batch_size_DL: 1
+    HR_size: 400 # The resolution the network will get. Random crop gets applied if that resolution does not match.
+    image_channels: 3 # number of channels to load images in
 
     masks: '/content/masks/'
     max_epochs: 200
@@ -46,11 +48,11 @@ datasets:
     dataroot_LR: '/content/val_lr/' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: # '/content/Checkpoint_0_0_D.pth'
+    pretrain_model_G: # '/content/glean_fixed.pth' # '/content/Checkpoint_0_0_D.pth'
     checkpoint_path: # '/content/drive/MyDrive/Colab-BasicSR/lightning_text/Checkpoint_31_715000.ckpt'
-    checkpoint_save_path: '/content/'
-    validation_output_path: '/content/val_output/'
-    log_path: '/content/'
+    checkpoint_save_path: '/content/drive/MyDrive/Colab-BasicSR/GLEAN/'
+    validation_output_path: '/content/drive/MyDrive/Colab-BasicSR/GLEAN/val_output/'
+    log_path: '/content/drive/MyDrive/Colab-BasicSR/GLEAN/'
 
 # Generator options:
 network_G:
@@ -134,6 +136,25 @@ network_G:
     #downsample_mode='strideconv'
     #upsample_mode='convtranspose'
 
+    # GLEAN (2021)
+    # Warning: Does require "pip install mmcv-full"
+    netG: GLEAN
+    in_size: 64
+    out_size: 1024
+    img_channels: 3
+    rrdb_channels: 64
+    num_rrdbs: 23
+    style_channels: 512
+    num_mlps: 8
+    channel_multiplier: 2
+    blur_kernel: [1, 3, 3, 1]
+    lr_mlp: 0.01
+    default_style_mode: 'mix'
+    eval_style_mode: 'single'
+    mix_prob: 0.9
+    pretrained: True
+    bgr2rgb: False
+
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
     #netG: DFNet
@@ -149,7 +170,6 @@ network_G:
     #blend_layers: [0, 1, 2, 3, 4, 5]
     #conv_type: normal # partial | normal | deform
     
-
     # EdgeConnect (2019)
     #netG: EdgeConnect
     #use_spectral_norm: True
@@ -268,7 +288,9 @@ network_G:
     #netG: MEDFE
 
     # AdaFill (2021)
-    netG: AdaFill
+    #netG: AdaFill
+
+  
 
 # Discriminator options:
 # Discriminator options:
@@ -301,7 +323,6 @@ network_D:
     #self_attention: False
     #max_pool: False
     #poolsize: 4
-
 
     #netD: VGG_128_SN
 
@@ -512,7 +533,7 @@ train:
     p: 1
 
     # PerceptualLoss (only single gpu)
-    PerceptualLoss_weight: 1
+    PerceptualLoss_weight: 0
     model: 'net-lin'
     net: 'alex'
     colorspace: 'rgb'

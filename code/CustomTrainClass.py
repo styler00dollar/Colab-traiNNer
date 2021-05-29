@@ -173,7 +173,26 @@ class CustomTrainClass(pl.LightningModule):
       from arch.Deoldify_arch import Unet34
       self.netG = Unet34()
 
-    if cfg['path']['checkpoint_path'] is None:
+    # GLEAN (does init itself)
+    elif cfg['network_G']['netG'] == 'GLEAN':
+      from arch.GLEAN_arch import GLEANStyleGANv2
+      if cfg['network_G']['pretrained'] == False:
+        self.netG = GLEANStyleGANv2(in_size=cfg['network_G']['in_size'], out_size=cfg['network_G']['out_size'],
+                              img_channels=cfg['network_G']['img_channels'], rrdb_channels=cfg['network_G']['rrdb_channels'], num_rrdbs=cfg['network_G']['num_rrdbs'],
+                              style_channels=cfg['network_G']['style_channels'], num_mlps=cfg['network_G']['num_mlps'], channel_multiplier=cfg['network_G']['channel_multiplier'],
+                              blur_kernel=cfg['network_G']['blur_kernel'], lr_mlp=cfg['network_G']['lr_mlp'], default_style_mode=cfg['network_G']['default_style_mode'],
+                              eval_style_mode=cfg['network_G']['eval_style_mode'], mix_prob=cfg['network_G']['mix_prob'], pretrained=None, bgr2rgb=cfg['network_G']['bgr2rgb'])
+      else:
+        # using stylegan pretrain
+        self.netG = GLEANStyleGANv2(in_size=cfg['network_G']['in_size'], out_size=cfg['network_G']['out_size'],
+                              img_channels=cfg['network_G']['img_channels'], rrdb_channels=cfg['network_G']['rrdb_channels'], num_rrdbs=cfg['network_G']['num_rrdbs'],
+                              style_channels=cfg['network_G']['style_channels'], num_mlps=cfg['network_G']['num_mlps'], channel_multiplier=cfg['network_G']['channel_multiplier'],
+                              blur_kernel=cfg['network_G']['blur_kernel'], lr_mlp=cfg['network_G']['lr_mlp'], default_style_mode=cfg['network_G']['default_style_mode'],
+                              eval_style_mode=cfg['network_G']['eval_style_mode'], mix_prob=cfg['network_G']['mix_prob'], pretrained=dict(ckpt_path='http://download.openmmlab.com/mmgen/stylegan2/official_weights/stylegan2-ffhq-config-f-official_20210327_171224-bce9310c.pth', prefix='generator_ema'), bgr2rgb=cfg['network_G']['bgr2rgb'])
+
+
+
+    if cfg['path']['checkpoint_path'] is None and cfg['network_G']['netG'] != 'GLEAN':
       if self.global_step == 0:
       #if self.trainer.global_step == 0:
         weights_init(self.netG, 'kaiming')
@@ -274,7 +293,7 @@ class CustomTrainClass(pl.LightningModule):
           elif cfg['network_D']['resnet_arch'] == 'resnet152':
             pretrained_model = models.resnet152(pretrained = True)
 
-          IN_FEATURES = pretrained_model.fc.in_features 
+          IN_FEATURES = pretrained_model.fc.in_features
           OUTPUT_DIM = cfg['network_D']['num_classes']
 
           fc = nn.Linear(IN_FEATURES, OUTPUT_DIM)
@@ -367,7 +386,7 @@ class CustomTrainClass(pl.LightningModule):
       )
 
     #############################################
-    # RepVGG-A0, RepVGG-A1, RepVGG-A2, RepVGG-B0, RepVGG-B1, RepVGG-B1g2, RepVGG-B1g4, 
+    # RepVGG-A0, RepVGG-A1, RepVGG-A2, RepVGG-B0, RepVGG-B1, RepVGG-B1g2, RepVGG-B1g4,
     # RepVGG-B2, RepVGG-B2g2, RepVGG-B2g4, RepVGG-B3, RepVGG-B3g2, RepVGG-B3g4
     elif cfg['network_D']['netD'] == 'RepVGG':
       if cfg['network_D']['RepVGG_arch'] == 'RepVGG-A0':
@@ -516,14 +535,14 @@ class CustomTrainClass(pl.LightningModule):
       # train_batch[0] = Null
       # train_batch[1] = lr
       # train_batch[2] = hr
-        
+
 
       if cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch' or cfg['datasets']['train']['mode'] == 'DS_lrhr_batch_oft':
         # reducing dimension
         train_batch[0] = torch.squeeze(train_batch[0], 0)
         train_batch[1] = torch.squeeze(train_batch[1], 0)
         train_batch[2] = torch.squeeze(train_batch[2], 0)
-        
+
       # train generator
       ############################
       if cfg['network_G']['netG'] == 'MANet' or cfg['network_G']['netG'] == 'context_encoder' or cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
@@ -577,7 +596,7 @@ class CustomTrainClass(pl.LightningModule):
 
       ############################
       # ESRGAN
-      if cfg['network_G']['netG'] == 'RRDB_net':
+      if cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN':
         out = self.netG(train_batch[1])
 
       # train generator
@@ -716,7 +735,7 @@ class CustomTrainClass(pl.LightningModule):
         Tensor = torch.cuda.FloatTensor #if cuda else torch.FloatTensor
         fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1)
         d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(out), fake)
-        
+
         writer.add_scalar('loss/d_loss_fool', d_loss_fool, self.trainer.global_step)
         total_loss += d_loss_fool
 
@@ -728,12 +747,12 @@ class CustomTrainClass(pl.LightningModule):
 
       # train discriminator
       if optimizer_idx == 1:
-        
+
 
         Tensor = torch.cuda.FloatTensor #if cuda else torch.FloatTensor
         valid = Variable(Tensor((out.shape[0])).fill_(1.0), requires_grad=False).unsqueeze(-1)
         fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1)
-        
+
 
         dis_real_loss = self.MSELoss(self.netD(train_batch[2]), valid)
         dis_fake_loss = self.MSELoss(self.netD(out), fake)
@@ -828,7 +847,7 @@ class CustomTrainClass(pl.LightningModule):
 
     ############################
     # ESRGAN
-    if cfg['network_G']['netG'] == 'RRDB_net':
+    if cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN':
       out = self.netG(train_batch[0])
 
     # Validation metrics work, but they need an origial source image.
