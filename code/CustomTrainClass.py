@@ -524,7 +524,9 @@ class CustomTrainClass(pl.LightningModule):
 
 
   #def training_step(self, train_batch, batch_idx):
-  def training_step(self, train_batch, batch_idx, optimizer_idx):
+  def training_step(self, train_batch, batch_idx, optimizer_idx=0):
+
+
       # inpainting:
       # train_batch[0][0] = batch_size
       # train_batch[0] = masked
@@ -730,14 +732,14 @@ class CustomTrainClass(pl.LightningModule):
 
         #return total_loss
         #########################
+        if cfg['network_D']['netD'] != None:
+          # Try to fool the discriminator
+          Tensor = torch.cuda.FloatTensor #if cuda else torch.FloatTensor
+          fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1)
+          d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(out), fake)
 
-        # Try to fool the discriminator
-        Tensor = torch.cuda.FloatTensor #if cuda else torch.FloatTensor
-        fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1)
-        d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(out), fake)
-
-        writer.add_scalar('loss/d_loss_fool', d_loss_fool, self.trainer.global_step)
-        total_loss += d_loss_fool
+          writer.add_scalar('loss/d_loss_fool', d_loss_fool, self.trainer.global_step)
+          total_loss += d_loss_fool
 
         return total_loss
 
@@ -767,34 +769,42 @@ class CustomTrainClass(pl.LightningModule):
       #return total_loss+d_loss
 
   def configure_optimizers(self):
-
       if cfg['network_G']['finetune'] is None or cfg['network_G']['finetune'] == False:
         if cfg['train']['scheduler'] == 'Adam':
           opt_g = torch.optim.Adam(self.netG.parameters(), lr=cfg['train']['lr'])
-          opt_d = torch.optim.Adam(self.netD.parameters(), lr=cfg['train']['lr'])
+          if cfg['network_D']['netD'] != None:
+            opt_d = torch.optim.Adam(self.netD.parameters(), lr=cfg['train']['lr'])
         if cfg['train']['scheduler'] == 'AdamP':
           from adamp import AdamP
           opt_g = AdamP(self.netG.parameters(), lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
-          opt_d = AdamP(self.netD.parameters(), lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
+          if cfg['network_D']['netD'] != None:
+            opt_d = AdamP(self.netD.parameters(), lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
         if cfg['train']['scheduler'] == 'SGDP':
           from adamp import SGDP
           opt_g = SGDP(self.netG.parameters(), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
-          opt_d = SGDP(self.netD.parameters(), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
+          if cfg['network_D']['netD'] != None:
+            opt_d = SGDP(self.netD.parameters(), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
 
       if cfg['network_G']['finetune'] == True:
         if cfg['train']['scheduler'] == 'Adam':
           opt_g = torch.optim.Adam(filter(lambda p:p.requires_grad, self.netG.parameters()), lr=cfg['train']['lr'])
-          opt_d = torch.optim.Adam(self.netD.parameters(), lr=cfg['train']['lr'])
+          if cfg['network_D']['netD'] != None:
+            opt_d = torch.optim.Adam(self.netD.parameters(), lr=cfg['train']['lr'])
         if cfg['train']['scheduler'] == 'AdamP':
           from adamp import AdamP
           opt_g = AdamP(filter(lambda p:p.requires_grad, self.netG.parameters()), lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
-          opt_d = AdamP(self.netD.parameters(), lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
+          if cfg['network_D']['netD'] != None:
+            opt_d = AdamP(self.netD.parameters(), lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
         if cfg['train']['scheduler'] == 'SGDP':
           from adamp import SGDP
           opt_g = SGDP(filter(lambda p:p.requires_grad, self.netG.parameters()), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
-          opt_d = SGDP(self.netD.parameters(), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
+          if cfg['network_D']['netD'] != None:
+            opt_d = SGDP(self.netD.parameters(), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
 
-      return [opt_g, opt_d], []
+      if cfg['network_D']['netD'] != None:
+        return [opt_g, opt_d], []
+      else:
+        return [opt_g], []
 
 
   def validation_step(self, train_batch, train_idx):

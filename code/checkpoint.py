@@ -50,7 +50,8 @@ class CheckpointEveryNSteps(pl.Callback):
             # saving normal .pth models
             #https://github.com/PyTorchLightning/pytorch-lightning/issues/4114
             torch.save(trainer.model.netG.state_dict(), os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_G.pth"))
-            torch.save(trainer.model.netD.state_dict(), os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_D.pth"))
+            if cfg['network_D']['netD'] != None:
+              torch.save(trainer.model.netD.state_dict(), os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_D.pth"))
 
             # run validation once checkpoint was made
             trainer.run_evaluation()
@@ -66,7 +67,10 @@ class CheckpointEveryNSteps(pl.Callback):
         print("Checkpoint " + f"{self.prefix}_{epoch}_{global_step}.ckpt" + " saved.")
 
         torch.save(trainer.model.netG.state_dict(), os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_G.pth"))
-        torch.save(trainer.model.netD.state_dict(), os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_D.pth"))
-        print("Checkpoint " + f"{self.prefix}_{epoch}_{global_step}_G.pth" + " and " + f"{self.prefix}_{epoch}_{global_step}_D.pth" + "saved")
+        if cfg['network_D']['netD'] != None:
+          torch.save(trainer.model.netD.state_dict(), os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_D.pth"))
+          print("Checkpoint " + f"{self.prefix}_{epoch}_{global_step}_G.pth" + " and " + f"{self.prefix}_{epoch}_{global_step}_D.pth" + "saved")
+        else:
+          print("Checkpoint " + f"{self.prefix}_{epoch}_{global_step}_G.pth saved")
 
 #Trainer(callbacks=[CheckpointEveryNSteps()])
