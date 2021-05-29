@@ -597,9 +597,16 @@ class CustomTrainClass(pl.LightningModule):
 
 
       ############################
-      # ESRGAN
+      # ESRGAN / GLEAN
       if cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN':
-        out = self.netG(train_batch[1])
+        if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
+            # masked test with inpaint dataloader
+            tmp = torch.cat([train_batch[0], train_batch[1]],1)
+            out = self.netG(tmp)
+            out = train_batch[0]*(train_batch[1])+out*(1-train_batch[1])
+        else:
+          # normal dataloader
+          out = self.netG(train_batch[1])
 
       # train generator
       if optimizer_idx == 0:
@@ -856,9 +863,16 @@ class CustomTrainClass(pl.LightningModule):
       out = self.netG(train_batch[0])
 
     ############################
-    # ESRGAN
+    # ESRGAN / GLEAN
     if cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN':
-      out = self.netG(train_batch[0])
+      if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
+          # masked test with inpaint dataloader
+          tmp = torch.cat([train_batch[0], train_batch[1]],1)
+          out = self.netG(tmp)
+          out = train_batch[0]*(train_batch[1])+out*(1-train_batch[1])
+      else:
+        # normal dataloader
+        out = self.netG(train_batch[0])
 
     # Validation metrics work, but they need an origial source image.
     if 'PSNR' in cfg['train']['metrics']:

@@ -54,6 +54,7 @@ from mmcv.ops.fused_bias_leakyrelu import (FusedBiasLeakyReLU,
 from mmcv.ops.upfirdn2d import upfirdn2d
 from torch.nn.init import _calculate_correct_fan
 
+
 def pixel_norm(x, eps=1e-6):
     """Pixel Normalization.
 
@@ -1622,6 +1623,7 @@ class StyleGAN2Discriminator(nn.Module):
         return x
 
 
+        
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -2104,6 +2106,7 @@ class GLEANStyleGANv2(nn.Module):
                  in_size,
                  out_size,
                  img_channels=3,
+                 img_channels_out=3,
                  rrdb_channels=64,
                  num_rrdbs=23,
                  style_channels=512,
@@ -2120,9 +2123,9 @@ class GLEANStyleGANv2(nn.Module):
         super().__init__()
 
         # input size must be strictly smaller than output size
-        if in_size >= out_size:
-            raise ValueError('in_size must be smaller than out_size, but got '
-                             f'{in_size} and {out_size}.')
+        #if in_size >= out_size:
+        #    raise ValueError('in_size must be smaller than out_size, but got '
+        #                     f'{in_size} and {out_size}.')
 
         # latent bank (StyleGANv2), with weights being fixed
         self.generator = build_component(
@@ -2205,7 +2208,7 @@ class GLEANStyleGANv2(nn.Module):
                     nn.Sequential(
                         nn.Conv2d(in_channels, 64, 3, 1, 1),
                         nn.LeakyReLU(negative_slope=0.2, inplace=True),
-                        nn.Conv2d(64, img_channels, 3, 1, 1)))
+                        nn.Conv2d(64, img_channels_out, 3, 1, 1)))
 
     def forward(self, lq):
         """Forward function.
@@ -2218,10 +2221,10 @@ class GLEANStyleGANv2(nn.Module):
         """
 
         h, w = lq.shape[2:]
-        if h != self.in_size or w != self.in_size:
-            raise AssertionError(
-                f'Spatial resolution must equal in_size ({self.in_size}).'
-                f' Got ({h}, {w}).')
+        #if h != self.in_size or w != self.in_size:
+        #    raise AssertionError(
+        #        f'Spatial resolution must equal in_size ({self.in_size}).'
+        #        f' Got ({h}, {w}).')
 
         # encoder
         feat = lq
