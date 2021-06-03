@@ -178,14 +178,14 @@ class CustomTrainClass(pl.LightningModule):
       from arch.GLEAN_arch import GLEANStyleGANv2
       if cfg['network_G']['pretrained'] == False:
         self.netG = GLEANStyleGANv2(in_size=cfg['network_G']['in_size'], out_size=cfg['network_G']['out_size'],
-                              img_channels=cfg['network_G']['img_channels'], rrdb_channels=cfg['network_G']['rrdb_channels'], num_rrdbs=cfg['network_G']['num_rrdbs'],
+                              img_channels=cfg['network_G']['img_channels'], img_channels_out=cfg['network_G']['img_channels_out'], rrdb_channels=cfg['network_G']['rrdb_channels'], num_rrdbs=cfg['network_G']['num_rrdbs'],
                               style_channels=cfg['network_G']['style_channels'], num_mlps=cfg['network_G']['num_mlps'], channel_multiplier=cfg['network_G']['channel_multiplier'],
                               blur_kernel=cfg['network_G']['blur_kernel'], lr_mlp=cfg['network_G']['lr_mlp'], default_style_mode=cfg['network_G']['default_style_mode'],
                               eval_style_mode=cfg['network_G']['eval_style_mode'], mix_prob=cfg['network_G']['mix_prob'], pretrained=None, bgr2rgb=cfg['network_G']['bgr2rgb'])
       else:
         # using stylegan pretrain
         self.netG = GLEANStyleGANv2(in_size=cfg['network_G']['in_size'], out_size=cfg['network_G']['out_size'],
-                              img_channels=cfg['network_G']['img_channels'], rrdb_channels=cfg['network_G']['rrdb_channels'], num_rrdbs=cfg['network_G']['num_rrdbs'],
+                              img_channels=cfg['network_G']['img_channels'], img_channels_out=cfg['network_G']['img_channels_out'], rrdb_channels=cfg['network_G']['rrdb_channels'], num_rrdbs=cfg['network_G']['num_rrdbs'],
                               style_channels=cfg['network_G']['style_channels'], num_mlps=cfg['network_G']['num_mlps'], channel_multiplier=cfg['network_G']['channel_multiplier'],
                               blur_kernel=cfg['network_G']['blur_kernel'], lr_mlp=cfg['network_G']['lr_mlp'], default_style_mode=cfg['network_G']['default_style_mode'],
                               eval_style_mode=cfg['network_G']['eval_style_mode'], mix_prob=cfg['network_G']['mix_prob'], pretrained=dict(ckpt_path='http://download.openmmlab.com/mmgen/stylegan2/official_weights/stylegan2-ffhq-config-f-official_20210327_171224-bce9310c.pth', prefix='generator_ema'), bgr2rgb=cfg['network_G']['bgr2rgb'])
