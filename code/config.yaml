@@ -178,6 +178,12 @@ network_G:
     #    concat: true
     #nll_weight: 1
 
+    # DFDNet
+    # Warning: Expects "DictionaryCenter512" in the current folder, you can get the data here: https://drive.google.com/drive/folders/1bayYIUMCSGmoFPyd4Uu2Uwn347RW-vl5
+    # Also wants a folder called "landmarks", you can generate that data yourself. Example: https://github.com/styler00dollar/Colab-DFDNet/blob/local/Colab-DFDNet-lightning-train.ipynb
+    # Hardcoded resolution: 512px
+    # netG: DFDNet
+
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
     #netG: DFNet

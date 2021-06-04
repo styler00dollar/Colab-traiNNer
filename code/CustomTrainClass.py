@@ -218,6 +218,11 @@ class CustomTrainClass(pl.LightningModule):
       self.netG = SRFlowNet(in_nc=cfg['network_G']['in_nc'], out_nc=cfg['network_G']['out_nc'],
                 nf=cfg['network_G']['nf'], nb=cfg['network_G']['nb'], scale=cfg['scale'], K=cfg['network_G']['flow']['K'], step=None)
 
+    # DFDNet
+    elif cfg['network_G']['netG'] == 'DFDNet':
+      from arch.SRFlowNet_arch import UNetDictFace
+      self.netG = UNetDictFace(64)
+
     if cfg['path']['checkpoint_path'] is None and cfg['network_G']['netG'] != 'GLEAN' and cfg['network_G']['netG'] != 'srflow':
       if self.global_step == 0:
       #if self.trainer.global_step == 0:
@@ -563,7 +568,7 @@ class CustomTrainClass(pl.LightningModule):
       # train_batch[0] = Null
       # train_batch[1] = lr
       # train_batch[2] = hr
-
+      # train_batch[3] = landmarks (DFDNet)
 
       if cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch' or cfg['datasets']['train']['mode'] == 'DS_lrhr_batch_oft':
         # reducing dimension
@@ -643,6 +648,14 @@ class CustomTrainClass(pl.LightningModule):
         z, nll, y_logits = self.netG(gt=train_batch[2], lr=train_batch[1], reverse=False)
         out, logdet = self.netG(lr=train_batch[1], z=z, eps_std=0, reverse=True, reverse_with_grad=True)
         #out = torch.clamp(out, 0, 1) # forcing out to be between 0 and 1
+
+      # DFDNet
+      if cfg['network_G']['netG'] == 'DFDNet':
+          out = self.netG(train_batch[1], part_locations=train_batch[3]))
+          # range [-1, 1] to [0, 1]
+          out = out + 1
+          out = out - out.min()
+          out = out / (out.max() - out.min())
 
       # train generator
       if optimizer_idx == 0:
@@ -866,6 +879,7 @@ class CustomTrainClass(pl.LightningModule):
     # train_batch[0] = lr
     # train_batch[1] = hr
     # train_batch[2] = lr_path
+    # train_batch[3] = landmarks (DFDNet)
 
     #########################
     if cfg['network_G']['netG'] == 'MANet' or cfg['network_G']['netG'] == 'context_encoder' or cfg['network_G']['netG'] == 'aotgan' or cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
@@ -916,6 +930,7 @@ class CustomTrainClass(pl.LightningModule):
         # normal dataloader
         out = self.netG(train_batch[0])
 
+
     if cfg['network_G']['netG'] == 'srflow':
       # freeze rrdb in the beginning
       if self.trainer.global_step < 100000:
@@ -925,6 +940,14 @@ class CustomTrainClass(pl.LightningModule):
 
       z = get_z(self, heat=0, seed=None, batch_size=1, lr_shape=train_batch[0].shape)
       out, logdet = self.netG(lr=train_batch[0], z=z, eps_std=0, reverse=True, reverse_with_grad=True)
+
+    # DFDNet
+    if cfg['network_G']['netG'] == 'DFDNet':
+        out = self.netG(train_batch[0], part_locations=train_batch[3]))
+        # range [-1, 1] to [0, 1]
+        out = out + 1
+        out = out - out.min()
+        out = out / (out.max() - out.min())
 
     # Validation metrics work, but they need an origial source image.
     if 'PSNR' in cfg['train']['metrics']:

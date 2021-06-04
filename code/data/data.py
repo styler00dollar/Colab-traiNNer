@@ -492,7 +492,37 @@ class DS_inpaint_tiled_batch_val(Dataset):
 
 
 
+# DFDNet
+    def get_part_location(self, landmarkpath, imgname, downscale=1):
+        Landmarks = []
+        with open(os.path.join(landmarkpath, imgname + '.txt'),'r') as f:
+            for line in f:
+                tmp = [np.float(i) for i in line.split(' ') if i != '\n']
+                Landmarks.append(tmp)
+        Landmarks = np.array(Landmarks)/downscale # 512 * 512
 
+        Map_LE = list(np.hstack((range(17,22), range(36,42))))
+        Map_RE = list(np.hstack((range(22,27), range(42,48))))
+        Map_NO = list(range(29,36))
+        Map_MO = list(range(48,68))
+        #left eye
+        Mean_LE = np.mean(Landmarks[Map_LE],0)
+        L_LE = np.max((np.max(np.max(Landmarks[Map_LE],0) - np.min(Landmarks[Map_LE],0))/2,16))
+        Location_LE = np.hstack((Mean_LE - L_LE + 1, Mean_LE + L_LE)).astype(int)
+        #right eye
+        Mean_RE = np.mean(Landmarks[Map_RE],0)
+        L_RE = np.max((np.max(np.max(Landmarks[Map_RE],0) - np.min(Landmarks[Map_RE],0))/2,16))
+        Location_RE = np.hstack((Mean_RE - L_RE + 1, Mean_RE + L_RE)).astype(int)
+        #nose
+        Mean_NO = np.mean(Landmarks[Map_NO],0)
+        L_NO = np.max((np.max(np.max(Landmarks[Map_NO],0) - np.min(Landmarks[Map_NO],0))/2,16))
+        Location_NO = np.hstack((Mean_NO - L_NO + 1, Mean_NO + L_NO)).astype(int)
+        #mouth
+        Mean_MO = np.mean(Landmarks[Map_MO],0)
+        L_MO = np.max((np.max(np.max(Landmarks[Map_MO],0) - np.min(Landmarks[Map_MO],0))/2,16))
+
+        Location_MO = np.hstack((Mean_MO - L_MO + 1, Mean_MO + L_MO)).astype(int)
+        return Location_LE, Location_RE, Location_NO, Location_MO
 
 
 
@@ -537,7 +567,12 @@ class DS_lrhr(Dataset):
         hr_image = torch.from_numpy(hr_image).permute(2, 0, 1)/255
         lr_image = torch.from_numpy(lr_image).permute(2, 0, 1)/255
 
-        return 0, lr_image, hr_image
+        # if generator is DFDNet, also pass landmarks
+        if cfg['network_G']['netG'] == 'DFDNet':
+          landmarks = get_part_location(os.path.dirname(hr_path), os.path.basename(hr_path), 1)
+          return 0, lr_image, hr_image, landmarks
+	else:
+          return 0, lr_image, hr_image
 
 
 class DS_lrhr_val(Dataset):
