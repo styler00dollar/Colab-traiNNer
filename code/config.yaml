@@ -612,7 +612,7 @@ train:
     stage1_weight: 0 # only if the network outputs 2 images, will use l1
 
     # Differentiable Augmentation for Data-Efficient GAN Training
-    diffaug: False # currently not implemented
+    diffaug: True
     policy: 'color,translation,cutout'
 
     # Metrics

@@ -18,6 +18,8 @@ from init import weights_init
 import os
 import numpy as np
 
+if cfg['train']['diffaug'] == True:
+  from loss.diffaug import DiffAugment
 
 class CustomTrainClass(pl.LightningModule):
   def __init__(self):
@@ -789,15 +791,15 @@ class CustomTrainClass(pl.LightningModule):
           # Try to fool the discriminator
           Tensor = torch.cuda.FloatTensor #if cuda else torch.FloatTensor
           fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1)
-          d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(out), fake)
+          if cfg['train']['diffaug'] == True:
+            d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(DiffAugment(out, cfg['train']['policy'])), fake)
+          else:
+            d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(out), fake)
 
           writer.add_scalar('loss/d_loss_fool', d_loss_fool, self.trainer.global_step)
           total_loss += d_loss_fool
 
         return total_loss
-
-
-
 
 
       # train discriminator
@@ -808,9 +810,12 @@ class CustomTrainClass(pl.LightningModule):
         valid = Variable(Tensor((out.shape[0])).fill_(1.0), requires_grad=False).unsqueeze(-1)
         fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1)
 
-
-        dis_real_loss = self.MSELoss(self.netD(train_batch[2]), valid)
-        dis_fake_loss = self.MSELoss(self.netD(out), fake)
+        if cfg['train']['diffaug'] == True:
+          dis_real_loss = self.MSELoss(self.netD(DiffAugment(train_batch[2], cfg['train']['policy'])), valid)
+          dis_fake_loss = self.MSELoss(self.netD(out), fake)
+        else:
+          dis_real_loss = self.MSELoss(self.netD(DiffAugment(train_batch[2], cfg['train']['policy'])), valid)
+          dis_fake_loss = self.MSELoss(self.netD(out), fake)
 
 
         # Total loss
