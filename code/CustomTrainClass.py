@@ -202,7 +202,7 @@ class CustomTrainClass(pl.LightningModule):
 
     # DFDNet
     elif cfg['network_G']['netG'] == 'DFDNet':
-      from arch.SRFlowNet_arch import UNetDictFace
+      from arch.DFDNet_arch import UNetDictFace
       self.netG = UNetDictFace(64)
 
     # GFPGAN 
@@ -626,6 +626,7 @@ class CustomTrainClass(pl.LightningModule):
             out = train_batch[0]*(train_batch[1])+out*(1-train_batch[1])
         else:
           # normal dataloader
+          print(train_batch[1].shape)
           out = self.netG(train_batch[1])
 
       # GFPGAN
@@ -644,7 +645,7 @@ class CustomTrainClass(pl.LightningModule):
 
       # DFDNet
       if cfg['network_G']['netG'] == 'DFDNet':
-          out = self.netG(train_batch[1], part_locations=train_batch[3]))
+          out = self.netG(train_batch[1], part_locations=train_batch[3])
           # range [-1, 1] to [0, 1]
           out = out + 1
           out = out - out.min()
@@ -826,7 +827,6 @@ class CustomTrainClass(pl.LightningModule):
         return d_loss
       #return total_loss+d_loss
 
-  def configure_optimizers(self):
 
   def configure_optimizers(self):
       if cfg['network_G']['finetune'] is None or cfg['network_G']['finetune'] == False:
@@ -938,6 +938,7 @@ class CustomTrainClass(pl.LightningModule):
           out = train_batch[0]*(train_batch[1])+out*(1-train_batch[1])
       else:
         # normal dataloader
+        print(train_batch[0].shape)
         out = self.netG(train_batch[0])
     
     # GFPGAN
@@ -957,7 +958,7 @@ class CustomTrainClass(pl.LightningModule):
 
     # DFDNet
     if cfg['network_G']['netG'] == 'DFDNet':
-        out = self.netG(train_batch[0], part_locations=train_batch[3]))
+        out = self.netG(train_batch[0], part_locations=train_batch[3])
         # range [-1, 1] to [0, 1]
         out = out + 1
         out = out - out.min()

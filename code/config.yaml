@@ -7,7 +7,7 @@ use_tpu: False
 use_amp: False
 use_swa: False
 progress_bar_refresh_rate: 20
-default_root_dir: '/content/drive/MyDrive/Colab-BasicSR/GLEAN_INPAINT/'
+default_root_dir: '/content/'
 
 # Dataset options:
 datasets:
@@ -18,16 +18,16 @@ datasets:
     # DS_lrhr: loads lr from dataroot_LR and hr from dataroot_HR
     # DS_lrhr_batch_oft: loads grayscale-hr (3x3 400px) from dataroot_LR and generates lr by downscaling otf randomly
 
-    mode: DS_inpaint_tiled_batch # DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
+    mode: DS_lrhr # DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
     grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
-    dataroot_HR: '/content/hr/' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/lr/' # Original, with a single directory
+    dataroot_HR: '/content/ffhq' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/content/ffhq' # Original, with a single directory
 
     n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     batch_size: 1
     batch_size_DL: 1
-    HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
-    image_channels: 3 # number of channels to load images in
+    HR_size: 100 # The resolution the network will get. Random crop gets applied if that resolution does not match.
+    image_channels: 1 # number of channels to load images in
 
     masks: '/content/masks/'
     max_epochs: 200
@@ -35,23 +35,23 @@ datasets:
 
     # batch
     # If a tiled dataloader is used, specify image charactaristics. Random crop will not be applied. Maybe in the future.
-    image_size: 512 # Size of one tile
-    amount_tiles: 4 # Amount of tiles inside the merged grid image
+    image_size: 100 # Size of one tile
+    amount_tiles: 3 # Amount of tiles inside the merged grid image
 
     # if edge data is required
     canny_min: 100
     canny_max: 150
 
   val:
-    dataroot_HR: '/content/drive/MyDrive/Colab-BasicSR/GLEAN_INPAINT/val_input/'
-    dataroot_LR: '/content/drive/MyDrive/Colab-BasicSR/GLEAN_INPAINT/val_input/' # Inpainting will use this directory as input
+    dataroot_HR: '/content/ffhq'
+    dataroot_LR: '/content/ffhq' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: # '/content/glean_fixed.pth' # '/content/Checkpoint_0_0_D.pth'
+    pretrain_model_G: '/content/latest_net_G.pth' # '/content/glean_fixed.pth' # '/content/Checkpoint_0_0_D.pth'
     checkpoint_path: # '/content/drive/MyDrive/Colab-BasicSR/lightning_text/Checkpoint_31_715000.ckpt'
-    checkpoint_save_path: '/content/drive/MyDrive/Colab-BasicSR/GLEAN_INPAINT/'
-    validation_output_path: '/content/drive/MyDrive/Colab-BasicSR/GLEAN_INPAINT/val_output/'
-    log_path: '/content/drive/MyDrive/Colab-BasicSR/GLEAN_INPAINT/'
+    checkpoint_save_path: '/content/'
+    validation_output_path: '/content/validation/'
+    log_path: '/content/'
 
 # Generator options:
 network_G:
@@ -63,13 +63,13 @@ network_G:
     #mode: CNA
     #nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
     #nb: 23 # (default: 23, good: 8)
-    #in_nc: 1 # of input image channels: 3 for RGB and 1 for grayscale
-    #out_nc: 1 # of output image channels: 3 for RGB and 1 for grayscale
+    #in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
+    #out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
     #gc: 32
     #group: 1
     #convtype: Conv2D # Conv2D | PartialConv2D
     #net_act: leakyrelu # swish | leakyrelu
-    #gaussian: true # true | false
+    #gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
     #plus: false # true | false
     #finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
     #upsample_mode: 'upconv'
@@ -152,17 +152,16 @@ network_G:
     #default_style_mode: 'mix'
     #eval_style_mode: 'single'
     #mix_prob: 0.9
-    #pretrained: False # if out_size is 1024, you can set it to True
+    #pretrained: False # only works with official settings
     #bgr2rgb: False
 
-    # srflow
+    # srflow (upscaling factors: 4, 8, 16)
     # Warning: Can be unstable, depending on the dataset, seems to crash with monochrome data
     #netG: srflow
     #in_nc: 3
     #out_nc: 3
     #nf: 64
     #nb: 23
-    #upscale: 4 # 4, 8, 16
     #train_RRDB: false
     #train_RRDB_delay: 0.5
     #flow:
@@ -184,24 +183,25 @@ network_G:
     # Warning: Expects "DictionaryCenter512" in the current folder, you can get the data here: https://drive.google.com/drive/folders/1bayYIUMCSGmoFPyd4Uu2Uwn347RW-vl5
     # Also wants a folder called "landmarks", you can generate that data yourself. Example: https://github.com/styler00dollar/Colab-DFDNet/blob/local/Colab-DFDNet-lightning-train.ipynb
     # Hardcoded resolution: 512px
-    # netG: DFDNet
-    # dictionary_path: "./DictionaryCenter512"
-    # landmarkpath: "./landmarks"
+    netG: DFDNet
+    dictionary_path: "/content/DictionaryCenter512"
+    landmarkpath: "/content/landmarks"
+    val_landmarkpath: "/content/landmarks"
 
     # GFPGAN (2021)
-    netG: GFPGAN
-    out_size
-    num_style_feat: 512
-    channel_multiplier: 1
-    resample_kernel: (1, 3, 3, 1)
-    decoder_load_path: # None
-    fix_decoder: True
-    num_mlp: 8
-    lr_mlp: 0.01
-    input_is_latent: False
-    different_w: False
-    arrow: 1
-    sft_half: False
+    #netG: GFPGAN
+    #out_size
+    #num_style_feat: 512
+    #channel_multiplier: 1
+    #resample_kernel: (1, 3, 3, 1)
+    #decoder_load_path: # None
+    #fix_decoder: True
+    #num_mlp: 8
+    #lr_mlp: 0.01
+    #input_is_latent: False
+    #different_w: False
+    #arrow: 1
+    #sft_half: False
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
@@ -590,7 +590,7 @@ train:
     net: 'alex'
     colorspace: 'rgb'
     spatial: False
-    use_gpu: True # False for TPU training
+    use_gpu: False # False for TPU training
     gpu_ids: [0]
     #model_path: None # todo
 
