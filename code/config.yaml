@@ -20,8 +20,8 @@ datasets:
 
     mode: DS_lrhr # DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
     grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
-    dataroot_HR: '/content/ffhq' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/ffhq' # Original, with a single directory
+    dataroot_HR: '/content/hr' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/content/lr' # Original, with a single directory
 
     n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     batch_size: 1
@@ -43,11 +43,11 @@ datasets:
     canny_max: 150
 
   val:
-    dataroot_HR: '/content/ffhq'
-    dataroot_LR: '/content/ffhq' # Inpainting will use this directory as input
+    dataroot_HR: '/content/val_hr'
+    dataroot_LR: '/content/val_lr' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: '/content/latest_net_G.pth' # '/content/glean_fixed.pth' # '/content/Checkpoint_0_0_D.pth'
+    pretrain_model_G: # '/content/glean_fixed.pth' # '/content/Checkpoint_0_0_D.pth'
     checkpoint_path: # '/content/drive/MyDrive/Colab-BasicSR/lightning_text/Checkpoint_31_715000.ckpt'
     checkpoint_save_path: '/content/'
     validation_output_path: '/content/validation/'
@@ -183,25 +183,25 @@ network_G:
     # Warning: Expects "DictionaryCenter512" in the current folder, you can get the data here: https://drive.google.com/drive/folders/1bayYIUMCSGmoFPyd4Uu2Uwn347RW-vl5
     # Also wants a folder called "landmarks", you can generate that data yourself. Example: https://github.com/styler00dollar/Colab-DFDNet/blob/local/Colab-DFDNet-lightning-train.ipynb
     # Hardcoded resolution: 512px
-    netG: DFDNet
-    dictionary_path: "/content/DictionaryCenter512"
-    landmarkpath: "/content/landmarks"
-    val_landmarkpath: "/content/landmarks"
+    #netG: DFDNet
+    #dictionary_path: "/content/DictionaryCenter512"
+    #landmarkpath: "/content/landmarks"
+    #val_landmarkpath: "/content/landmarks"
 
     # GFPGAN (2021)
-    #netG: GFPGAN
-    #out_size
-    #num_style_feat: 512
-    #channel_multiplier: 1
-    #resample_kernel: (1, 3, 3, 1)
-    #decoder_load_path: # None
-    #fix_decoder: True
-    #num_mlp: 8
-    #lr_mlp: 0.01
-    #input_is_latent: False
-    #different_w: False
-    #arrow: 1
-    #sft_half: False
+    netG: GFPGAN
+    out_size: 512
+    num_style_feat: 512
+    channel_multiplier: 1
+    resample_kernel: [1, 3, 3, 1]
+    decoder_load_path: # None
+    fix_decoder: True
+    num_mlp: 8
+    lr_mlp: 0.01
+    input_is_latent: False
+    different_w: False
+    narrow: 1
+    sft_half: False
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
@@ -511,19 +511,25 @@ network_D:
     #num_classes: 1
     #pretrain: True
   
-train:
-    scheduler: AdamP # AdamP, Adam, SGDP
+train: 
+    scheduler: AdamP # AdamP, Adam, SGDP, MADGRAD
     lr: 0.0001
+    
+    # AdamP, AGDP, MADGRAD
+    weight_decay: 1e-2
+
+    # SGDP, MAGDRAD
+    momentum: 0.9
 
     # AdamP
     betas0: 0.9
     betas1: 0.999
-    weight_decay: 1e-2
-
+    
     # SGDP
-    weight_decay: 1e-5
-    momentum: 0.9
     nesterov: True
+
+    # MADGRAD:
+    eps: 1e-6
 
     # Losses:
     L1Loss_weight: 1

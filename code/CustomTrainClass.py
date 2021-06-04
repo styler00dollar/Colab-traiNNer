@@ -205,14 +205,14 @@ class CustomTrainClass(pl.LightningModule):
       from arch.DFDNet_arch import UNetDictFace
       self.netG = UNetDictFace(64)
 
-    # GFPGAN 
+    # GFPGAN (error with init?)
     elif cfg['network_G']['netG'] == 'GFPGAN':
-      from arch.GFPGAN_arch import UNetDictFace
-      self.netG = GFPGANv1(out_size, num_style_feat=cfg['network_G']['num_style_feat'],channel_multiplier=cfg['network_G']['channel_multiplier'],resample_kernel=cfg['network_G']['resample_kernel'],decoder_load_path=cfg['network_G']['decoder_load_path'],
+      from arch.GFPGAN_arch import GFPGANv1
+      self.netG = GFPGANv1(out_size=cfg['network_G']['out_size'], num_style_feat=cfg['network_G']['num_style_feat'],channel_multiplier=cfg['network_G']['channel_multiplier'],resample_kernel=cfg['network_G']['resample_kernel'],decoder_load_path=cfg['network_G']['decoder_load_path'],
                           fix_decoder=cfg['network_G']['fix_decoder'], num_mlp=cfg['network_G']['num_mlp'],lr_mlp=cfg['network_G']['lr_mlp'],input_is_latent=cfg['network_G']['input_is_latent'],
-                          different_w=cfg['network_G']['different_w'], arrow=cfg['network_G']['arrow'],sft_half=cfg['network_G']['sft_half'])
+                          different_w=cfg['network_G']['different_w'], narrow=cfg['network_G']['narrow'],sft_half=cfg['network_G']['sft_half'])
 
-    if cfg['path']['checkpoint_path'] is None and cfg['network_G']['netG'] != 'GLEAN' and cfg['network_G']['netG'] != 'srflow':
+    if cfg['path']['checkpoint_path'] is None and cfg['network_G']['netG'] != 'GLEAN' and cfg['network_G']['netG'] != 'srflow' and cfg['network_G']['netG'] != 'GFPGAN':
       if self.global_step == 0:
       #if self.trainer.global_step == 0:
         weights_init(self.netG, 'kaiming')

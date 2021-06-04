@@ -11,27 +11,49 @@ https://github.com/xinntao/BasicSR/blob/cf1e32cdfc9710041ed497e9f5c155ceb7567c8f
 upfirdn2d.py (4-jun-2021)
 https://github.com/xinntao/BasicSR/blob/cf1e32cdfc9710041ed497e9f5c155ceb7567c8f/basicsr/ops/upfirdn2d/upfirdn2d.py
 """
+# modify from https://github.com/rosinality/stylegan2-pytorch/blob/master/op/fused_act.py # noqa:E501
+
+import torch
+from torch import nn
+from torch.autograd import Function
+
+#try:
+#    from . import fused_act_ext
+#except ImportError:
+import os
+#BASICSR_JIT = os.getenv('BASICSR_JIT')
+#if BASICSR_JIT == 'True':
+from torch.utils.cpp_extension import load
+module_path = os.path.dirname(__file__)
+fused_act_ext = load(
+    'fused',
+    sources=[
+        os.path.join(module_path, 'cpp', 'fused_bias_act.cpp'),
+        os.path.join(module_path, 'cpp', 'fused_bias_act_kernel.cu'),
+    ],
+)
+
 # modify from https://github.com/rosinality/stylegan2-pytorch/blob/master/op/upfirdn2d.py  # noqa:E501
 
 import torch
 from torch.autograd import Function
 from torch.nn import functional as F
 
-try:
-    from . import upfirdn2d_ext
-except ImportError:
-    import os
-    BASICSR_JIT = os.getenv('BASICSR_JIT')
-    if BASICSR_JIT == 'True':
-        from torch.utils.cpp_extension import load
-        module_path = os.path.dirname(__file__)
-        upfirdn2d_ext = load(
-            'upfirdn2d',
-            sources=[
-                os.path.join(module_path, 'src', 'upfirdn2d.cpp'),
-                os.path.join(module_path, 'src', 'upfirdn2d_kernel.cu'),
-            ],
-        )
+#try:
+#    from . import upfirdn2d_ext
+#except ImportError:
+import os
+#BASICSR_JIT = os.getenv('BASICSR_JIT')
+#if BASICSR_JIT == 'True':
+from torch.utils.cpp_extension import load
+module_path = os.path.dirname(__file__)
+upfirdn2d_ext = load(
+    'upfirdn2d',
+    sources=[
+        os.path.join(module_path, 'cpp', 'upfirdn2d.cpp'),
+        os.path.join(module_path, 'cpp', 'upfirdn2d_kernel.cu'),
+    ],
+)
 
 
 class UpFirDn2dBackward(Function):
@@ -198,27 +220,6 @@ def upfirdn2d_native(input, kernel, up_x, up_y, down_x, down_y, pad_x0, pad_x1, 
 
     return out.view(-1, channel, out_h, out_w)
 
-# modify from https://github.com/rosinality/stylegan2-pytorch/blob/master/op/fused_act.py # noqa:E501
-
-import torch
-from torch import nn
-from torch.autograd import Function
-
-try:
-    from . import fused_act_ext
-except ImportError:
-    import os
-    BASICSR_JIT = os.getenv('BASICSR_JIT')
-    if BASICSR_JIT == 'True':
-        from torch.utils.cpp_extension import load
-        module_path = os.path.dirname(__file__)
-        fused_act_ext = load(
-            'fused',
-            sources=[
-                os.path.join(module_path, 'src', 'fused_bias_act.cpp'),
-                os.path.join(module_path, 'src', 'fused_bias_act_kernel.cu'),
-            ],
-        )
 
 class FusedLeakyReLUFunctionBackward(Function):
 
@@ -678,7 +679,7 @@ class ConstantInput(nn.Module):
         return out
 
 
-@ARCH_REGISTRY.register()
+#@ARCH_REGISTRY.register()
 class StyleGAN2Generator(nn.Module):
     """StyleGAN2 Generator.
 
@@ -1017,7 +1018,7 @@ class ResBlock(nn.Module):
         return out
 
 
-@ARCH_REGISTRY.register()
+#@ARCH_REGISTRY.register()
 class StyleGAN2Discriminator(nn.Module):
     """StyleGAN2 Discriminator.
 
@@ -1093,7 +1094,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from basicsr.ops.fused_act import FusedLeakyReLU
+#from basicsr.ops.fused_act import FusedLeakyReLU
 
 class StyleGAN2GeneratorSFT(StyleGAN2Generator):
     """StyleGAN2 Generator.
@@ -1473,7 +1474,7 @@ class GFPGANv1(nn.Module):
         return image, out_rgbs
 
 
-@ARCH_REGISTRY.register()
+#@ARCH_REGISTRY.register()
 class FacialComponentDiscriminator(nn.Module):
 
     def __init__(self):
