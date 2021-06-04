@@ -18,6 +18,28 @@ from init import weights_init
 import os
 import numpy as np
 
+# srflow
+def get_z(self, heat, seed=None, batch_size=1, lr_shape=None):
+    if seed: torch.manual_seed(seed)
+    #if opt_get(self.opt, ['network_G', 'flow', 'split', 'enable']):
+    if cfg['network_G']['flow']['split']['enable']:
+        #C = self.netG.module.flowUpsamplerNet.C
+        C = self.netG.flowUpsamplerNet.C
+        #H = int(cfg['scale'] * lr_shape[2] // self.netG.module.flowUpsamplerNet.scaleH)
+        H = int(cfg['scale'] * lr_shape[2] // self.netG.flowUpsamplerNet.scaleH)
+        #W = int(cfg['scale'] * lr_shape[3] // self.netG.module.flowUpsamplerNet.scaleW)
+        W = int(cfg['scale'] * lr_shape[3] // self.netG.flowUpsamplerNet.scaleW)
+        size = (batch_size, C, H, W)
+        z = torch.normal(mean=0, std=heat, size=size) if heat > 0 else torch.zeros(
+            size)
+    else:
+        #L = opt_get(self.opt, ['network_G', 'flow', 'L']) or 3
+        L = cfg['network_G']['flow']['L']
+        fac = 2 ** (L - 3)
+        z_size = int(self.lr_size // (2 ** (L - 3)))
+        z = torch.normal(mean=0, std=heat, size=(batch_size, 3 * 8 * 8 * fac * fac, z_size, z_size))
+    return z
+
 class CustomTrainClass(pl.LightningModule):
   def __init__(self):
     super().__init__()
@@ -190,9 +212,13 @@ class CustomTrainClass(pl.LightningModule):
                               blur_kernel=cfg['network_G']['blur_kernel'], lr_mlp=cfg['network_G']['lr_mlp'], default_style_mode=cfg['network_G']['default_style_mode'],
                               eval_style_mode=cfg['network_G']['eval_style_mode'], mix_prob=cfg['network_G']['mix_prob'], pretrained=dict(ckpt_path='http://download.openmmlab.com/mmgen/stylegan2/official_weights/stylegan2-ffhq-config-f-official_20210327_171224-bce9310c.pth', prefix='generator_ema'), bgr2rgb=cfg['network_G']['bgr2rgb'])
 
+    # srflow (weight init?)
+    elif cfg['network_G']['netG'] == 'srflow':
+      from arch.SRFlowNet_arch import SRFlowNet
+      self.netG = SRFlowNet(in_nc=cfg['network_G']['in_nc'], out_nc=cfg['network_G']['out_nc'],
+                nf=cfg['network_G']['nf'], nb=cfg['network_G']['nb'], scale=cfg['scale'], K=cfg['network_G']['flow']['K'], step=None)
 
-
-    if cfg['path']['checkpoint_path'] is None and cfg['network_G']['netG'] != 'GLEAN':
+    if cfg['path']['checkpoint_path'] is None and cfg['network_G']['netG'] != 'GLEAN' and cfg['network_G']['netG'] != 'srflow':
       if self.global_step == 0:
       #if self.trainer.global_step == 0:
         weights_init(self.netG, 'kaiming')
@@ -608,6 +634,16 @@ class CustomTrainClass(pl.LightningModule):
           # normal dataloader
           out = self.netG(train_batch[1])
 
+      if cfg['network_G']['netG'] == 'srflow':
+        # freeze rrdb in the beginning
+        if self.trainer.global_step < 100000:
+          self.netG.set_rrdb_training(False)
+        else:
+          self.netG.set_rrdb_training(True)
+        z, nll, y_logits = self.netG(gt=train_batch[2], lr=train_batch[1], reverse=False)
+        out, logdet = self.netG(lr=train_batch[1], z=z, eps_std=0, reverse=True, reverse_with_grad=True)
+        #out = torch.clamp(out, 0, 1) # forcing out to be between 0 and 1
+
       # train generator
       if optimizer_idx == 0:
         ############################
@@ -736,6 +772,12 @@ class CustomTrainClass(pl.LightningModule):
 
 
         writer.add_scalar('loss/g_loss', total_loss, self.trainer.global_step)
+
+        # srflow
+        if cfg['network_G']['netG'] == 'srflow':
+          nll_loss = torch.mean(nll)
+          total_loss += cfg['network_G']['nll_weight']*nll_loss
+          writer.add_scalar('loss/nll_loss', nll_loss, self.trainer.global_step)
 
         #return total_loss
         #########################
@@ -873,6 +915,16 @@ class CustomTrainClass(pl.LightningModule):
       else:
         # normal dataloader
         out = self.netG(train_batch[0])
+
+    if cfg['network_G']['netG'] == 'srflow':
+      # freeze rrdb in the beginning
+      if self.trainer.global_step < 100000:
+        self.netG.set_rrdb_training(False)
+      else:
+        self.netG.set_rrdb_training(True)
+
+      z = get_z(self, heat=0, seed=None, batch_size=1, lr_shape=train_batch[0].shape)
+      out, logdet = self.netG(lr=train_batch[0], z=z, eps_std=0, reverse=True, reverse_with_grad=True)
 
     # Validation metrics work, but they need an origial source image.
     if 'PSNR' in cfg['train']['metrics']:
