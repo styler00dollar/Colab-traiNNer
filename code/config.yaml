@@ -1,6 +1,7 @@
 name: template
 scale: 1
 gpus: 1
+distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
 use_amp: False
@@ -136,23 +137,23 @@ network_G:
 
     # GLEAN (2021)
     # Warning: Does require "pip install mmcv-full"
-    netG: GLEAN
-    in_size: 512
-    out_size: 512
-    img_channels: 4
-    img_channels_out: 3
-    rrdb_channels: 10 # 64
-    num_rrdbs: 5 # 23
-    style_channels: 125 # 512
-    num_mlps: 4 # 8
-    channel_multiplier: 2
-    blur_kernel: [1, 3, 3, 1]
-    lr_mlp: 0.01
-    default_style_mode: 'mix'
-    eval_style_mode: 'single'
-    mix_prob: 0.9
-    pretrained: False # if out_size is 1024, you can set it to True
-    bgr2rgb: False
+    #netG: GLEAN
+    #in_size: 512
+    #out_size: 512
+    #img_channels: 4
+    #img_channels_out: 3
+    #rrdb_channels: 10 # 64
+    #num_rrdbs: 5 # 23
+    #style_channels: 125 # 512
+    #num_mlps: 4 # 8
+    #channel_multiplier: 2
+    #blur_kernel: [1, 3, 3, 1]
+    #lr_mlp: 0.01
+    #default_style_mode: 'mix'
+    #eval_style_mode: 'single'
+    #mix_prob: 0.9
+    #pretrained: False # if out_size is 1024, you can set it to True
+    #bgr2rgb: False
 
     # srflow
     # Warning: Can be unstable, depending on the dataset, seems to crash with monochrome data
@@ -177,12 +178,30 @@ network_G:
     #    blocks: [ 1, 8, 15, 22 ]
     #    concat: true
     #nll_weight: 1
+    #freeze_iter: 100000
 
     # DFDNet
     # Warning: Expects "DictionaryCenter512" in the current folder, you can get the data here: https://drive.google.com/drive/folders/1bayYIUMCSGmoFPyd4Uu2Uwn347RW-vl5
     # Also wants a folder called "landmarks", you can generate that data yourself. Example: https://github.com/styler00dollar/Colab-DFDNet/blob/local/Colab-DFDNet-lightning-train.ipynb
     # Hardcoded resolution: 512px
     # netG: DFDNet
+    # dictionary_path: "./DictionaryCenter512"
+    # landmarkpath: "./landmarks"
+
+    # GFPGAN (2021)
+    netG: GFPGAN
+    out_size
+    num_style_feat: 512
+    channel_multiplier: 1
+    resample_kernel: (1, 3, 3, 1)
+    decoder_load_path: # None
+    fix_decoder: True
+    num_mlp: 8
+    lr_mlp: 0.01
+    input_is_latent: False
+    different_w: False
+    arrow: 1
+    sft_half: False
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)

@@ -18,27 +18,6 @@ from init import weights_init
 import os
 import numpy as np
 
-# srflow
-def get_z(self, heat, seed=None, batch_size=1, lr_shape=None):
-    if seed: torch.manual_seed(seed)
-    #if opt_get(self.opt, ['network_G', 'flow', 'split', 'enable']):
-    if cfg['network_G']['flow']['split']['enable']:
-        #C = self.netG.module.flowUpsamplerNet.C
-        C = self.netG.flowUpsamplerNet.C
-        #H = int(cfg['scale'] * lr_shape[2] // self.netG.module.flowUpsamplerNet.scaleH)
-        H = int(cfg['scale'] * lr_shape[2] // self.netG.flowUpsamplerNet.scaleH)
-        #W = int(cfg['scale'] * lr_shape[3] // self.netG.module.flowUpsamplerNet.scaleW)
-        W = int(cfg['scale'] * lr_shape[3] // self.netG.flowUpsamplerNet.scaleW)
-        size = (batch_size, C, H, W)
-        z = torch.normal(mean=0, std=heat, size=size) if heat > 0 else torch.zeros(
-            size)
-    else:
-        #L = opt_get(self.opt, ['network_G', 'flow', 'L']) or 3
-        L = cfg['network_G']['flow']['L']
-        fac = 2 ** (L - 3)
-        z_size = int(self.lr_size // (2 ** (L - 3)))
-        z = torch.normal(mean=0, std=heat, size=(batch_size, 3 * 8 * 8 * fac * fac, z_size, z_size))
-    return z
 
 class CustomTrainClass(pl.LightningModule):
   def __init__(self):
@@ -217,11 +196,19 @@ class CustomTrainClass(pl.LightningModule):
       from arch.SRFlowNet_arch import SRFlowNet
       self.netG = SRFlowNet(in_nc=cfg['network_G']['in_nc'], out_nc=cfg['network_G']['out_nc'],
                 nf=cfg['network_G']['nf'], nb=cfg['network_G']['nb'], scale=cfg['scale'], K=cfg['network_G']['flow']['K'], step=None)
+      from arch.SRFlowNet_arch import get_z
 
     # DFDNet
     elif cfg['network_G']['netG'] == 'DFDNet':
       from arch.SRFlowNet_arch import UNetDictFace
       self.netG = UNetDictFace(64)
+
+    # GFPGAN 
+    elif cfg['network_G']['netG'] == 'GFPGAN':
+      from arch.GFPGAN_arch import UNetDictFace
+      self.netG = GFPGANv1(out_size, num_style_feat=cfg['network_G']['num_style_feat'],channel_multiplier=cfg['network_G']['channel_multiplier'],resample_kernel=cfg['network_G']['resample_kernel'],decoder_load_path=cfg['network_G']['decoder_load_path'],
+                          fix_decoder=cfg['network_G']['fix_decoder'], num_mlp=cfg['network_G']['num_mlp'],lr_mlp=cfg['network_G']['lr_mlp'],input_is_latent=cfg['network_G']['input_is_latent'],
+                          different_w=cfg['network_G']['different_w'], arrow=cfg['network_G']['arrow'],sft_half=cfg['network_G']['sft_half'])
 
     if cfg['path']['checkpoint_path'] is None and cfg['network_G']['netG'] != 'GLEAN' and cfg['network_G']['netG'] != 'srflow':
       if self.global_step == 0:
@@ -639,9 +626,13 @@ class CustomTrainClass(pl.LightningModule):
           # normal dataloader
           out = self.netG(train_batch[1])
 
+      # GFPGAN
+      if cfg['network_G']['netG'] == 'GFPGAN':
+          out, _ = self.netG(train_batch[1])
+
       if cfg['network_G']['netG'] == 'srflow':
         # freeze rrdb in the beginning
-        if self.trainer.global_step < 100000:
+        if self.trainer.global_step < cfg['network_G']['freeze_iter']:
           self.netG.set_rrdb_training(False)
         else:
           self.netG.set_rrdb_training(True)
@@ -831,6 +822,8 @@ class CustomTrainClass(pl.LightningModule):
       #return total_loss+d_loss
 
   def configure_optimizers(self):
+
+  def configure_optimizers(self):
       if cfg['network_G']['finetune'] is None or cfg['network_G']['finetune'] == False:
         if cfg['train']['scheduler'] == 'Adam':
           opt_g = torch.optim.Adam(self.netG.parameters(), lr=cfg['train']['lr'])
@@ -846,6 +839,12 @@ class CustomTrainClass(pl.LightningModule):
           opt_g = SGDP(self.netG.parameters(), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
           if cfg['network_D']['netD'] != None:
             opt_d = SGDP(self.netD.parameters(), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
+        if cfg['train']['scheduler'] == 'MADGRAD':
+          from madgrad import MADGRAD
+          opt_g = MADGRAD(self.netG.parameters(), lr=cfg['train']['lr'], momentum =cfg['train']['momentum'], weight_decay=cfg['train']['weight_decay'], eps=cfg['train']['eps'])
+          if cfg['network_D']['netD'] != None:
+            opt_d = MADGRAD(self.netD.parameters(), lr=cfg['train']['lr'], momentum = cfg['train']['momentum'], weight_decay=cfg['train']['weight_decay'], eps=cfg['train']['eps'])
+
 
       if cfg['network_G']['finetune'] == True:
         if cfg['train']['scheduler'] == 'Adam':
@@ -862,6 +861,12 @@ class CustomTrainClass(pl.LightningModule):
           opt_g = SGDP(filter(lambda p:p.requires_grad, self.netG.parameters()), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
           if cfg['network_D']['netD'] != None:
             opt_d = SGDP(self.netD.parameters(), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
+        if cfg['train']['scheduler'] == 'MADGRAD':
+          from madgrad import MADGRAD
+          opt_g = MADGRAD(filter(lambda p:p.requires_grad, self.netG.parameters()), lr=cfg['train']['lr'], momentum =cfg['train']['momentum'], weight_decay=cfg['train']['weight_decay'], eps=cfg['train']['eps'])
+          if cfg['network_D']['netD'] != None:
+            opt_d = MADGRAD(self.netD.parameters(), lr=cfg['train']['lr'], momentum = cfg['train']['momentum'], weight_decay=cfg['train']['weight_decay'], eps=cfg['train']['eps'])
+
 
       if cfg['network_D']['netD'] != None:
         return [opt_g, opt_d], []
@@ -929,11 +934,15 @@ class CustomTrainClass(pl.LightningModule):
       else:
         # normal dataloader
         out = self.netG(train_batch[0])
+    
+    # GFPGAN
+    if cfg['network_G']['netG'] == 'GFPGAN':
+        out, _ = self.netG(train_batch[1])
 
 
     if cfg['network_G']['netG'] == 'srflow':
       # freeze rrdb in the beginning
-      if self.trainer.global_step < 100000:
+      if self.trainer.global_step < cfg['network_G']['freeze_iter']:
         self.netG.set_rrdb_training(False)
       else:
         self.netG.set_rrdb_training(True)

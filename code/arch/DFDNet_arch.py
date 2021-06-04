@@ -23,6 +23,11 @@ import pytorch_lightning as pl
 
 from functions import *
 
+import yaml
+
+with open("config.yaml", "r") as ymlfile:
+    cfg = yaml.safe_load(ymlfile)
+
 class VGGFeat(pl.LightningModule):
     """
     Input: (B, C, H, W), RGB, [-1, 1]
@@ -206,9 +211,10 @@ class StyledUpBlock(nn.Module):
         return outup
 
 class UNetDictFace(pl.LightningModule):
-    def __init__(self, ngf=64, dictionary_path='./DictionaryCenter512'):
+    def __init__(self, ngf=64):
         super().__init__()
-
+        # dictionary_path='./DictionaryCenter512'
+        dictionary_path = cfg['network_G']['dictionary_path']
         self.part_sizes = np.array([80,80,50,110]) # size for 512
         self.feature_sizes = np.array([256,128,64,32])
         self.channel_sizes = np.array([128,256,512,512])

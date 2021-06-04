@@ -23,6 +23,30 @@ import yaml
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
+
+# srflow
+def get_z(self, heat, seed=None, batch_size=1, lr_shape=None):
+    if seed: torch.manual_seed(seed)
+    #if opt_get(self.opt, ['network_G', 'flow', 'split', 'enable']):
+    if cfg['network_G']['flow']['split']['enable']:
+        #C = self.netG.module.flowUpsamplerNet.C
+        C = self.netG.flowUpsamplerNet.C
+        #H = int(cfg['scale'] * lr_shape[2] // self.netG.module.flowUpsamplerNet.scaleH)
+        H = int(cfg['scale'] * lr_shape[2] // self.netG.flowUpsamplerNet.scaleH)
+        #W = int(cfg['scale'] * lr_shape[3] // self.netG.module.flowUpsamplerNet.scaleW)
+        W = int(cfg['scale'] * lr_shape[3] // self.netG.flowUpsamplerNet.scaleW)
+        size = (batch_size, C, H, W)
+        z = torch.normal(mean=0, std=heat, size=size) if heat > 0 else torch.zeros(
+            size)
+    else:
+        #L = opt_get(self.opt, ['network_G', 'flow', 'L']) or 3
+        L = cfg['network_G']['flow']['L']
+        fac = 2 ** (L - 3)
+        z_size = int(self.lr_size // (2 ** (L - 3)))
+        z = torch.normal(mean=0, std=heat, size=(batch_size, 3 * 8 * 8 * fac * fac, z_size, z_size))
+    return z
+
+
 class SRFlowNet(nn.Module):
     def __init__(self, in_nc, out_nc, nf, nb, gc=32, scale=4, K=None, step=None):
         super(SRFlowNet, self).__init__()

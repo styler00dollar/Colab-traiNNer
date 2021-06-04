@@ -493,9 +493,9 @@ class DS_inpaint_tiled_batch_val(Dataset):
 
 
 # DFDNet
-    def get_part_location(self, landmarkpath, imgname, downscale=1):
+    def get_part_location(self, imgname, downscale=1):
         Landmarks = []
-        with open(os.path.join(landmarkpath, imgname + '.txt'),'r') as f:
+        with open(os.path.join(cfg['network_G']['landmarkpath'], imgname + '.txt'),'r') as f:
             for line in f:
                 tmp = [np.float(i) for i in line.split(' ') if i != '\n']
                 Landmarks.append(tmp)
@@ -567,11 +567,14 @@ class DS_lrhr(Dataset):
         hr_image = torch.from_numpy(hr_image).permute(2, 0, 1)/255
         lr_image = torch.from_numpy(lr_image).permute(2, 0, 1)/255
 
-        # if generator is DFDNet, also pass landmarks
+        # if generator is DFDNet, change image range to [-1,1] and also pass landmarks
         if cfg['network_G']['netG'] == 'DFDNet':
-          landmarks = get_part_location(os.path.dirname(hr_path), os.path.basename(hr_path), 1)
+          hr_image = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(hr_image)
+          lr_image = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(lr_image)
+
+          landmarks = get_part_location(os.path.basename(hr_path), 1)
           return 0, lr_image, hr_image, landmarks
-	else:
+        else:
           return 0, lr_image, hr_image
 
 
@@ -604,8 +607,12 @@ class DS_lrhr_val(Dataset):
         hr_image = torch.from_numpy(hr_image).permute(2, 0, 1)/255
         lr_image = torch.from_numpy(lr_image).permute(2, 0, 1)/255
 
-        return lr_image, hr_image, lr_path
-
+        # if generator is DFDNet, also pass landmarks
+        if cfg['network_G']['netG'] == 'DFDNet':
+          landmarks = get_part_location(os.path.dirname(hr_path), os.path.basename(hr_path), 1)
+          return lr_image, hr_image, lr_path, landmarks
+        else:
+          return lr_image, hr_image, lr_path
 
 
 
