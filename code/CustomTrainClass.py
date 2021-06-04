@@ -626,7 +626,6 @@ class CustomTrainClass(pl.LightningModule):
             out = train_batch[0]*(train_batch[1])+out*(1-train_batch[1])
         else:
           # normal dataloader
-          print(train_batch[1].shape)
           out = self.netG(train_batch[1])
 
       # GFPGAN
