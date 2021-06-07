@@ -1,6 +1,6 @@
 name: template
 scale: 1
-gpus: 1
+gpus: 1 # amount of gpus
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
@@ -19,14 +19,14 @@ datasets:
     # DS_lrhr_batch_oft: loads grayscale-hr (3x3 400px) from dataroot_LR and generates lr by downscaling otf randomly
 
     mode: DS_lrhr # DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
-    grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
+    grayscale: True # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
     dataroot_HR: '/content/hr' # Original, with a single directory. Inpainting will use this directory as source image.
     dataroot_LR: '/content/lr' # Original, with a single directory
 
     n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     batch_size: 1
     batch_size_DL: 1
-    HR_size: 100 # The resolution the network will get. Random crop gets applied if that resolution does not match.
+    HR_size: 400 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 1 # number of channels to load images in
 
     masks: '/content/masks/'
@@ -58,22 +58,22 @@ network_G:
     finetune: False # Important for further rfr/dsnet training. Apply that after training for a while. https://github.com/jingyuanli001/RFR-Inpainting/issues/33
 
     # ESRGAN:
-    #netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch)
-    #norm_type: null
-    #mode: CNA
-    #nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
-    #nb: 23 # (default: 23, good: 8)
-    #in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
-    #out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
-    #gc: 32
-    #group: 1
-    #convtype: Conv2D # Conv2D | PartialConv2D
-    #net_act: leakyrelu # swish | leakyrelu
-    #gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
-    #plus: false # true | false
-    #finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
-    #upsample_mode: 'upconv'
-    #nr: 3
+    netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch)
+    norm_type: null
+    mode: CNA
+    nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
+    nb: 23 # (default: 23, good: 8)
+    in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
+    out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
+    gc: 32
+    group: 1
+    convtype: Conv2D # Conv2D | PartialConv2D
+    net_act: leakyrelu # swish | leakyrelu
+    gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
+    plus: false # true | false
+    finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
+    upsample_mode: 'upconv'
+    nr: 3
 
     # ASRGAN:
     #which_model_G: asr_resnet # asr_resnet | asr_cnn
@@ -189,19 +189,19 @@ network_G:
     #val_landmarkpath: "/content/landmarks"
 
     # GFPGAN (2021)
-    netG: GFPGAN
-    out_size: 512
-    num_style_feat: 512
-    channel_multiplier: 1
-    resample_kernel: [1, 3, 3, 1]
-    decoder_load_path: # None
-    fix_decoder: True
-    num_mlp: 8
-    lr_mlp: 0.01
-    input_is_latent: False
-    different_w: False
-    narrow: 1
-    sft_half: False
+    #netG: GFPGAN
+    #out_size: 512
+    #num_style_feat: 512
+    #channel_multiplier: 1
+    #resample_kernel: [1, 3, 3, 1]
+    #decoder_load_path: # None
+    #fix_decoder: True
+    #num_mlp: 8
+    #lr_mlp: 0.01
+    #input_is_latent: False
+    #different_w: False
+    #narrow: 1
+    #sft_half: False
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
@@ -347,7 +347,7 @@ network_D:
     d_loss_fool_weight: 1 # inside the generator loop, trying to fool the disciminator
     d_loss_weight: 1 # inside own discriminator update
     
-    netD: # in case there is no discriminator, leave it empty
+    #netD: # in case there is no discriminator, leave it empty
 
     # VGG
     #netD: VGG
@@ -511,8 +511,17 @@ network_D:
     #num_classes: 1
     #pretrain: True
   
+    # NFNet
+    netD: NFNet
+    num_classes: 1
+    variant: 'F0'         # F0 - F7
+    stochdepth_rate: 0.25 # 0-1, the probability that a layer is dropped during one step
+    alpha: 0.2            # Scaling factor at the end of each block
+    se_ratio: 0.5         # Squeeze-Excite expansion ratio
+    activation: 'gelu'    # or 'relu'
+
 train: 
-    scheduler: AdamP # AdamP, Adam, SGDP, MADGRAD
+    scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD
     lr: 0.0001
     
     # AdamP, AGDP, MADGRAD

@@ -484,14 +484,24 @@ class CustomTrainClass(pl.LightningModule):
           relative_pos_embedding=cfg['network_D']['relative_pos_embedding']
       )
 
+    # NFNet
+    elif cfg['network_D']['netD'] == 'NFNet':
+      from arch.NFNet_arch import NFNet
+      self.netD = NFNet(
+            num_classes=cfg['network_D']['num_classes'],
+            variant=cfg['network_D']['variant'],
+            stochdepth_rate=cfg['network_D']['stochdepth_rate'],
+            alpha=cfg['network_D']['alpha'],
+            se_ratio=cfg['network_D']['se_ratio'],
+            activation=cfg['network_D']['activation']
+            )
 
     # only doing init, if not 'TranformerDiscriminator', 'EfficientNet', 'ResNeSt', 'resnet', 'ViT', 'DeepViT', 'mobilenetV3'
     # should probably be rewritten
-    if cfg['network_D']['netD'] == 'context_encoder' or cfg['network_D']['netD'] == 'VGG' or cfg['network_D']['netD'] == 'VGG_fea' or cfg['network_D']['netD'] == 'Discriminator_VGG_128_SN' or cfg['network_D']['netD'] == 'VGGFeatureExtractor' or cfg['network_D']['netD'] == 'NLayerDiscriminator' or cfg['network_D']['netD'] == 'MultiscaleDiscriminator' or cfg['network_D']['netD'] == 'Discriminator_ResNet_128' or cfg['network_D']['netD'] == 'ResNet101FeatureExtractor' or  cfg['network_D']['netD'] == 'MINCNet' or cfg['network_D']['netD'] == 'PixelDiscriminator' or cfg['network_D']['netD'] == 'ResNeSt' or cfg['network_D']['netD'] == 'RepVGG' or cfg['network_D']['netD'] == 'squeezenet' or cfg['network_D']['netD'] == 'SwinTransformer':
+    if cfg['network_D']['netD'] == 'NFNet' or cfg['network_D']['netD'] == 'context_encoder' or cfg['network_D']['netD'] == 'VGG' or cfg['network_D']['netD'] == 'VGG_fea' or cfg['network_D']['netD'] == 'Discriminator_VGG_128_SN' or cfg['network_D']['netD'] == 'VGGFeatureExtractor' or cfg['network_D']['netD'] == 'NLayerDiscriminator' or cfg['network_D']['netD'] == 'MultiscaleDiscriminator' or cfg['network_D']['netD'] == 'Discriminator_ResNet_128' or cfg['network_D']['netD'] == 'ResNet101FeatureExtractor' or  cfg['network_D']['netD'] == 'MINCNet' or cfg['network_D']['netD'] == 'PixelDiscriminator' or cfg['network_D']['netD'] == 'ResNeSt' or cfg['network_D']['netD'] == 'RepVGG' or cfg['network_D']['netD'] == 'squeezenet' or cfg['network_D']['netD'] == 'SwinTransformer':
       if self.global_step == 0:
         weights_init(self.netD, 'kaiming')
         print("Discriminator weight init complete.")
-
 
 
     # loss functions
@@ -871,7 +881,6 @@ class CustomTrainClass(pl.LightningModule):
           if cfg['network_D']['netD'] != None:
             opt_d = MADGRAD(self.netD.parameters(), lr=cfg['train']['lr'], momentum = cfg['train']['momentum'], weight_decay=cfg['train']['weight_decay'], eps=cfg['train']['eps'])
 
-
       if cfg['network_D']['netD'] != None:
         return [opt_g, opt_d], []
       else:
@@ -938,7 +947,7 @@ class CustomTrainClass(pl.LightningModule):
       else:
         # normal dataloader
         out = self.netG(train_batch[0])
-    
+
     # GFPGAN
     if cfg['network_G']['netG'] == 'GFPGAN':
         out, _ = self.netG(train_batch[1])
