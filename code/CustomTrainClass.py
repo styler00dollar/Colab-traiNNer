@@ -496,6 +496,13 @@ class CustomTrainClass(pl.LightningModule):
             activation=cfg['network_D']['activation']
             )
 
+    elif cfg['network_D']['netD'] == 'lvvit':
+      from arch.lvvit_arch import LV_ViT
+      self.netD = LV_ViT( img_size=cfg['network_D']['img_size'], patch_size=cfg['network_D']['patch_size'], in_chans=cfg['network_D']['in_chans'], num_classes=cfg['network_D']['num_classes'], embed_dim=cfg['network_D']['embed_dim'], depth=cfg['network_D']['depth'],
+                num_heads=cfg['network_D']['num_heads'], mlp_ratio=cfg['network_D']['mlp_ratio'], qkv_bias=cfg['network_D']['qkv_bias'], qk_scale=cfg['network_D']['qk_scale'], drop_rate=cfg['network_D']['drop_rate'], attn_drop_rate=cfg['network_D']['attn_drop_rate'],
+                drop_path_rate=cfg['network_D']['drop_path_rate'], drop_path_decay=cfg['network_D']['drop_path_decay'], hybrid_backbone=cfg['network_D']['hybrid_backbone'], norm_layer=nn.LayerNorm, p_emb=cfg['network_D']['p_emb'], head_dim = cfg['network_D']['head_dim'],
+                skip_lam =cfg['network_D']['skip_lam'],order=cfg['network_D']['order'], mix_token=cfg['network_D']['mix_token'], return_dense=cfg['network_D']['return_dense'])
+
     # only doing init, if not 'TranformerDiscriminator', 'EfficientNet', 'ResNeSt', 'resnet', 'ViT', 'DeepViT', 'mobilenetV3'
     # should probably be rewritten
     if cfg['network_D']['netD'] == 'NFNet' or cfg['network_D']['netD'] == 'context_encoder' or cfg['network_D']['netD'] == 'VGG' or cfg['network_D']['netD'] == 'VGG_fea' or cfg['network_D']['netD'] == 'Discriminator_VGG_128_SN' or cfg['network_D']['netD'] == 'VGGFeatureExtractor' or cfg['network_D']['netD'] == 'NLayerDiscriminator' or cfg['network_D']['netD'] == 'MultiscaleDiscriminator' or cfg['network_D']['netD'] == 'Discriminator_ResNet_128' or cfg['network_D']['netD'] == 'ResNet101FeatureExtractor' or  cfg['network_D']['netD'] == 'MINCNet' or cfg['network_D']['netD'] == 'PixelDiscriminator' or cfg['network_D']['netD'] == 'ResNeSt' or cfg['network_D']['netD'] == 'RepVGG' or cfg['network_D']['netD'] == 'squeezenet' or cfg['network_D']['netD'] == 'SwinTransformer':
