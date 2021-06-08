@@ -560,7 +560,7 @@ train:
     lr: 0.0001
     
     # AdamP, AGDP, MADGRAD
-    weight_decay: 1e-2
+    weight_decay: 0.01
 
     # SGDP, MAGDRAD
     momentum: 0.9
