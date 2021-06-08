@@ -211,7 +211,7 @@ class CustomTrainClass(pl.LightningModule):
     # GFPGAN (error with init?)
     elif cfg['network_G']['netG'] == 'GFPGAN':
       from arch.GFPGAN_arch import GFPGANv1
-      self.netG = GFPGANv1(out_size=cfg['network_G']['out_size'], num_style_feat=cfg['network_G']['num_style_feat'],channel_multiplier=cfg['network_G']['channel_multiplier'],resample_kernel=cfg['network_G']['resample_kernel'],decoder_load_path=cfg['network_G']['decoder_load_path'],
+      self.netG = GFPGANv1(input_channels=cfg['network_G']['input_channels'], output_channels=cfg['network_G']['output_channels'], out_size=cfg['network_G']['out_size'], num_style_feat=cfg['network_G']['num_style_feat'],channel_multiplier=cfg['network_G']['channel_multiplier'],resample_kernel=cfg['network_G']['resample_kernel'],decoder_load_path=cfg['network_G']['decoder_load_path'],
                           fix_decoder=cfg['network_G']['fix_decoder'], num_mlp=cfg['network_G']['num_mlp'],lr_mlp=cfg['network_G']['lr_mlp'],input_is_latent=cfg['network_G']['input_is_latent'],
                           different_w=cfg['network_G']['different_w'], narrow=cfg['network_G']['narrow'],sft_half=cfg['network_G']['sft_half'])
 
@@ -672,6 +672,12 @@ class CustomTrainClass(pl.LightningModule):
 
       # GFPGAN
       if cfg['network_G']['netG'] == 'GFPGAN':
+        if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
+          # masked test with inpaint dataloader
+          tmp = torch.cat([train_batch[0], train_batch[1]],1)
+          out, _ = self.netG(tmp)
+          out = train_batch[0]*(train_batch[1])+out*(1-train_batch[1])
+        else:
           out, _ = self.netG(train_batch[1])
 
       if cfg['network_G']['netG'] == 'srflow':
@@ -981,6 +987,14 @@ class CustomTrainClass(pl.LightningModule):
 
     # GFPGAN
     if cfg['network_G']['netG'] == 'GFPGAN':
+      if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
+        # masked test with inpaint dataloader
+        tmp = torch.cat([train_batch[0], train_batch[1]],1)
+        print("tmp.shape")
+        print(tmp.shape)
+        out, _ = self.netG(tmp)
+        out = train_batch[0]*(train_batch[1])+out*(1-train_batch[1])
+      else:
         out, _ = self.netG(train_batch[1])
 
 

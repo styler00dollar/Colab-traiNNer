@@ -1314,7 +1314,9 @@ class GFPGANv1(nn.Module):
 
     def __init__(
             self,
-            out_size,
+            input_channels=4,
+            output_channels=3,
+            out_size=512,
             num_style_feat=512,
             channel_multiplier=1,
             resample_kernel=(1, 3, 3, 1),
@@ -1349,7 +1351,7 @@ class GFPGANv1(nn.Module):
         self.log_size = int(math.log(out_size, 2))
         first_out_size = 2**(int(math.log(out_size, 2)))
 
-        self.conv_body_first = ConvLayer(3, channels[f'{first_out_size}'], 1, bias=True, activate=True)
+        self.conv_body_first = ConvLayer(input_channels, channels[f'{first_out_size}'], 1, bias=True, activate=True)
 
         # downsample
         in_channels = channels[f'{first_out_size}']
@@ -1359,7 +1361,7 @@ class GFPGANv1(nn.Module):
             self.conv_body_down.append(ResBlock(in_channels, out_channels, resample_kernel))
             in_channels = out_channels
 
-        self.final_conv = ConvLayer(in_channels, channels['4'], 3, bias=True, activate=True)
+        self.final_conv = ConvLayer(in_channels, channels['4'], output_channels, bias=True, activate=True)
 
         # upsample
         in_channels = channels['4']
