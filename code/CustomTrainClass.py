@@ -21,6 +21,10 @@ import numpy as np
 if cfg['train']['diffaug'] == True:
   from loss.diffaug import DiffAugment
 
+if cfg['network_G']['CEM'] == True:
+  from arch.CEM import CEMnet
+
+
 class CustomTrainClass(pl.LightningModule):
   def __init__(self):
     super().__init__()
@@ -219,6 +223,17 @@ class CustomTrainClass(pl.LightningModule):
         print("Generator weight init complete.")
     ############################
 
+    if cfg['network_G']['CEM'] == True:
+      CEM_conf = CEMnet.Get_CEM_Conf(cfg['scale'])
+      CEM_conf.sigmoid_range_limit = cfg['network_G']['sigmoid_range_limit']
+      if CEM_conf.sigmoid_range_limit:
+          CEM_conf.input_range = [-1,1] if z_norm else [0,1]
+      kernel = None  # note: could pass a kernel here, but None will use default cubic kernel
+      self.CEM_net = CEMnet.CEMnet(CEM_conf, upscale_kernel=kernel)
+      self.CEM_net.WrapArchitecture(only_padders=True)
+      self.netG = self.CEM_net.WrapArchitecture(self.netG, training_patch_size=cfg['datasets']['train']['HR_size'])
+
+    ############################
 
     # discriminators
     # size refers to input shape of tensor
@@ -644,6 +659,10 @@ class CustomTrainClass(pl.LightningModule):
         else:
           # normal dataloader
           out = self.netG(train_batch[1])
+          # # unpad images if using CEM
+          if cfg['network_G']['CEM'] == True:
+            out = self.CEM_net.HR_unpadder(out)
+            train_batch[2] = self.CEM_net.HR_unpadder(train_batch[2])
 
       # GFPGAN
       if cfg['network_G']['netG'] == 'GFPGAN':

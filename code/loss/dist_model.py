@@ -103,10 +103,10 @@ class DistModel(BaseModel):
             self.net.eval()
 
         if(use_gpu):
-            self.net.to(gpu_ids[0])
-            self.net = torch.nn.DataParallel(self.net, device_ids=gpu_ids)
+            self.net.to(self.device)
+            #self.net = torch.nn.DataParallel(self.net, device_ids=gpu_ids)
             if(self.is_train):
-                self.rankLoss = self.rankLoss.to(device=gpu_ids[0]) # just put this on GPU0
+                self.rankLoss = self.rankLoss.to(device=self.device)
 
         if(printNet):
             print('---------- Networks initialized -------------')

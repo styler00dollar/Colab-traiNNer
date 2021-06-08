@@ -1,3 +1,9 @@
+
+"""
+block.py
+https://github.com/victorca25/BasicSR/blob/c594cada9422f6f3447fbeb2b2e21e4407ab1188/codes/models/modules/architectures/block.py
+"""
+
 from collections import OrderedDict
 
 import torch
@@ -420,7 +426,8 @@ class GaussianNoise(nn.Module):
         super().__init__()
         self.sigma = sigma
         self.is_relative_detach = is_relative_detach
-        self.noise = torch.tensor(0, dtype=torch.float).to(torch.device('cuda'))
+        #self.noise = torch.tensor(0, dtype=torch.float).to(torch.device('cuda')) # avoiding cuda problems
+        self.noise = torch.tensor(0, dtype=torch.float).to(torch.device(self.device))
 
     def forward(self, x):
         if self.training and self.sigma != 0:

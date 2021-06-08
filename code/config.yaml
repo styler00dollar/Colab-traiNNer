@@ -1,6 +1,6 @@
 name: template
-scale: 1
-gpus: 1 # amount of gpus
+scale: 4
+gpus: 1 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
@@ -26,7 +26,7 @@ datasets:
     n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     batch_size: 1
     batch_size_DL: 1
-    HR_size: 400 # The resolution the network will get. Random crop gets applied if that resolution does not match.
+    HR_size: 100 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 1 # number of channels to load images in
 
     masks: '/content/masks/'
@@ -55,6 +55,10 @@ path:
 
 # Generator options:
 network_G:
+    # CEM (for esrgan, not 1x)
+    CEM: True # uses hardcoded torch.cuda.FloatTensor
+    sigmoid_range_limit: False
+
     finetune: False # Important for further rfr/dsnet training. Apply that after training for a while. https://github.com/jingyuanli001/RFR-Inpainting/issues/33
 
     # ESRGAN:
@@ -347,7 +351,7 @@ network_D:
     d_loss_fool_weight: 1 # inside the generator loop, trying to fool the disciminator
     d_loss_weight: 1 # inside own discriminator update
     
-    #netD: # in case there is no discriminator, leave it empty
+    netD: # in case there is no discriminator, leave it empty
 
     # VGG
     #netD: VGG
@@ -512,13 +516,39 @@ network_D:
     #pretrain: True
   
     # NFNet
-    netD: NFNet
-    num_classes: 1
-    variant: 'F0'         # F0 - F7
-    stochdepth_rate: 0.25 # 0-1, the probability that a layer is dropped during one step
-    alpha: 0.2            # Scaling factor at the end of each block
-    se_ratio: 0.5         # Squeeze-Excite expansion ratio
-    activation: 'gelu'    # or 'relu'
+    #netD: NFNet
+    #num_classes: 1
+    #variant: 'F0'         # F0 - F7
+    #stochdepth_rate: 0.25 # 0-1, the probability that a layer is dropped during one step
+    #alpha: 0.2            # Scaling factor at the end of each block
+    #se_ratio: 0.5         # Squeeze-Excite expansion ratio
+    #activation: 'gelu'    # or 'relu'
+
+    # lvvit (2021)
+    # Warning: Needs 'pip install timm==0.4.5'
+    #netD: lvvit
+    #img_size: 224
+    #patch_size: 16
+    #in_chans: 3
+    #num_classes: 1
+    #embed_dim: 768
+    #depth: 12
+    #num_heads: 12
+    #mlp_ratio: 4.
+    #qkv_bias: False
+    #qk_scale: # None
+    #drop_rate: 0.
+    #attn_drop_rate: 0.
+    #drop_path_rate: 0.
+    #drop_path_decay: 'linear'
+    #hybrid_backbone: # None
+    ##norm_layer: nn.LayerNorm # Deafault: nn.LayerNorm / can't be configured
+    #p_emb: '4_2'
+    #head_dim: # None
+    #skip_lam: 1.0
+    #order: # None
+    #mix_token: False
+    #return_dense: False
 
 train: 
     scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD
@@ -606,7 +636,7 @@ train:
     colorspace: 'rgb'
     spatial: False
     use_gpu: False # False for TPU training
-    gpu_ids: [0]
+    gpu_ids: [0] # depricated, uses self.device instead
     #model_path: None # todo
 
     # Contextual_Loss (3-channel input)
