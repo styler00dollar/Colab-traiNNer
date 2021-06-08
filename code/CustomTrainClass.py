@@ -860,7 +860,7 @@ class CustomTrainClass(pl.LightningModule):
           dis_real_loss = self.MSELoss(self.netD(DiffAugment(train_batch[2], cfg['train']['policy'])), valid)
           dis_fake_loss = self.MSELoss(self.netD(out), fake)
         else:
-          dis_real_loss = self.MSELoss(self.netD(DiffAugment(train_batch[2], cfg['train']['policy'])), valid)
+          dis_real_loss = self.MSELoss(self.netD(train_batch[2]), valid)
           dis_fake_loss = self.MSELoss(self.netD(out), fake)
 
 
@@ -990,8 +990,6 @@ class CustomTrainClass(pl.LightningModule):
       if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
         # masked test with inpaint dataloader
         tmp = torch.cat([train_batch[0], train_batch[1]],1)
-        print("tmp.shape")
-        print(tmp.shape)
         out, _ = self.netG(tmp)
         out = train_batch[0]*(train_batch[1])+out*(1-train_batch[1])
       else:
