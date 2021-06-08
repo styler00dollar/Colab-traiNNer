@@ -15,7 +15,7 @@ from pdb import set_trace as st
 from IPython import embed
 from . import pretrained_networks as pn
 
-from vic import perceptual_loss as util
+from . import perceptual_loss as util
 from .block import Upsample
 
 def spatial_average(in_tens, keepdim=True):

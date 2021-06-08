@@ -18,6 +18,7 @@ class BaseModel():
     def initialize(self, use_gpu=True, gpu_ids=[0]):
         self.use_gpu = use_gpu
         self.gpu_ids = gpu_ids
+        self.device = device
 
     def forward(self):
         pass

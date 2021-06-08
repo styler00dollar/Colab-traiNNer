@@ -1,6 +1,6 @@
 """
-https://github.com/victorca25/BasicSR/blob/master/codes/models/modules/LPIPS/perceptual_loss.py
-BasicSR/codes/models/modules/LPIPS/perceptual_loss.py (6-12-Dez)
+perceptual_loss.py (08-06-21)
+https://github.com/victorca25/BasicSR/blob/14aced7d1049a283761c145f3cf300a94c6ac4b9/codes/models/modules/LPIPS/perceptual_loss.py
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -11,11 +11,11 @@ import numpy as np
 import torch
 from torch.autograd import Variable
 
-from . import dist_model
+#from . import dist_model
 #from models.modules import dist_model
 
 class PerceptualLoss(torch.nn.Module):
-    def __init__(self, model='net-lin', net='alex', colorspace='rgb', spatial=False, use_gpu=True, gpu_ids=[0], model_path=None, device = None): # VGG using our perceptually-learned weights (LPIPS metric)
+    def __init__(self, model='net-lin', net='alex', colorspace='rgb', spatial=False, use_gpu=True, gpu_ids=[0], model_path=None): # VGG using our perceptually-learned weights (LPIPS metric)
     # def __init__(self, model='net', net='vgg', use_gpu=True): # "default" way of using VGG as a perceptual loss
         super(PerceptualLoss, self).__init__()
         print('Setting up Perceptual loss...')
@@ -23,7 +23,7 @@ class PerceptualLoss(torch.nn.Module):
         self.spatial = spatial
         self.gpu_ids = gpu_ids
         self.model = dist_model.DistModel()
-        self.model.initialize(model=model, net=net, use_gpu=use_gpu, colorspace=colorspace, spatial=self.spatial, gpu_ids=gpu_ids, model_path=model_path, device = device)
+        self.model.initialize(model=model, net=net, use_gpu=use_gpu, colorspace=colorspace, spatial=self.spatial, gpu_ids=gpu_ids, model_path=model_path)
         print('...[%s] initialized'%self.model.name())
         print('...Done')
 

@@ -4,7 +4,6 @@ with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
 from loss.loss import CharbonnierLoss, GANLoss, GradientPenaltyLoss, HFENLoss, TVLoss, GradientLoss, ElasticLoss, RelativeL1, L1CosineSim, ClipL1, MaskedL1Loss, MultiscalePixelLoss, FFTloss, OFLoss, L1_regularization, ColorLoss, AverageLoss, GPLoss, CPLoss, SPL_ComputeWithTrace, SPLoss, Contextual_Loss, StyleLoss
-from loss.perceptual_loss import PerceptualLoss
 from loss.metrics import *
 from torchvision.utils import save_image
 from torch.autograd import Variable
@@ -518,6 +517,14 @@ class CustomTrainClass(pl.LightningModule):
                 drop_path_rate=cfg['network_D']['drop_path_rate'], drop_path_decay=cfg['network_D']['drop_path_decay'], hybrid_backbone=cfg['network_D']['hybrid_backbone'], norm_layer=nn.LayerNorm, p_emb=cfg['network_D']['p_emb'], head_dim = cfg['network_D']['head_dim'],
                 skip_lam =cfg['network_D']['skip_lam'],order=cfg['network_D']['order'], mix_token=cfg['network_D']['mix_token'], return_dense=cfg['network_D']['return_dense'])
 
+    elif cfg['network_D']['netD'] == 'PNetLin':
+      from arch.networks_basic import PNetLin
+      self.netD = PNetLin(pnet_rand=cfg['network_D']['pnet_rand'], pnet_tune=cfg['network_D']['pnet_tune'], pnet_type=cfg['network_D']['pnet_type'],
+                use_dropout=cfg['network_D']['use_dropout'], spatial=cfg['network_D']['spatial'], version=cfg['network_D']['version'], lpips=cfg['network_D']['lpips'])
+      model_path = os.path.abspath('loss/lpips_weights/v0.1/%s.pth'%(cfg['network_D']['pnet_type']))
+      print('Loading model from: %s'%model_path)
+      self.netD.load_state_dict(torch.load(model_path), strict=False)
+
     # only doing init, if not 'TranformerDiscriminator', 'EfficientNet', 'ResNeSt', 'resnet', 'ViT', 'DeepViT', 'mobilenetV3'
     # should probably be rewritten
     if cfg['network_D']['netD'] == 'NFNet' or cfg['network_D']['netD'] == 'context_encoder' or cfg['network_D']['netD'] == 'VGG' or cfg['network_D']['netD'] == 'VGG_fea' or cfg['network_D']['netD'] == 'Discriminator_VGG_128_SN' or cfg['network_D']['netD'] == 'VGGFeatureExtractor' or cfg['network_D']['netD'] == 'NLayerDiscriminator' or cfg['network_D']['netD'] == 'MultiscaleDiscriminator' or cfg['network_D']['netD'] == 'Discriminator_ResNet_128' or cfg['network_D']['netD'] == 'ResNet101FeatureExtractor' or  cfg['network_D']['netD'] == 'MINCNet' or cfg['network_D']['netD'] == 'PixelDiscriminator' or cfg['network_D']['netD'] == 'ResNeSt' or cfg['network_D']['netD'] == 'RepVGG' or cfg['network_D']['netD'] == 'squeezenet' or cfg['network_D']['netD'] == 'SwinTransformer':
@@ -545,7 +552,6 @@ class CustomTrainClass(pl.LightningModule):
     self.CPLoss = CPLoss(rgb=cfg['train']['rgb'], yuv=cfg['train']['yuv'], yuvgrad=cfg['train']['yuvgrad'], trace=cfg['train']['trace'], spl_denorm=cfg['train']['spl_denorm'], yuv_denorm=cfg['train']['yuv_denorm'])
     self.StyleLoss = StyleLoss()
     self.TVLoss = TVLoss(tv_type=cfg['train']['tv_type'], p = cfg['train']['p'])
-    self.PerceptualLoss = PerceptualLoss(model=cfg['train']['model'], net=cfg['train']['net'], colorspace=cfg['train']['colorspace'], spatial=cfg['train']['spatial'], use_gpu=cfg['train']['use_gpu'], gpu_ids=cfg['train']['gpu_ids'])
     self.Contextual_Loss = Contextual_Loss(cfg['train']['layers_weights'], crop_quarter=cfg['train']['crop_quarter'], max_1d_size=cfg['train']['max_1d_size'],
         distance_type = cfg['train']['distance_type'], b=cfg['train']['b'], band_width=cfg['train']['band_width'],
         use_vgg = cfg['train']['use_vgg'], net = cfg['train']['net_contextual'], calc_type = cfg['train']['calc_type'])
@@ -756,13 +762,6 @@ class CustomTrainClass(pl.LightningModule):
           total_loss += tv_forward
           writer.add_scalar('loss/tv', tv_forward, self.trainer.global_step)
 
-        if cfg['train']['PerceptualLoss_weight'] > 0:
-          perceptual_forward = cfg['train']['PerceptualLoss_weight']*self.PerceptualLoss(out, train_batch[2])
-          total_loss += perceptual_forward
-          writer.add_scalar('loss/perceptual', perceptual_forward, self.trainer.global_step)
-
-
-
 
         #########################
         # exotic loss
@@ -825,14 +824,24 @@ class CustomTrainClass(pl.LightningModule):
         #########################
         if cfg['network_D']['netD'] != None:
           # Try to fool the discriminator
-          Tensor = torch.cuda.FloatTensor #if cuda else torch.FloatTensor
-          fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1)
-          if cfg['train']['diffaug'] == True:
-            d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(DiffAugment(out, cfg['train']['policy'])), fake)
-          else:
-            d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(out), fake)
+          if cfg['network_D']['netD'] != "PNetLin":
+            Tensor = torch.cuda.FloatTensor #if cuda else torch.FloatTensor
+            fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1)
+            if cfg['train']['diffaug'] == True:
+              d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(DiffAugment(out, cfg['train']['policy'])), fake)
+            else:
+              d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(out), fake)
 
-          writer.add_scalar('loss/d_loss_fool', d_loss_fool, self.trainer.global_step)
+            writer.add_scalar('loss/d_loss_fool', d_loss_fool, self.trainer.global_step)
+
+          else:
+            # perceptual loss does need lr and hr
+            if cfg['train']['diffaug'] == True:
+              tmp = self.netD(in0=DiffAugment(out, cfg['train']['policy']), in1=DiffAugment(train_batch[2], cfg['train']['policy']))
+            else:
+              tmp = self.netD(in0=out, in1=train_batch[2])
+            d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * tmp
+
           total_loss += d_loss_fool
 
         return total_loss
@@ -840,8 +849,6 @@ class CustomTrainClass(pl.LightningModule):
 
       # train discriminator
       if optimizer_idx == 1:
-
-
         Tensor = torch.cuda.FloatTensor #if cuda else torch.FloatTensor
         valid = Variable(Tensor((out.shape[0])).fill_(1.0), requires_grad=False).unsqueeze(-1)
         fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1)
@@ -860,54 +867,55 @@ class CustomTrainClass(pl.LightningModule):
         writer.add_scalar('loss/d_loss', d_loss, self.trainer.global_step)
 
         return d_loss
-      #return total_loss+d_loss
+
 
 
   def configure_optimizers(self):
+      # perceptual loss does not get training and will be ignored
       if cfg['network_G']['finetune'] is None or cfg['network_G']['finetune'] == False:
         if cfg['train']['scheduler'] == 'Adam':
           opt_g = torch.optim.Adam(self.netG.parameters(), lr=cfg['train']['lr'])
-          if cfg['network_D']['netD'] != None:
+          if cfg['network_D']['netD'] != None and cfg['network_D']['netD'] != "PNetLin":
             opt_d = torch.optim.Adam(self.netD.parameters(), lr=cfg['train']['lr'])
         if cfg['train']['scheduler'] == 'AdamP':
           from adamp import AdamP
           opt_g = AdamP(self.netG.parameters(), lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
-          if cfg['network_D']['netD'] != None:
+          if cfg['network_D']['netD'] != None and cfg['network_D']['netD'] != "PNetLin":
             opt_d = AdamP(self.netD.parameters(), lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
         if cfg['train']['scheduler'] == 'SGDP':
           from adamp import SGDP
           opt_g = SGDP(self.netG.parameters(), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
-          if cfg['network_D']['netD'] != None:
+          if cfg['network_D']['netD'] != None and cfg['network_D']['netD'] != "PNetLin":
             opt_d = SGDP(self.netD.parameters(), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
         if cfg['train']['scheduler'] == 'MADGRAD':
           from madgrad import MADGRAD
           opt_g = MADGRAD(self.netG.parameters(), lr=cfg['train']['lr'], momentum =cfg['train']['momentum'], weight_decay=cfg['train']['weight_decay'], eps=cfg['train']['eps'])
-          if cfg['network_D']['netD'] != None:
+          if cfg['network_D']['netD'] != None and cfg['network_D']['netD'] != "PNetLin":
             opt_d = MADGRAD(self.netD.parameters(), lr=cfg['train']['lr'], momentum = cfg['train']['momentum'], weight_decay=cfg['train']['weight_decay'], eps=cfg['train']['eps'])
 
 
       if cfg['network_G']['finetune'] == True:
         if cfg['train']['scheduler'] == 'Adam':
           opt_g = torch.optim.Adam(filter(lambda p:p.requires_grad, self.netG.parameters()), lr=cfg['train']['lr'])
-          if cfg['network_D']['netD'] != None:
+          if cfg['network_D']['netD'] != None and cfg['network_D']['netD'] != "PNetLin":
             opt_d = torch.optim.Adam(self.netD.parameters(), lr=cfg['train']['lr'])
         if cfg['train']['scheduler'] == 'AdamP':
           from adamp import AdamP
           opt_g = AdamP(filter(lambda p:p.requires_grad, self.netG.parameters()), lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
-          if cfg['network_D']['netD'] != None:
+          if cfg['network_D']['netD'] != None and cfg['network_D']['netD'] != "PNetLin":
             opt_d = AdamP(self.netD.parameters(), lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
         if cfg['train']['scheduler'] == 'SGDP':
           from adamp import SGDP
           opt_g = SGDP(filter(lambda p:p.requires_grad, self.netG.parameters()), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
-          if cfg['network_D']['netD'] != None:
+          if cfg['network_D']['netD'] != None and cfg['network_D']['netD'] != "PNetLin":
             opt_d = SGDP(self.netD.parameters(), lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
         if cfg['train']['scheduler'] == 'MADGRAD':
           from madgrad import MADGRAD
           opt_g = MADGRAD(filter(lambda p:p.requires_grad, self.netG.parameters()), lr=cfg['train']['lr'], momentum =cfg['train']['momentum'], weight_decay=cfg['train']['weight_decay'], eps=cfg['train']['eps'])
-          if cfg['network_D']['netD'] != None:
+          if cfg['network_D']['netD'] != None and cfg['network_D']['netD'] != "PNetLin":
             opt_d = MADGRAD(self.netD.parameters(), lr=cfg['train']['lr'], momentum = cfg['train']['momentum'], weight_decay=cfg['train']['weight_decay'], eps=cfg['train']['eps'])
 
-      if cfg['network_D']['netD'] != None:
+      if cfg['network_D']['netD'] != None and cfg['network_D']['netD'] != "PNetLin":
         return [opt_g, opt_d], []
       else:
         return [opt_g], []

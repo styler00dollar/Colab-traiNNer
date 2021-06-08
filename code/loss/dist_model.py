@@ -34,7 +34,7 @@ class DistModel(BaseModel):
 
     def initialize(self, model='net-lin', net='alex', colorspace='Lab', pnet_rand=False, pnet_tune=False, model_path=None,
             use_gpu=True, printNet=False, spatial=False,
-            is_train=False, lr=.0001, beta1=0.5, version='0.1', gpu_ids=[0]):
+            is_train=False, lr=.0001, beta1=0.5, version='0.1', gpu_ids=[0], device=None):
         '''
         INPUTS
             model - ['net-lin'] for linearly calibrated network
@@ -64,6 +64,7 @@ class DistModel(BaseModel):
         self.spatial = spatial
         self.gpu_ids = gpu_ids
         self.model_name = '%s [%s]'%(model,net)
+        self.device = device
 
         if(self.model == 'net-lin'): # pretrained net + linear layer
             self.net = networks.PNetLin(pnet_rand=pnet_rand, pnet_tune=pnet_tune, pnet_type=net,
@@ -103,10 +104,10 @@ class DistModel(BaseModel):
             self.net.eval()
 
         if(use_gpu):
-            self.net.to(self.device)
+            self.net.to(device)
             #self.net = torch.nn.DataParallel(self.net, device_ids=gpu_ids)
             if(self.is_train):
-                self.rankLoss = self.rankLoss.to(device=self.device)
+                self.rankLoss = self.rankLoss.to(device=device)
 
         if(printNet):
             print('---------- Networks initialized -------------')
@@ -143,10 +144,10 @@ class DistModel(BaseModel):
         self.input_judge = data['judge']
 
         if(self.use_gpu):
-            self.input_ref = self.input_ref.to(device=self.gpu_ids[0])
-            self.input_p0 = self.input_p0.to(device=self.gpu_ids[0])
-            self.input_p1 = self.input_p1.to(device=self.gpu_ids[0])
-            self.input_judge = self.input_judge.to(device=self.gpu_ids[0])
+            self.input_ref = self.input_ref.to(device=self.device)
+            self.input_p0 = self.input_p0.to(device=self.device)
+            self.input_p1 = self.input_p1.to(device=self.device)
+            self.input_judge = self.input_judge.to(device=self.device)
 
         self.var_ref = Variable(self.input_ref,requires_grad=True)
         self.var_p0 = Variable(self.input_p0,requires_grad=True)
