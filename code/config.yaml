@@ -550,15 +550,6 @@ network_D:
     #mix_token: False
     #return_dense: False
 
-    # PerceptualLoss
-    netD: PNetLin # PNetLin, DSSIM (?)
-    pnet_type: 'vgg' # alex, squeeze, vgg
-    pnet_rand: False
-    pnet_tune: False
-    use_dropout: True
-    spatial: False
-    version: '0.1' # only version
-    lpips: True
 
 train: 
     scheduler: Adam # Adam, AdamP, Adam, SGDP, MADGRAD
@@ -654,7 +645,19 @@ train:
     # Style (3-channel input)
     StyleLoss_weight: 0
 
-    stage1_weight: 0 # only if the network outputs 2 images, will use l1
+    # PerceptualLoss
+    perceptual_weight: 1
+    net: PNetLin # PNetLin, DSSIM (?)
+    pnet_type: 'vgg' # alex, squeeze, vgg
+    pnet_rand: False
+    pnet_tune: False
+    use_dropout: True
+    spatial: False
+    version: '0.1' # only version
+    lpips: True
+
+    # only if the network outputs 2 images, will use l1
+    stage1_weight: 0 
 
     # Differentiable Augmentation for Data-Efficient GAN Training
     diffaug: False
