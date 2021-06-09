@@ -1,9 +1,3 @@
-
-"""
-block.py
-https://github.com/victorca25/BasicSR/blob/c594cada9422f6f3447fbeb2b2e21e4407ab1188/codes/models/modules/architectures/block.py
-"""
-
 """
 block.py
 https://github.com/victorca25/BasicSR/blob/c594cada9422f6f3447fbeb2b2e21e4407ab1188/codes/models/modules/architectures/block.py
