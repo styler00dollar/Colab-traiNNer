@@ -4,8 +4,13 @@ block.py
 https://github.com/victorca25/BasicSR/blob/c594cada9422f6f3447fbeb2b2e21e4407ab1188/codes/models/modules/architectures/block.py
 """
 
-from collections import OrderedDict
+"""
+block.py
+https://github.com/victorca25/BasicSR/blob/c594cada9422f6f3447fbeb2b2e21e4407ab1188/codes/models/modules/architectures/block.py
+"""
 
+from collections import OrderedDict
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 #from models.modules.architectures.convolutions.partialconv2d import PartialConv2d #TODO
@@ -53,7 +58,7 @@ def swish_func(x, beta=1.0):
     #"""
 
 # Swish module
-class Swish(nn.Module):
+class Swish(pl.LightningModule):
 
     __constants__ = ['beta', 'slope', 'inplace']
 
@@ -112,7 +117,7 @@ def act(act_type, inplace=True, neg_slope=0.2, n_prelu=1, beta=1.0):
     return layer
 
 
-class Identity(nn.Module):
+class Identity(pl.LightningModule):
     def __init__(self, *kwargs):
         super(Identity, self).__init__()
 
@@ -177,7 +182,7 @@ def get_valid_padding(kernel_size, dilation):
     return padding
 
 
-class ConcatBlock(nn.Module):
+class ConcatBlock(pl.LightningModule):
     # Concat the output of a submodule to its input
     def __init__(self, submodule):
         super(ConcatBlock, self).__init__()
@@ -191,7 +196,7 @@ class ConcatBlock(nn.Module):
         return 'Identity .. \n|' + self.sub.__repr__().replace('\n', '\n|')
 
 
-class ShortcutBlock(nn.Module):
+class ShortcutBlock(pl.LightningModule):
     # Elementwise sum the output of a submodule to its input
     def __init__(self, submodule):
         super(ShortcutBlock, self).__init__()
@@ -279,7 +284,7 @@ def make_layer(basic_block, num_basic_block, **kwarg):
     return nn.Sequential(*layers)
 
 
-class Mean(nn.Module):
+class Mean(pl.LightningModule):
   def __init__(self, dim: list, keepdim=False):
     super().__init__()
     self.dim = dim
@@ -332,7 +337,7 @@ def default_init_weights(module_list, init_type='kaiming', scale=1, bias_fill=0,
 # Upsampler
 ####################
 
-class Upsample(nn.Module):
+class Upsample(pl.LightningModule):
     r"""Upsamples a given multi-channel 1D (temporal), 2D (spatial) or 3D (volumetric) data.
 
     The input data is assumed to be of the form
@@ -421,7 +426,7 @@ def conv_layer(in_channels, out_channels, kernel_size, stride=1, dilation=1, gro
 # ESRGANplus
 ####################
 
-class GaussianNoise(nn.Module):
+class GaussianNoise(pl.LightningModule):
     def __init__(self, sigma=0.1, is_relative_detach=False):
         super().__init__()
         self.sigma = sigma
@@ -442,7 +447,7 @@ def conv1x1(in_planes, out_planes, stride=1):
 
 # TODO: Not used:
 # https://github.com/github-pengge/PyTorch-progressive_growing_of_gans/blob/master/models/base_model.py
-class minibatch_std_concat_layer(nn.Module):
+class minibatch_std_concat_layer(pl.LightningModule):
     def __init__(self, averaging='all'):
         super(minibatch_std_concat_layer, self).__init__()
         self.averaging = averaging.lower()
@@ -482,7 +487,7 @@ class minibatch_std_concat_layer(nn.Module):
 # Useful blocks
 ####################
 
-class SelfAttentionBlock(nn.Module):
+class SelfAttentionBlock(pl.LightningModule):
     """
         Implementation of Self attention Block according to paper
         'Self-Attention Generative Adversarial Networks' (https://arxiv.org/abs/1805.08318)
