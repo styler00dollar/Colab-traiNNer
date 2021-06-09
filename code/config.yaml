@@ -192,9 +192,10 @@ network_G:
     #landmarkpath: "/content/landmarks"
     #val_landmarkpath: "/content/landmarks"
 
-    # GFPGAN (2021)
+    # GFPGAN (2021) [EXPERIMENTAL]
     # does require ninja
     # because it compiles files, the startup time is quite long
+    # WARNING: Checkpoint and pth files can't be loaded, don't train models with it, since you can't use the models later on.
     netG: GFPGAN
     input_channels: 4
     output_channels: 3
@@ -349,7 +350,6 @@ network_G:
 
   
 
-# Discriminator options:
 # Discriminator options:
 network_D:
     d_loss_fool_weight: 1 # inside the generator loop, trying to fool the disciminator
