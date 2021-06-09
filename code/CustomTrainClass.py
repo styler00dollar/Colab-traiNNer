@@ -769,6 +769,7 @@ class CustomTrainClass(pl.LightningModule):
           writer.add_scalar('loss/tv', tv_forward, self.trainer.global_step)
 
         if cfg['train']['perceptual_weight'] > 0:
+          self.perceptual_loss.to(self.device)
           if cfg['train']['diffaug'] == True:
             tmp = self.perceptual_loss(in0=DiffAugment(out, cfg['train']['policy']), in1=DiffAugment(train_batch[2], cfg['train']['policy']))
           else:
