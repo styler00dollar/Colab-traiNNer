@@ -160,7 +160,7 @@ network_G:
     #bgr2rgb: False
 
     # srflow (upscaling factors: 4, 8, 16)
-    # Warning: Can be unstable, depending on the dataset, seems to crash with monochrome data
+    # Warning: Can be very unstable with batch_size 1, use higher batch_size
     #netG: srflow
     #in_nc: 3
     #out_nc: 3
