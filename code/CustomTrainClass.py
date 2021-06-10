@@ -998,13 +998,14 @@ class CustomTrainClass(pl.LightningModule):
 
 
     if cfg['network_G']['netG'] == 'srflow':
+      from arch.SRFlowNet_arch import get_z
       # freeze rrdb in the beginning
       if self.trainer.global_step < cfg['network_G']['freeze_iter']:
         self.netG.set_rrdb_training(False)
       else:
         self.netG.set_rrdb_training(True)
 
-      z = get_z(self, heat=0, seed=None, batch_size=1, lr_shape=train_batch[0].shape)
+      z = get_z(self, heat=0, seed=None, batch_size=train_batch[0].shape[0], lr_shape=train_batch[0].shape)
       out, logdet = self.netG(lr=train_batch[0], z=z, eps_std=0, reverse=True, reverse_with_grad=True)
 
     # DFDNet
