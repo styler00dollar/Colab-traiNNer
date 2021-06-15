@@ -103,6 +103,13 @@ class CustomTrainClass(pl.LightningModule):
       from arch.MANet_arch import PConvUNet
       self.netG = PConvUNet()
 
+    # GPEN
+    elif cfg['network_G']['netG'] == 'GPEN':
+      from arch.GPEN_arch import FullGenerator
+      self.netG = FullGenerator(size = cfg['network_G']['size'], style_dim = cfg['network_G']['style_dim'], 
+        n_mlp = cfg['network_G']['n_mlp'], channel_multiplier = cfg['network_G']['channel_multiplier'], 
+        blur_kernel = cfg['network_G']['blur_kernel'], lr_mlp = cfg['network_G']['lr_mlp'])
+
     # Experimental
 
     #DSNetRRDB
@@ -655,8 +662,8 @@ class CustomTrainClass(pl.LightningModule):
 
 
       ############################
-      # ESRGAN / GLEAN
-      if cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN':
+      # ESRGAN / GLEAN / GPEN
+      if cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN':
         if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
             # masked test with inpaint dataloader
             tmp = torch.cat([train_batch[0], train_batch[1]],1)
@@ -976,7 +983,7 @@ class CustomTrainClass(pl.LightningModule):
 
     ############################
     # ESRGAN / GLEAN
-    if cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN':
+    if cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN':
       if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
           # masked test with inpaint dataloader
           tmp = torch.cat([train_batch[0], train_batch[1]],1)
