@@ -629,9 +629,10 @@ class ResBlock(nn.Module):
 class FullGenerator(nn.Module):
     def __init__(
         self,
-        size,
-        style_dim,
-        n_mlp,
+        input_channels = 3,
+        size = 512,
+        style_dim = 512,
+        n_mlp = 8,
         channel_multiplier=2,
         blur_kernel=[1, 3, 3, 1],
         lr_mlp=0.01,
@@ -652,7 +653,7 @@ class FullGenerator(nn.Module):
         self.log_size = int(math.log(size, 2))
         self.generator = Generator(size, style_dim, n_mlp, channel_multiplier=channel_multiplier, blur_kernel=blur_kernel, lr_mlp=lr_mlp)
         
-        conv = [ConvLayer(3, channels[size], 1)]
+        conv = [ConvLayer(input_channels, channels[size], 1)]
         self.ecd0 = nn.Sequential(*conv)
         in_channel = channels[size]
 
@@ -673,15 +674,19 @@ class FullGenerator(nn.Module):
         truncation_latent=None,
         input_is_latent=False,
     ):
+
         noise = []
         for i in range(self.log_size-1):
             ecd = getattr(self, self.names[i])
             inputs = ecd(inputs)
             noise.append(inputs)
-            #print(inputs.shape)
+
+
         inputs = inputs.view(inputs.shape[0], -1)
+
+
         outs = self.final_linear(inputs)
-        #print(outs.shape)
+
         outs = self.generator([outs], return_latents, inject_index, truncation, truncation_latent, input_is_latent, noise=noise[::-1])
         #print(outs[0].shape)
         return outs[0]

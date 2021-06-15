@@ -18,7 +18,7 @@ datasets:
     # DS_lrhr: loads lr from dataroot_LR and hr from dataroot_HR
     # DS_lrhr_batch_oft: loads grayscale-hr (3x3 400px) from dataroot_LR and generates lr by downscaling otf randomly
 
-    mode: DS_lrhr_batch_oft # DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
+    mode: DS_inpaint_tiled_batch # DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
     grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
     dataroot_HR: '/content/hr' # Original, with a single directory. Inpainting will use this directory as source image.
     dataroot_LR: '/content/lr' # Original, with a single directory
@@ -48,7 +48,7 @@ datasets:
 
 path:
     pretrain_model_G: # '/content/glean_fixed.pth' # '/content/Checkpoint_0_0_D.pth'
-    checkpoint_path: "/content/Checkpoint_16_100.ckpt"
+    checkpoint_path: # "/content/Checkpoint_16_100.ckpt"
     checkpoint_save_path: '/content/'
     validation_output_path: '/content/validation/'
     log_path: '/content/'
@@ -215,7 +215,9 @@ network_G:
     # GPEN
     # does require ninja
     # because it compiles files, the startup time is quite long
+    # output_channels is hardcoded to 3
     netG: GPEN
+    input_channels: 3
     size: 512
     style_dim: 512
     n_mlp: 8

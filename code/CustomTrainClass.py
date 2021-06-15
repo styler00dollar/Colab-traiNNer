@@ -106,7 +106,7 @@ class CustomTrainClass(pl.LightningModule):
     # GPEN
     elif cfg['network_G']['netG'] == 'GPEN':
       from arch.GPEN_arch import FullGenerator
-      self.netG = FullGenerator(size = cfg['network_G']['size'], style_dim = cfg['network_G']['style_dim'], 
+      self.netG = FullGenerator(input_channels = cfg['network_G']['input_channels'], style_dim = cfg['network_G']['style_dim'], 
         n_mlp = cfg['network_G']['n_mlp'], channel_multiplier = cfg['network_G']['channel_multiplier'], 
         blur_kernel = cfg['network_G']['blur_kernel'], lr_mlp = cfg['network_G']['lr_mlp'])
 
