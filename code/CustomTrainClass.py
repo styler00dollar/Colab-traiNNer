@@ -524,6 +524,10 @@ class CustomTrainClass(pl.LightningModule):
                 drop_path_rate=cfg['network_D']['drop_path_rate'], drop_path_decay=cfg['network_D']['drop_path_decay'], hybrid_backbone=cfg['network_D']['hybrid_backbone'], norm_layer=nn.LayerNorm, p_emb=cfg['network_D']['p_emb'], head_dim = cfg['network_D']['head_dim'],
                 skip_lam =cfg['network_D']['skip_lam'],order=cfg['network_D']['order'], mix_token=cfg['network_D']['mix_token'], return_dense=cfg['network_D']['return_dense'])
 
+    elif cfg['network_D']['netD'] == 'timm':
+      import timm
+      self.netD = timm.create_model(cfg['network_D']['timm_model'], num_classes=1, pretrained=True)
+
     # only doing init, if not 'TranformerDiscriminator', 'EfficientNet', 'ResNeSt', 'resnet', 'ViT', 'DeepViT', 'mobilenetV3'
     # should probably be rewritten
     if cfg['network_D']['netD'] == 'NFNet' or cfg['network_D']['netD'] == 'context_encoder' or cfg['network_D']['netD'] == 'VGG' or cfg['network_D']['netD'] == 'VGG_fea' or cfg['network_D']['netD'] == 'Discriminator_VGG_128_SN' or cfg['network_D']['netD'] == 'VGGFeatureExtractor' or cfg['network_D']['netD'] == 'NLayerDiscriminator' or cfg['network_D']['netD'] == 'MultiscaleDiscriminator' or cfg['network_D']['netD'] == 'Discriminator_ResNet_128' or cfg['network_D']['netD'] == 'ResNet101FeatureExtractor' or  cfg['network_D']['netD'] == 'MINCNet' or cfg['network_D']['netD'] == 'PixelDiscriminator' or cfg['network_D']['netD'] == 'ResNeSt' or cfg['network_D']['netD'] == 'RepVGG' or cfg['network_D']['netD'] == 'squeezenet' or cfg['network_D']['netD'] == 'SwinTransformer':
