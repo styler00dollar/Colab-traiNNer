@@ -6,6 +6,12 @@ https://github.com/yangxy/GPEN/blob/main/face_model/model.py
 @paper: GAN Prior Embedded Network for Blind Face Restoration in the Wild (CVPR2021)
 @author: yangxy (yangtao9009@gmail.com)
 '''
+import yaml
+
+with open("config.yaml", "r") as ymlfile:
+    cfg = yaml.safe_load(ymlfile)
+
+
 import math
 import random
 import functools
@@ -20,7 +26,7 @@ from torch.autograd import Function
 from arch.cpp.fused_act import FusedLeakyReLU, fused_leaky_relu
 from arch.cpp.upfirdn2d import upfirdn2d
 
-isconcat = True
+isconcat = True # True
 sss = 2 if isconcat else 1
 
 class PixelNorm(nn.Module):
@@ -159,7 +165,8 @@ class EqualLinear(nn.Module):
 
         self.scale = (1 / math.sqrt(in_dim)) * lr_mul
         self.lr_mul = lr_mul
-
+        
+        
     def forward(self, input):
         if self.activation:
             out = F.linear(input, self.weight * self.scale)
@@ -293,9 +300,15 @@ class NoiseInjection(nn.Module):
 
         self.weight = nn.Parameter(torch.zeros(1))
 
+
     def forward(self, image, noise=None):
         
         if noise is not None:
+            # test
+            if cfg['network_G']['pooling'] == True:
+              self.pooling = torch.nn.AdaptiveAvgPool2d((image.shape[2],image.shape[3]))
+              noise = self.pooling(noise)
+
             #print(image.shape, noise.shape)
             if isconcat: return torch.cat((image, self.weight * noise), dim=1) # concat
             return image + self.weight * noise
@@ -666,6 +679,11 @@ class FullGenerator(nn.Module):
             in_channel = out_channel
         self.final_linear = nn.Sequential(EqualLinear(channels[4] * 4 * 4, style_dim, activation='fused_lrelu'))
 
+        # test
+        if cfg['network_G']['pooling'] == True:
+          self.pooling = torch.nn.AdaptiveAvgPool2d((4,4)) # values to match normal 512px training
+        
+
     def forward(self,
         inputs,
         return_latents=False,
@@ -674,19 +692,30 @@ class FullGenerator(nn.Module):
         truncation_latent=None,
         input_is_latent=False,
     ):
+        if cfg['network_G']['pooling'] == True:
+          size_x = inputs.shape[2]
+          size_y = inputs.shape[3]
+
 
         noise = []
         for i in range(self.log_size-1):
             ecd = getattr(self, self.names[i])
             inputs = ecd(inputs)
             noise.append(inputs)
-
-
+        
+        if cfg['network_G']['pooling'] == True:
+          inputs = self.pooling(inputs)
+        
         inputs = inputs.view(inputs.shape[0], -1)
-
-
         outs = self.final_linear(inputs)
-
         outs = self.generator([outs], return_latents, inject_index, truncation, truncation_latent, input_is_latent, noise=noise[::-1])
-        #print(outs[0].shape)
-        return outs[0]
+        
+
+        # test
+        if cfg['network_G']['pooling'] == True:
+          tmp = outs[0]
+          self.pooling2 = torch.nn.AdaptiveAvgPool2d((int(size_x),int(size_y)))
+          tmp = self.pooling2(tmp)
+          return tmp
+        else:
+          return outs[0]
