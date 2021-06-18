@@ -52,6 +52,7 @@ if __name__ == '__main__':
   # Loading a pretrain pth
   if cfg['path']['pretrain_model_G']:
     model.netG.load_state_dict(torch.load(cfg['path']['pretrain_model_G']))
+    print("Pretrain Generator pth loaded!")
 
   #############################################
 
