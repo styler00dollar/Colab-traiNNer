@@ -153,7 +153,7 @@ class DS_inpaint_val(Dataset):
           edges = torch.from_numpy(edges).unsqueeze(0)
 
         green_mask = 1-np.all(sample == [0,255,0], axis=-1).astype(int)
-        green_mask = torch.from_numpy(green_mask.astype('float')).unsqueeze(0)
+        green_mask = torch.from_numpy(green_mask.astype(np.float32)).unsqueeze(0)
         sample = torch.from_numpy(sample.astype(np.float32)).permute(2, 0, 1)/255
         sample = sample * green_mask
 
@@ -282,7 +282,7 @@ class DS_inpaint_tiled_val(Dataset):
           edges = torch.from_numpy(edges).unsqueeze(0)
 
         green_mask = 1-np.all(sample == [0,255,0], axis=-1).astype(int)
-        green_mask = torch.from_numpy(green_mask.astype('float')).unsqueeze(0)
+        green_mask = torch.from_numpy(green_mask).unsqueeze(0)
         sample = torch.from_numpy(sample.astype(np.float32)).permute(2, 0, 1)/255
         sample = sample * green_mask
 
@@ -431,6 +431,10 @@ class DS_inpaint_tiled_batch(Dataset):
         # apply mask
         masked = sample_add * mask_add
 
+        # making sure tensors are in the correct format
+        masked = masked.type(torch.FloatTensor)
+        sample_add = sample_add.type(torch.FloatTensor)
+
         # EdgeConnect
         if cfg['network_G']['netG'] == 'EdgeConnect':
           return masked, mask, sample, edges, grayscale
@@ -468,13 +472,8 @@ class DS_inpaint_tiled_batch_val(Dataset):
         sample_path = self.samples[index]
         sample = cv2.imread(sample_path)
 
-        if cfg['datasets']['train']['loading_backend'] == "OpenCV":
-          sample = cv2.imread(sample_path)
-          sample = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
-        elif cfg['datasets']['train']['loading_backend'] == "PIL":
-          sample = Image.open(sample_path)
-          sample = np.asarray(sample).astype(np.uint8)
-
+        sample = cv2.imread(sample_path)
+        sample = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
 
 
         # if edges are required
@@ -485,9 +484,13 @@ class DS_inpaint_tiled_batch_val(Dataset):
           edges = torch.from_numpy(edges).unsqueeze(0)
 
         green_mask = 1-np.all(sample == [0,255,0], axis=-1).astype(int)
-        green_mask = torch.from_numpy(green_mask.astype('float')).unsqueeze(0)
+        green_mask = torch.from_numpy(green_mask).unsqueeze(0)
         sample = torch.from_numpy(sample.astype(np.float32)).permute(2, 0, 1)/255
         sample = sample * green_mask
+
+        # making sure tensors are in the correct format
+        green_mask = green_mask.type(torch.FloatTensor)
+        sample = sample.type(torch.FloatTensor)
 
         # train_batch[0] = masked
         # train_batch[1] = mask
