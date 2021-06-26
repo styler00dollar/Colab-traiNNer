@@ -47,7 +47,7 @@ datasets:
     dataroot_LR: '/content/val_lr' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: 
+    pretrain_model_G:
     checkpoint_path: "/content/Checkpoint_0_0.ckpt"
     checkpoint_save_path: '/content/'
     validation_output_path: '/content/validation/'
@@ -261,7 +261,7 @@ network_G:
     #de_ksize: [3, 3, 3, 3, 3, 3, 3, 3]
     #blend_layers: [0, 1, 2, 3, 4, 5]
     #conv_type: normal # partial | normal | deform
-    
+
 
     # EdgeConnect (2019)
     #netG: EdgeConnect
@@ -383,13 +383,13 @@ network_G:
     # AdaFill (2021)
     #netG: AdaFill
 
-  
+
 
 # Discriminator options:
 network_D:
     d_loss_fool_weight: 1 # inside the generator loop, trying to fool the disciminator
     d_loss_weight: 1 # inside own discriminator update
-    
+
     #netD: # in case there is no discriminator, leave it empty
 
     # VGG
@@ -491,7 +491,7 @@ network_D:
     #attn_drop_rate: 0.
     #drop_path_rate: 0.
     #hybrid_backbone: None
-    #norm_layer: 
+    #norm_layer:
 
     # context_encoder (num_classes can't be set, broadcasting warning will be shown, training works, but I am not sure if it will work correctly)
     #netD: context_encoder
@@ -553,7 +553,7 @@ network_D:
     #resnet_arch: resnet50 # resnet50, resnet101, resnet152
     #num_classes: 1
     #pretrain: True
-  
+
     # NFNet
     #netD: NFNet
     #num_classes: 1
@@ -595,10 +595,10 @@ network_D:
     netD: timm
     timm_model: "tf_efficientnetv2_s"
 
-train: 
+train:
     scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad, tanangulargrad
     lr: 0.0001
-    
+
     # AdamP, AGDP, MADGRAD, cosangulargrad, tanangulargrad
     weight_decay: 0.01
 
@@ -608,7 +608,7 @@ train:
     # AdamP, cosangulargrad, tanangulargrad
     betas0: 0.9
     betas1: 0.999
-    
+
     # SGDP
     nesterov: True
 
@@ -701,7 +701,7 @@ train:
     lpips: True
 
     # only if the network outputs 2 images, will use l1
-    stage1_weight: 0 
+    stage1_weight: 0
 
     # Differentiable Augmentation for Data-Efficient GAN Training
     diffaug: False
