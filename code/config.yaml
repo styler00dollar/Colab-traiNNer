@@ -25,8 +25,8 @@ datasets:
 
     n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     batch_size: 1
-    batch_size_DL: 2
-    HR_size: 386 # The resolution the network will get. Random crop gets applied if that resolution does not match.
+    batch_size_DL: 1
+    HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
     masks: '/content/masks/'
@@ -35,8 +35,8 @@ datasets:
 
     # batch
     # If a tiled dataloader is used, specify image charactaristics. Random crop will not be applied. Maybe in the future.
-    image_size: 386 # Size of one tile
-    amount_tiles: 2 # Amount of tiles inside the merged grid image
+    image_size: 512 # Size of one tile
+    amount_tiles: 1 # Amount of tiles inside the merged grid image
 
     # if edge data is required
     canny_min: 100
@@ -47,8 +47,8 @@ datasets:
     dataroot_LR: '/content/val_lr' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: # '/content/glean_fixed.pth' # '/content/Checkpoint_0_0_D.pth'
-    checkpoint_path: # "/content/Checkpoint_16_100.ckpt"
+    pretrain_model_G: 
+    checkpoint_path: "/content/Checkpoint_0_0.ckpt"
     checkpoint_save_path: '/content/'
     validation_output_path: '/content/validation/'
     log_path: '/content/'
@@ -195,36 +195,57 @@ network_G:
     # GFPGAN (2021) [EXPERIMENTAL]
     # does require ninja
     # because it compiles files, the startup time is quite long
-    # WARNING: Checkpoint and pth files can't be loaded, don't train models with it, since you can't use the models later on.
-    #netG: GFPGAN
-    #input_channels: 4
-    #output_channels: 3
-    #out_size: 512
-    #num_style_feat: 512
-    #channel_multiplier: 1
-    #resample_kernel: [1, 3, 3, 1]
-    #decoder_load_path: # None
-    #fix_decoder: True
-    #num_mlp: 8
-    #lr_mlp: 0.01
-    #input_is_latent: False
-    #different_w: False
-    #narrow: 1
-    #sft_half: False
+    netG: GFPGAN
+    input_channels: 4
+    output_channels: 3
+    out_size: 512
+    num_style_feat: 512
+    channel_multiplier: 1
+    resample_kernel: [1, 3, 3, 1]
+    decoder_load_path: # None
+    fix_decoder: True
+    num_mlp: 8
+    lr_mlp: 0.01
+    input_is_latent: False
+    different_w: False
+    narrow: 1
+    sft_half: False
 
     # GPEN
     # does require ninja
     # because it compiles files, the startup time is quite long
     # output_channels is hardcoded to 3
-    netG: GPEN
-    input_channels: 4
-    size: 512
-    style_dim: 512
-    n_mlp: 8
-    channel_multiplier: 2
-    blur_kernel: [1, 3, 3, 1]
-    lr_mlp: 0.01
-    pooling: True # Experimental, to have any input size
+    #netG: GPEN
+    #input_channels: 4
+    #size: 512
+    #style_dim: 512
+    #n_mlp: 8
+    #channel_multiplier: 2
+    #blur_kernel: [1, 3, 3, 1]
+    #lr_mlp: 0.01
+    #pooling: True # Experimental, to have any input size
+
+    # comodgan (2021)
+    # needs ninja
+    # because it compiles files, the startup time is quite long
+    #netG: comodgan
+    #dlatent_size: 512
+    #num_channels: 3 # amount of channels without mask
+    #resolution: 512
+    #fmap_base: 16384 # 16 << 10
+    #fmap_decay: 1.0
+    #fmap_min: 1
+    #fmap_max: 512
+    #randomize_noise: True
+    #architecture: 'skip'
+    #nonlinearity: 'lrelu'
+    #resample_kernel: [1,3,3,1]
+    #fused_modconv: True
+    #pix2pix: False
+    #dropout_rate: 0.5
+    #cond_mod: True
+    #style_mod: True
+    #noise_injection: True
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
@@ -575,23 +596,23 @@ network_D:
     timm_model: "tf_efficientnetv2_s"
 
 train: 
-    scheduler: Adam # Adam, AdamP, Adam, SGDP, MADGRAD
+    scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad, tanangulargrad
     lr: 0.0001
     
-    # AdamP, AGDP, MADGRAD
+    # AdamP, AGDP, MADGRAD, cosangulargrad, tanangulargrad
     weight_decay: 0.01
 
     # SGDP, MAGDRAD
     momentum: 0.9
 
-    # AdamP
+    # AdamP, cosangulargrad, tanangulargrad
     betas0: 0.9
     betas1: 0.999
     
     # SGDP
     nesterov: True
 
-    # MADGRAD:
+    # MADGRAD, cosangulargrad, tanangulargrad
     eps: 1e-6
 
     # Losses:
