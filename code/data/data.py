@@ -20,7 +20,7 @@ if cfg['datasets']['train']['loading_backend'] == "PIL":
   import pillow_avif
 
 def random_mask(height=256, width=256,
-                    min_stroke=1, max_stroke=4,
+                    min_stroke=1, max_stroke=8,
                     min_vertex=1, max_vertex=12,
                     min_brush_width_divisor=16, max_brush_width_divisor=10):
         mask = np.ones((height, width))
