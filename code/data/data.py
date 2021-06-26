@@ -153,7 +153,7 @@ class DS_inpaint_val(Dataset):
           edges = torch.from_numpy(edges).unsqueeze(0)
 
         green_mask = 1-np.all(sample == [0,255,0], axis=-1).astype(int)
-        green_mask = torch.from_numpy(green_mask).unsqueeze(0)
+        green_mask = torch.from_numpy(green_mask.astype('float')).unsqueeze(0)
         sample = torch.from_numpy(sample.astype(np.float32)).permute(2, 0, 1)/255
         sample = sample * green_mask
 
