@@ -16,6 +16,9 @@ import random
 import glob
 import torchvision.transforms as transforms
 
+if cfg['datasets']['train']['loading_backend'] == "PIL":
+  import pillow_avif
+
 def random_mask(height=256, width=256,
                     min_stroke=1, max_stroke=4,
                     min_vertex=1, max_vertex=12,
@@ -311,7 +314,7 @@ class DS_inpaint_tiled_batch(Dataset):
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
                 path = os.path.join(root, fname)
-                if ".png" in path or ".jpg" in path or ".webp" in path:
+                if ".png" in path or ".jpg" in path or ".webp" in path or ".avif" in path:
                   self.samples.append(path)
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + root)
@@ -334,7 +337,12 @@ class DS_inpaint_tiled_batch(Dataset):
 
     def __getitem__(self, index):
         sample_path = self.samples[index]
-        sample = cv2.imread(sample_path)
+        if cfg['datasets']['train']['loading_backend'] == "OpenCV":
+          sample = cv2.imread(sample_path)
+          sample = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
+        elif cfg['datasets']['train']['loading_backend'] == "PIL":
+          sample = Image.open(sample_path)
+          sample = np.asarray(sample).astype(np.uint8)
 
         pos_total = []
         self.total_size = 0
@@ -360,7 +368,6 @@ class DS_inpaint_tiled_batch(Dataset):
           # creating sample if for start
           if self.total_size == 0:
             sample_add = sample[i[0]*self.image_size:(i[0]+1)*self.image_size, i[1]*self.image_size:(i[1]+1)*self.image_size]
-            sample_add = cv2.cvtColor(sample_add, cv2.COLOR_BGR2RGB)
 
 
             sample_add = torch.from_numpy(sample_add).permute(2, 0, 1).unsqueeze(0)/255
@@ -376,7 +383,7 @@ class DS_inpaint_tiled_batch(Dataset):
             self.total_size += 1
           else:
             sample_add2 = sample[i[0]*self.image_size:(i[0]+1)*self.image_size, i[1]*self.image_size:(i[1]+1)*self.image_size]
-            sample_add2 = cv2.cvtColor(sample_add2, cv2.COLOR_BGR2RGB)
+            #sample_add2 = cv2.cvtColor(sample_add2, cv2.COLOR_BGR2RGB)
 
 
 
@@ -445,7 +452,7 @@ class DS_inpaint_tiled_batch_val(Dataset):
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
                 path = os.path.join(root, fname)
-                if ".png" in path or ".jpg" in path or ".webp" in path:
+                if ".png" in path or ".jpg" in path or ".webp" in path or ".avif" in path:
                   self.samples.append(path)
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + root)
@@ -460,7 +467,15 @@ class DS_inpaint_tiled_batch_val(Dataset):
     def __getitem__(self, index):
         sample_path = self.samples[index]
         sample = cv2.imread(sample_path)
-        sample = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
+
+        if cfg['datasets']['train']['loading_backend'] == "OpenCV":
+          sample = cv2.imread(sample_path)
+          sample = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
+        elif cfg['datasets']['train']['loading_backend'] == "PIL":
+          sample = Image.open(sample_path)
+          sample = np.asarray(sample).astype(np.uint8)
+
+
 
         # if edges are required
         if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS':
@@ -622,7 +637,7 @@ class DS_lrhr_val(Dataset):
 
 
 
-          
+
 
 
 
@@ -660,7 +675,7 @@ class DS_lrhr_batch_oft(Dataset):
 
         if cfg['datasets']['train']['grayscale'] == True:
           sample = cv2.imread(sample_path, cv2.IMREAD_GRAYSCALE)
-        else: 
+        else:
           sample = cv2.imread(sample_path)
 
         pos_total = []
@@ -754,7 +769,7 @@ class DS_lrhr_batch_oft_val(Dataset):
           lr_image = cv2.imread(lr_path)
           hr_image = torch.from_numpy(hr_image).permute(2, 0, 1)/255
           lr_image = torch.from_numpy(lr_image).permute(2, 0, 1)/255
-        
-        
+
+
 
         return lr_image, hr_image, lr_path
