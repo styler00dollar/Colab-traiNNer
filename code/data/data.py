@@ -577,10 +577,12 @@ class DS_lrhr(Dataset):
         if hr_image.shape[0] > self.hr_size or hr_image.shape[1] > self.hr_size:
           # image too big, random crop
           random_pos1 = random.randint(0,hr_image.shape[0]-self.hr_size)
-          random_pos2 = random.randint(0,hr_image.shape[0]-self.hr_size)
+          random_pos2 = random.randint(0,hr_image.shape[1]-self.hr_size)
 
-          image_hr = hr_image[random_pos1:random_pos1+self.hr_size, random_pos2:random_pos2+self.hr_size]
-          image_lr = lr_image[int(random_pos1/self.scale):int((random_pos2+self.hr_size)/self.scale), int(random_pos2/self.scale):int((random_pos2+self.hr_size)/self.scale)]
+
+          hr_image = hr_image[random_pos1:random_pos1+self.hr_size, random_pos2:random_pos2+self.hr_size]
+          lr_image = lr_image[int(random_pos1/self.scale):int((random_pos1/self.scale)+self.hr_size/self.scale), 
+                              int(random_pos2/self.scale):int((random_pos2/self.scale)+self.hr_size/self.scale)]
 
         # to tensor
         hr_image = torch.from_numpy(hr_image).permute(2, 0, 1)/255
