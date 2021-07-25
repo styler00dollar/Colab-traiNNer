@@ -49,6 +49,7 @@ datasets:
 
 path:
     pretrain_model_G: 
+    pretrain_model_D: 
     checkpoint_path:
     checkpoint_save_path: '/content/'
     validation_output_path: '/content/validation/'
