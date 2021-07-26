@@ -55,7 +55,7 @@ if __name__ == '__main__':
     print("Pretrain Generator pth loaded!")
 
   if cfg['path']['pretrain_model_D']:
-    model.netG.load_state_dict(torch.load(cfg['path']['pretrain_model_D']))
+    model.netD.load_state_dict(torch.load(cfg['path']['pretrain_model_D']))
     print("Pretrain Discriminator pth loaded!")
 
   #############################################
