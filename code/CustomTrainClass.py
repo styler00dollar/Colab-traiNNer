@@ -562,7 +562,7 @@ class CustomTrainClass(pl.LightningModule):
     self.TVLoss = TVLoss(tv_type=cfg['train']['tv_type'], p = cfg['train']['p'])
     self.Contextual_Loss = Contextual_Loss(cfg['train']['layers_weights'], crop_quarter=cfg['train']['crop_quarter'], max_1d_size=cfg['train']['max_1d_size'],
         distance_type = cfg['train']['distance_type'], b=cfg['train']['b'], band_width=cfg['train']['band_width'],
-        use_vgg = cfg['train']['use_vgg'], net = cfg['train']['net_contextual'], calc_type = cfg['train']['calc_type'])
+        use_vgg = cfg['train']['use_vgg'], net = cfg['train']['net_contextual'], calc_type = cfg['train']['calc_type'], use_timm = cfg['train']['use_timm'], timm_model = cfg['train']['timm_model'])
 
     self.MSELoss = torch.nn.MSELoss()
     self.L1Loss = nn.L1Loss()

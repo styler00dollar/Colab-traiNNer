@@ -32,7 +32,7 @@ datasets:
 
     masks: '/content/masks/'
     max_epochs: 200
-    save_step_frequency: 100 # also validation frequency
+    save_step_frequency: 1000 # also validation frequency
 
     # batch
     # If a tiled dataloader is used, specify image charactaristics. Random crop will not be applied. Maybe in the future.
@@ -49,7 +49,6 @@ datasets:
 
 path:
     pretrain_model_G: 
-    pretrain_model_D: 
     checkpoint_path:
     checkpoint_save_path: '/content/'
     validation_output_path: '/content/validation/'
@@ -595,7 +594,7 @@ network_D:
     # pip install timm
     # you can loop up models here: https://rwightman.github.io/pytorch-image-models/
     netD: timm
-    timm_model: "tf_efficientnetv2_s"
+    timm_model: "tf_efficientnetv2_b0"
 
 train: 
     scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad, tanangulargrad
@@ -677,16 +676,21 @@ train:
     p: 1
 
     # Contextual_Loss (3-channel input)
-    Contexual_weight: 0
-    layers_weights: {'conv_1_1': 1.0, 'conv_3_2': 1.0}
+    Contexual_weight: 1
     crop_quarter: False
     max_1d_size: 100
-    distance_type: 'cosine'
+    distance_type: 'cosine' # ["11", "l2", "consine"]
     b: 1.0
     band_width: 0.5
-    use_vgg: True
+    # for vgg
+    use_vgg: False
     net_contextual: 'vgg19'
-    calc_type: 'regular'
+    layers_weights: {'conv_1_1': 1.0, 'conv_3_2': 1.0}
+    # for timm
+    use_timm: True
+    timm_model: "tf_efficientnetv2_b0"
+    # for both
+    calc_type: 'regular' # ["bilateral" | "symetric" | None]
 
     # Style (3-channel input)
     StyleLoss_weight: 0

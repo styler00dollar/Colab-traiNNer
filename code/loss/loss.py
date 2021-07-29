@@ -605,7 +605,7 @@ class Contextual_Loss(nn.Module):
     '''
     def __init__(self, layers_weights, crop_quarter=False, max_1d_size=100,
             distance_type: str = 'cosine', b=1.0, band_width=0.5,
-            use_vgg: bool = True, net: str = 'vgg19', calc_type: str =  'regular'):
+            use_vgg: bool = False, net: str = 'vgg19', calc_type: str =  'regular', use_timm = True, timm_model = "tf_efficientnetv2_b0"):
         super(Contextual_Loss, self).__init__()
 
         assert band_width > 0, 'band_width parameter must be positive.'
@@ -620,14 +620,22 @@ class Contextual_Loss(nn.Module):
         except:
             pass
 
+        self.use_vgg = use_vgg
+        self.use_timm = use_timm
         self.crop_quarter = crop_quarter
         self.distanceType = distance_type
         self.max_1d_size = max_1d_size
         self.b = b
         self.band_width = band_width #self.h = h, #sigma
 
-        if use_vgg:
-            self.vgg_model = VGG_Model(listen_list=listen_list, net=net)
+        if self.use_vgg:
+          self.model = VGG_Model(listen_list=listen_list, net=net)
+          print(f"Using {net} for CX")
+
+        if self.use_timm:
+          import timm
+          self.model = timm.create_model(timm_model, pretrained=True)
+          print(f"Using {timm_model} for CX")
 
         if calc_type == 'bilateral':
             self.calculate_loss = self.bilateral_CX_Loss
@@ -639,30 +647,41 @@ class Contextual_Loss(nn.Module):
     def forward(self, images, gt):
         device = images.device
 
-        if hasattr(self, 'vgg_model'):
-            assert images.shape[1] == 3 and gt.shape[1] == 3,\
-                'VGG model takes 3 channel images.'
+        #if hasattr(self, 'vgg_model'):
+            #assert images.shape[1] == 3 and gt.shape[1] == 3,\
+            #    'VGG model takes 3 channel images.'
 
-            loss = 0
-            vgg_images = self.vgg_model(images)
-            vgg_images = {k: v.clone().to(device) for k, v in vgg_images.items()}
-            vgg_gt = self.vgg_model(gt)
-            vgg_gt = {k: v.to(device) for k, v in vgg_gt.items()}
+        # features
+        loss = 0
+        if self.use_vgg:
+          vgg_images = self.model(images)
+          vgg_images = {k: v.clone().to(device) for k, v in vgg_images.items()}
+          vgg_gt = self.model(gt)
+          vgg_gt = {k: v.to(device) for k, v in vgg_gt.items()}
+        elif self.use_timm:
+          vgg_images = self.model.forward_features(images)
+          vgg_gt = self.model.forward_features(gt)
 
-            for key in self.layers_weights.keys():
-                if self.crop_quarter:
-                    vgg_images[key] = self._crop_quarters(vgg_images[key])
-                    vgg_gt[key] = self._crop_quarters(vgg_gt[key])
+  	    # calc locss
+        if self.use_vgg:
+          for key in self.layers_weights.keys():
+              if self.crop_quarter:
+                  vgg_images[key] = self._crop_quarters(vgg_images[key])
+                  vgg_gt[key] = self._crop_quarters(vgg_gt[key])
 
-                N, C, H, W = vgg_images[key].size()
-                if H*W > self.max_1d_size**2:
-                    vgg_images[key] = self._random_pooling(vgg_images[key], output_1d_size=self.max_1d_size)
-                    vgg_gt[key] = self._random_pooling(vgg_gt[key], output_1d_size=self.max_1d_size)
+              N, C, H, W = vgg_images[key].size()
+              if H*W > self.max_1d_size**2:
+                  vgg_images[key] = self._random_pooling(vgg_images[key], output_1d_size=self.max_1d_size)
+                  vgg_gt[key] = self._random_pooling(vgg_gt[key], output_1d_size=self.max_1d_size)
 
-                loss_t = self.calculate_loss(vgg_images[key], vgg_gt[key])
-                loss += loss_t * self.layers_weights[key]
-                # del vgg_images[key], vgg_gt[key]
-        #TODO: without VGG it runs, but results are not looking right
+              loss_t = self.calculate_loss(vgg_images[key], vgg_gt[key])
+              loss += loss_t * self.layers_weights[key]
+              # del vgg_images[key], vgg_gt[key]
+          #TODO: without VGG it runs, but results are not looking right
+
+        elif self.use_timm:
+          # taking features directly from timm and calculating loss
+          loss = self.calculate_loss(vgg_images, vgg_gt)
         else:
             if self.crop_quarter:
                 images = self._crop_quarters(images)
