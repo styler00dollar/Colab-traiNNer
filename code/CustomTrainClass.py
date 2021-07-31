@@ -131,6 +131,17 @@ class CustomTrainClass(pl.LightningModule):
       from arch.experimental.DSNetDeoldify_arch import DSNetDeoldify
       self.netG = DSNetDeoldify()
 
+    elif cfg['network_G']['netG'] == 'lightweight_gan':
+      from arch.experimental.lightweight_gan_arch import Generator
+      self.netG = Generator(image_size=cfg['network_G']['image_size'],
+        latent_dim = cfg['network_G']['latent_dim'],
+        fmap_max = cfg['network_G']['fmap_max'],
+        fmap_inverse_coef = cfg['network_G']['fmap_inverse_coef'],
+        transparent = cfg['network_G']['transparent'],
+        greyscale = cfg['network_G']['greyscale'],
+        freq_chan_attn = cfg['network_G']['freq_chan_attn'])
+
+
     ############################
 
     # generators with two outputs
@@ -671,8 +682,8 @@ class CustomTrainClass(pl.LightningModule):
 
 
       ############################
-      # ESRGAN / GLEAN / GPEN / comodgan
-      if cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
+      # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan
+      if cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
         if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
             # masked test with inpaint dataloader
             tmp = torch.cat([train_batch[0], train_batch[1]],1)
@@ -988,8 +999,8 @@ class CustomTrainClass(pl.LightningModule):
       out = self.netG(train_batch[0])
 
     ############################
-    # ESRGAN / GLEAN / GPEN / comodgan
-    if cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
+    # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan
+    if cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
       if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
           # masked test with inpaint dataloader
           tmp = torch.cat([train_batch[0], train_batch[1]],1)

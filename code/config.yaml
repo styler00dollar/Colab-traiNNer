@@ -31,7 +31,7 @@ datasets:
     image_channels: 3 # number of channels to load images in
 
     masks: '/content/masks/'
-    max_epochs: 200
+    max_epochs: 2000
     save_step_frequency: 1000 # also validation frequency
 
     # batch
@@ -49,6 +49,7 @@ datasets:
 
 path:
     pretrain_model_G: 
+    pretrain_model_D: 
     checkpoint_path:
     checkpoint_save_path: '/content/'
     validation_output_path: '/content/validation/'
@@ -196,21 +197,21 @@ network_G:
     # GFPGAN (2021) [EXPERIMENTAL]
     # does require ninja
     # because it compiles files, the startup time is quite long
-    netG: GFPGAN
-    input_channels: 4
-    output_channels: 3
-    out_size: 512
-    num_style_feat: 512
-    channel_multiplier: 1
-    resample_kernel: [1, 3, 3, 1]
-    decoder_load_path: # None
-    fix_decoder: True
-    num_mlp: 8
-    lr_mlp: 0.01
-    input_is_latent: False
-    different_w: False
-    narrow: 1
-    sft_half: False
+    #netG: GFPGAN
+    #input_channels: 4
+    #output_channels: 3
+    #out_size: 512
+    #num_style_feat: 512
+    #channel_multiplier: 1
+    #resample_kernel: [1, 3, 3, 1]
+    #decoder_load_path: # None
+    #fix_decoder: True
+    #num_mlp: 8
+    #lr_mlp: 0.01
+    #input_is_latent: False
+    #different_w: False
+    #narrow: 1
+    #sft_half: False
 
     # GPEN
     # does require ninja
@@ -384,7 +385,15 @@ network_G:
     # AdaFill (2021)
     #netG: AdaFill
 
-  
+    # lightweight_gan (2021)
+    netG: lightweight_gan
+    image_size: 512
+    latent_dim: 256
+    fmap_max: 512
+    fmap_inverse_coef: 12
+    transparent: False
+    greyscale: False
+    freq_chan_attn: False
 
 # Discriminator options:
 network_D:
@@ -597,7 +606,7 @@ network_D:
     timm_model: "tf_efficientnetv2_b0"
 
 train: 
-    scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad, tanangulargrad
+    scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
     lr: 0.0001
     
     # AdamP, AGDP, MADGRAD, cosangulargrad, tanangulargrad
