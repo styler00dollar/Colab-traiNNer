@@ -15,6 +15,7 @@ import torchvision
 from torchvision import transforms
 from functools import partial
 from kornia import filter2d
+from einops import rearrange
 
 def exists(val):
     return val is not None
@@ -249,8 +250,9 @@ class FCANet(nn.Module):
         return self.net(x)
 
 # generative adversarial network
+import pytorch_lightning as pl
 
-class Generator(nn.Module):
+class Generator(pl.LightningModule):
     def __init__(
         self,
         *,
@@ -292,6 +294,7 @@ class Generator(nn.Module):
 
         self.res_layers = range(2, num_layers + 2)
         self.layers = nn.ModuleList([])
+
         self.res_to_feature_map = dict(zip(self.res_layers, in_out_features))
 
         self.sle_map = ((3, 7), (4, 8), (5, 9), (6, 10))
@@ -337,32 +340,74 @@ class Generator(nn.Module):
             ])
             self.layers.append(layer)
 
+
+
+
         self.out_conv = nn.Conv2d(features[-1], init_channel, 3, padding = 1)
 
-        self.m1 = torch.nn.Conv2d(4, 256, kernel_size=1, stride=2)
-        self.m2 = torch.nn.Conv2d(256, 256, kernel_size=1, stride=2)
+
+
+
+
+        # values for 512px res
+        self.m1 = torch.nn.Conv2d(4, 32, kernel_size=1, stride=2)
+        # conv after loop conv
+        self.m2 = torch.nn.Conv2d(512, 512, kernel_size=1, stride=2)
+        self.m3 = torch.nn.Conv2d(512, 256, kernel_size=1, stride=2)
+        self.m4 = torch.nn.Conv2d(256, 256, kernel_size=1, stride=2)
+        self.m5 = torch.nn.Conv2d(256, 256, kernel_size=1, stride=2)
+        # merge conv
+        self.m6 = torch.nn.Conv2d(512, 256, kernel_size=1)
+
+        self.cat_conv = nn.ModuleList([])
+        self.first_conv = nn.ModuleList([])
+        
+        # creating conv list
+        for f in [32,64,128,256]:
+          first_conv = nn.Conv2d(f, f * 2, kernel_size = 3, padding = 1, stride = 2)
+
+          self.first_conv.append(first_conv)
+
+
 
     def forward(self, x):
-        # original input shape is torch.Size([1, 256]) which gets processed into torch.Size([1, 256, 1, 1]) with 512px training
-        # instead of doing so, image will be put into this shape with conv2d
+        # code needs cleaning, experiment for 512px inpainting
+
+        # original has random input of [1, 256] and that gets into [1, 256, 1, 1]
+        y = torch.rand(1, 256, 1 ,1).to(self.device)
+        #y = rearrange(x, 'b c -> b c () ()')
+
+        # creating pyramid of the input picture, and doing cat with them
+        first = []
         x = self.m1(x)
+        first.append(x)
+
+        for i, f in enumerate(self.first_conv):
+          result = f(x)
+          first.append(result)
+          x = result
+        
         x = self.m2(x)
-        x = self.m2(x)
-        x = self.m2(x)
-        x = self.m2(x)
-        x = self.m2(x)
-        x = self.m2(x)
-        x = self.m2(x)
-        x = self.m2(x)
-        # output is torch.Size([1, 256, 1, 1])
-        #x = rearrange(x, 'b c -> b c () ()')
+        first.append(x)
+        x = self.m3(x)
+        first.append(x)
+        x = self.m4(x)
+        first.append(x)
+        x = self.m5(x)
+        first.append(x)
+
+        # concat with random array and conv to original dimension
+        x = torch.cat([x,y], dim=1)
+        x = self.m6(x)
+
 
         x = self.initial_conv(x)
         x = F.normalize(x, dim = 1)
-
         residuals = dict()
-
+        
+        count = 0
         for (res, (up, sle, attn)) in zip(self.res_layers, self.layers):
+
             if exists(attn):
                 x = attn(x) + x
 
@@ -377,34 +422,11 @@ class Generator(nn.Module):
             if next_res in residuals:
                 x = x * residuals[next_res]
 
+            # concat with conv picture and conv
+            if not (x.shape[1] == 3 and x.shape[2] == 512 and x.shape[3] == 512):
+              x = torch.cat([x, first[len(first)-count-4]], dim=1)
+              temp_conv = torch.nn.Conv2d(x.shape[1], int(x.shape[1]/2), kernel_size=1).to(self.device)
+              x = temp_conv(x)
+              count += 1
+
         return self.out_conv(x)
-
-class SimpleDecoder(nn.Module):
-    def __init__(
-        self,
-        *,
-        chan_in,
-        chan_out = 3,
-        num_upsamples = 4,
-    ):
-        super().__init__()
-
-        self.layers = nn.ModuleList([])
-        final_chan = chan_out
-        chans = chan_in
-
-        for ind in range(num_upsamples):
-            last_layer = ind == (num_upsamples - 1)
-            chan_out = chans if not last_layer else final_chan * 2
-            layer = nn.Sequential(
-                upsample(),
-                nn.Conv2d(chans, chan_out, 3, padding = 1),
-                nn.GLU(dim = 1)
-            )
-            self.layers.append(layer)
-            chans //= 2
-
-    def forward(self, x):
-        for layer in self.layers:
-            x = layer(x)
-        return x
