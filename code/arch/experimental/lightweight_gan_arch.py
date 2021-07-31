@@ -347,8 +347,6 @@ class Generator(pl.LightningModule):
 
 
 
-
-
         # values for 512px res
         self.m1 = torch.nn.Conv2d(4, 32, kernel_size=1, stride=2)
         # conv after loop conv
@@ -361,14 +359,18 @@ class Generator(pl.LightningModule):
 
         self.cat_conv = nn.ModuleList([])
         self.first_conv = nn.ModuleList([])
-        
+        self.concat_conv = nn.ModuleList([])
+
         # creating conv list
         for f in [32,64,128,256]:
           first_conv = nn.Conv2d(f, f * 2, kernel_size = 3, padding = 1, stride = 2)
-
           self.first_conv.append(first_conv)
 
-
+        # concat conv at the end
+        # 512px loop
+        for f in [512,512,256,128,64,32]:
+          concat_conv = nn.Conv2d(f * 2, f, kernel_size = 3, padding = 1)
+          self.concat_conv.append(concat_conv)
 
     def forward(self, x):
         # code needs cleaning, experiment for 512px inpainting
@@ -400,7 +402,6 @@ class Generator(pl.LightningModule):
         x = torch.cat([x,y], dim=1)
         x = self.m6(x)
 
-
         x = self.initial_conv(x)
         x = F.normalize(x, dim = 1)
         residuals = dict()
@@ -423,10 +424,10 @@ class Generator(pl.LightningModule):
                 x = x * residuals[next_res]
 
             # concat with conv picture and conv
+            # stopping once final picture is reached (512px)
             if not (x.shape[1] == 3 and x.shape[2] == 512 and x.shape[3] == 512):
               x = torch.cat([x, first[len(first)-count-4]], dim=1)
-              temp_conv = torch.nn.Conv2d(x.shape[1], int(x.shape[1]/2), kernel_size=1).to(self.device)
-              x = temp_conv(x)
+              x = self.concat_conv[count](x)
               count += 1
 
         return self.out_conv(x)
