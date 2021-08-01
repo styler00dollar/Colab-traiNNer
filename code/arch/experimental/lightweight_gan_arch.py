@@ -366,8 +366,7 @@ class Generator(pl.LightningModule):
         self.first_conv.append(torch.nn.Conv2d(512, 256, kernel_size=1, stride=2))
         self.first_conv.append(torch.nn.Conv2d(256, 256, kernel_size=1, stride=2))
         self.first_conv.append(torch.nn.Conv2d(256, 256, kernel_size=1, stride=2))
-        if self.image_size == 1024:
-          self.first_conv.append(torch.nn.Conv2d(256, 256, kernel_size=1, stride=2))
+        self.first_conv.append(torch.nn.Conv2d(256, 256, kernel_size=1, stride=2))
         
         # merge conv for random
         self.random_conv = torch.nn.Conv2d(512, 256, kernel_size=1)
@@ -376,6 +375,9 @@ class Generator(pl.LightningModule):
         for f in [512,512,256,128,64,32]:
           concat_conv = nn.Conv2d(f * 2, f, kernel_size = 3, padding = 1)
           self.concat_conv.append(concat_conv)
+
+        if self.image_size == 1024:
+          self.trasnpose_conv = torch.nn.ConvTranspose2d(3, 3, 3, stride=2, padding=1, output_padding=1)
 
         # the final conv just does [1, 3, 1024, 1024] -> [1, 3, 1024, 1024] or [1, 3, 512, 512] -> [1, 3, 512, 512]
         self.out_conv = nn.Conv2d(3, 3, 3, padding = 1)
@@ -420,10 +422,19 @@ class Generator(pl.LightningModule):
                 x = x * residuals[next_res]
 
             # concat with conv picture and conv
-            # stopping once final picture is reached (512px)
+            # stopping once final picture is reached
             if not (x.shape[1] == 3 and x.shape[2] == 512 and x.shape[3] == 512) and self.image_size == 512:
-              x = torch.cat([x, first[len(first)-count-4]], dim=1)
+              x = torch.cat([x, first[len(first)-count-5]], dim=1)
               x = self.concat_conv[count](x)
               count += 1
+            
+            elif not (x.shape[1] == 3 and x.shape[2] == 512 and x.shape[3] == 512) and self.image_size == 1024:
+              x = torch.cat([x, first[len(first)-count-5]], dim=1)
+              x = self.concat_conv[count](x)
+              count += 1
+            elif (x.shape[1] == 3 and x.shape[2] == 512 and x.shape[3] == 512) and self.image_size == 1024:
+              # rgb image size 512 -> 1024 with transposeconv
+              x = self.trasnpose_conv(x)
+              break
 
         return self.out_conv(x)
