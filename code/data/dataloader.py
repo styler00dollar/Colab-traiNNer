@@ -63,6 +63,12 @@ class DFNetDataModule(pl.LightningDataModule):
           self.DFNetdataset_validation = DS_lrhr_batch_oft_val(self.val_lr, self.val_hr)
           self.DFNetdataset_test = DS_lrhr_batch_oft_val(self.val_lr, self.val_hr)
 
+        elif cfg['datasets']['train']['mode'] == 'DS_video':
+          from .data_video import VimeoTriplet, VimeoTriplet_val
+          self.DFNetdataset_train = VimeoTriplet(self.dir_hr)
+          self.DFNetdataset_validation = VimeoTriplet_val(self.val_lr)
+          self.DFNetdataset_test = VimeoTriplet_val(self.val_lr)
+
         else:
           print("Mode not found.")
 

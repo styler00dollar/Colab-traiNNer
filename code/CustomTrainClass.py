@@ -238,6 +238,10 @@ class CustomTrainClass(pl.LightningModule):
                           fix_decoder=cfg['network_G']['fix_decoder'], num_mlp=cfg['network_G']['num_mlp'],lr_mlp=cfg['network_G']['lr_mlp'],input_is_latent=cfg['network_G']['input_is_latent'],
                           different_w=cfg['network_G']['different_w'], narrow=cfg['network_G']['narrow'],sft_half=cfg['network_G']['sft_half'])
 
+    elif cfg['network_G']['netG'] == 'CAIN':
+      from arch.CAIN_arch import CAIN
+      self.netG = CAIN(cfg['network_G']['depth'])
+
     if cfg['path']['checkpoint_path'] is None and cfg['network_G']['netG'] != 'GLEAN' and cfg['network_G']['netG'] != 'srflow' and cfg['network_G']['netG'] != 'GFPGAN':
       if self.global_step == 0:
       #if self.trainer.global_step == 0:
@@ -624,6 +628,11 @@ class CustomTrainClass(pl.LightningModule):
       # train_batch[2] = hr
       # train_batch[3] = landmarks (DFDNet)
 
+      # frame interpolation
+      # train_batch[0] = 1st frame
+      # train_batch[1] = 3st frame
+      # train_batch[2] = 2st frame, gets generated
+
       if cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch' or cfg['datasets']['train']['mode'] == 'DS_lrhr_batch_oft':
         # reducing dimension
         train_batch[0] = torch.squeeze(train_batch[0], 0)
@@ -682,6 +691,10 @@ class CustomTrainClass(pl.LightningModule):
 
 
       ############################
+      # if frame interpolation
+      if cfg['network_G']['netG'] == 'CAIN':
+        out = self.netG(train_batch[0], train_batch[1])
+
       # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan
       if cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
         if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
@@ -961,6 +974,15 @@ class CustomTrainClass(pl.LightningModule):
     # train_batch[2] = lr_path
     # train_batch[3] = landmarks (DFDNet)
 
+    # frame interpolation
+    # train_batch[0] = [img1, img3]
+    # train_batch[1] = img2
+    # train_batch[2] = imgpath
+
+
+    # if frame interpolation
+    if cfg['network_G']['netG'] == 'CAIN':
+      out = self.netG(train_batch[0][0], train_batch[0][1])
     #########################
     if cfg['network_G']['netG'] == 'MANet' or cfg['network_G']['netG'] == 'context_encoder' or cfg['network_G']['netG'] == 'aotgan' or cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
       # generate fake (one output generator)
@@ -1061,7 +1083,6 @@ class CustomTrainClass(pl.LightningModule):
 
       filename_with_extention = os.path.basename(f)
       filename = os.path.splitext(filename_with_extention)[0]
-
       save_image(out[counter], os.path.join(validation_output, filename, str(self.trainer.global_step) + '.png'))
 
       counter += 1
@@ -1084,22 +1105,3 @@ class CustomTrainClass(pl.LightningModule):
       val_lpips = np.mean(self.val_lpips)
       writer.add_scalar('metrics/LPIPS', val_lpips, self.trainer.global_step)
       self.val_lpips = []
-
-  def test_step(self, train_batch, train_idx):
-    # inpainting
-    # train_batch[0] = masked
-    # train_batch[1] = mask
-    # train_batch[2] = path
-
-    # super resolution
-    # train_batch[0] = lr
-    # train_batch[1] = hr
-    # train_batch[2] = lr_path
-    test_output = cfg['path']['test_output_path']
-    if not os.path.exists(test_output):
-      os.makedirs(test_output)
-
-    out = self(train_batch[0].unsqueeze(0),train_batch[1].unsqueeze(0))
-    out = train_batch[0]*(train_batch[1])+out*(1-train_batch[1])
-
-    save_image(out, os.path.join(test_output, os.path.splitext(os.path.basename(train_batch[2]))[0] + '.png'))
