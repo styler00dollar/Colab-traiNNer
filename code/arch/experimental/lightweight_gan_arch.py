@@ -685,8 +685,6 @@ class SimpleFontGenerator512(pl.LightningModule):
         return self.out_conv(x)
 
 
-# unfinished test
-"""
 class SimpleFontGenerator256(pl.LightningModule):
     def __init__(
         self,
@@ -735,6 +733,7 @@ class SimpleFontGenerator256(pl.LightningModule):
 
         self.res_to_feature_map = dict(zip(self.res_layers, in_out_features))
 
+        # 512, 128 / 256, 64 / 256, 64 / 128, 32
         self.sle_map = ((3, 7), (4, 8), (5, 9), (6, 10))
         self.sle_map = list(filter(lambda t: t[0] <= resolution and t[1] <= resolution, self.sle_map))
         self.sle_map = dict(self.sle_map)
@@ -788,18 +787,17 @@ class SimpleFontGenerator256(pl.LightningModule):
         self.concat_conv = nn.ModuleList([])
 
         # creating conv list
-        for f in [128,256]:
+        for f in [256]:
         #for f in [128,256]:
           first_conv = nn.Conv2d(f, f * 2, kernel_size = 3, padding = 1, stride = 2)
           self.first_conv.append(first_conv)
 
         # conv after loop conv
         self.first_conv.append(torch.nn.Conv2d(512, 512, kernel_size=1, stride=2))
-        self.first_conv.append(torch.nn.Conv2d(512, 512, kernel_size=1, stride=2))
         self.first_conv.append(torch.nn.Conv2d(512, 256, kernel_size=1, stride=2))
         self.first_conv.append(torch.nn.Conv2d(256, 256, kernel_size=1, stride=2))
         self.first_conv.append(torch.nn.Conv2d(256, 256, kernel_size=1, stride=2))
-
+        
         # merge conv for random
         self.random_conv = torch.nn.Conv2d(512, 256, kernel_size=1)
 
@@ -807,21 +805,22 @@ class SimpleFontGenerator256(pl.LightningModule):
         for f in [512,512,256,128,64,32]:
           concat_conv = nn.Conv2d(f * 2, f, kernel_size = 3, padding = 1)
           self.concat_conv.append(concat_conv)
-
+        
         # final conv [1, 32, 256, 256] -> [1, 3, 256, 256]
-        self.out_conv = nn.Conv2d(32, 3, 3, padding = 1)
 
         # font conv (up)
         # torch.Size([1, 128, 32, 32])
         # input is 32px image
         self.font_conv = nn.ModuleList([])
-        self.init_conv = nn.Conv2d(3, 128, 3, padding = 1)
+        self.init_conv = nn.Conv2d(3, 256, 3, padding = 1)
 
-        for i in [128, 64]:
+        for i in [256, 128]:
           self.font_conv.append(nn.ConvTranspose2d(i, int(i/2), stride=2, kernel_size = 3, padding=1, output_padding=1))
 
+        self.out_conv = nn.Conv2d(32, 3, 3, padding = 1)
+        #self.out_conv = nn.ConvTranspose2d(32,3, stride=2, kernel_size = 3, padding=1, output_padding=1)
+
     def forward(self, x):
-        #print(x.shape)
         # original has random input of [1, 256] and that gets into [1, 256, 1, 1]
 
         y = torch.rand(1, 256, 1 ,1).to(self.device)
@@ -830,7 +829,6 @@ class SimpleFontGenerator256(pl.LightningModule):
         # conv the image to make concat later
         first = []
         second = []
-
         x = self.init_conv(x)
         z = zz = x # creating a copy
 
@@ -840,20 +838,17 @@ class SimpleFontGenerator256(pl.LightningModule):
           second.append(result)
           x = result
 
+
         # font conv down
         for i, f in enumerate(self.first_conv):
           result = f(z)
           first.append(result)
-          z = result
+          z = result  
 
         # concat results into one list
         #first = first + second
         # [::-1] means to mirror the list
         first = second[::-1] + list(zz.unsqueeze(0)) + first
-
-        print("first.shape")
-        for f in first:
-          print(f.shape)
 
         # concat with random array and conv to original dimension
         x = torch.cat([z,y], dim=1)
@@ -862,9 +857,6 @@ class SimpleFontGenerator256(pl.LightningModule):
         x = self.initial_conv(x)
         x = F.normalize(x, dim = 1)
         residuals = dict()
-
-
-        #x = z
 
         count = 0
         for (res, (up, sle, attn)) in zip(self.res_layers, self.layers):
@@ -884,11 +876,10 @@ class SimpleFontGenerator256(pl.LightningModule):
 
             # concat with conv picture and conv
             # stopping once final picture is reached
-            if not (x.shape[1] == 3 and x.shape[2] == 256 and x.shape[3] == 256):
-              print(x.shape, first[len(first)-count-6].shape)
-              x = torch.cat([x, first[len(first)-count-6]], dim=1)
+            if not (x.shape[2] == 256 and x.shape[3] == 256):
+              print(x.shape, first[len(first)-count-4].shape)
+              x = torch.cat([x, first[len(first)-count-4]], dim=1)
               x = self.concat_conv[count](x)
               count += 1
 
         return self.out_conv(x)
-"""
