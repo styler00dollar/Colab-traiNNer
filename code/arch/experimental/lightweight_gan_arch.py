@@ -367,7 +367,7 @@ class Generator(pl.LightningModule):
         self.first_conv.append(torch.nn.Conv2d(256, 256, kernel_size=1, stride=2))
         self.first_conv.append(torch.nn.Conv2d(256, 256, kernel_size=1, stride=2))
         self.first_conv.append(torch.nn.Conv2d(256, 256, kernel_size=1, stride=2))
-        
+
         # merge conv for random
         self.random_conv = torch.nn.Conv2d(512, 256, kernel_size=1)
 
@@ -403,7 +403,7 @@ class Generator(pl.LightningModule):
         x = self.initial_conv(x)
         x = F.normalize(x, dim = 1)
         residuals = dict()
-        
+
         count = 0
         for (res, (up, sle, attn)) in zip(self.res_layers, self.layers):
 
@@ -427,7 +427,7 @@ class Generator(pl.LightningModule):
               x = torch.cat([x, first[len(first)-count-5]], dim=1)
               x = self.concat_conv[count](x)
               count += 1
-            
+
             elif not (x.shape[1] == 3 and x.shape[2] == 512 and x.shape[3] == 512) and self.image_size == 1024:
               x = torch.cat([x, first[len(first)-count-5]], dim=1)
               x = self.concat_conv[count](x)
@@ -438,3 +438,457 @@ class Generator(pl.LightningModule):
               break
 
         return self.out_conv(x)
+
+
+
+class SimpleFontGenerator512(pl.LightningModule):
+    def __init__(
+        self,
+        *,
+        image_size=512,
+        latent_dim = 256,
+        fmap_max = 512,
+        fmap_inverse_coef = 12,
+        transparent = False,
+        greyscale = False,
+        attn_res_layers = [],
+        freq_chan_attn = False
+    ):
+        super().__init__()
+        resolution = log2(image_size)
+        assert is_power_of_two(image_size), 'image size must be a power of 2'
+
+        if transparent:
+            init_channel = 4
+        elif greyscale:
+            init_channel = 1
+        else:
+            init_channel = 3
+
+        #fmap_max = default(fmap_max, latent_dim)
+
+        self.initial_conv = nn.Sequential(
+            nn.ConvTranspose2d(latent_dim, latent_dim * 2, 4),
+            norm_class(latent_dim * 2),
+            nn.GLU(dim = 1)
+        )
+
+        num_layers = int(resolution) - 2
+        features = list(map(lambda n: (n,  2 ** (fmap_inverse_coef - n)), range(2, num_layers + 2)))
+        features = list(map(lambda n: (n[0], min(n[1], fmap_max)), features))
+        features = list(map(lambda n: 3 if n[0] >= 8 else n[1], features))
+        features = [latent_dim, *features]
+
+        in_out_features = list(zip(features[:-1], features[1:]))
+
+        self.res_layers = range(2, num_layers + 2)
+        self.layers = nn.ModuleList([])
+
+        self.res_to_feature_map = dict(zip(self.res_layers, in_out_features))
+
+        self.sle_map = ((3, 7), (4, 8), (5, 9), (6, 10))
+        self.sle_map = list(filter(lambda t: t[0] <= resolution and t[1] <= resolution, self.sle_map))
+        self.sle_map = dict(self.sle_map)
+
+        self.num_layers_spatial_res = 1
+
+        for (res, (chan_in, chan_out)) in zip(self.res_layers, in_out_features):
+            image_width = 2 ** res
+
+            attn = None
+            if image_width in attn_res_layers:
+                attn = PreNorm(chan_in, LinearAttention(chan_in))
+
+            sle = None
+            if res in self.sle_map:
+                residual_layer = self.sle_map[res]
+                sle_chan_out = self.res_to_feature_map[residual_layer - 1][-1]
+
+                if freq_chan_attn:
+                    sle = FCANet(
+                        chan_in = chan_out,
+                        chan_out = sle_chan_out,
+                        width = 2 ** (res + 1)
+                    )
+                else:
+                    sle = GlobalContext(
+                        chan_in = chan_out,
+                        chan_out = sle_chan_out
+                    )
+
+            layer = nn.ModuleList([
+                nn.Sequential(
+                    upsample(),
+                    Blur(),
+                    nn.Conv2d(chan_in, chan_out * 2, 3, padding = 1),
+                    norm_class(chan_out * 2),
+                    nn.GLU(dim = 1)
+                ),
+                sle,
+                attn
+            ])
+            self.layers.append(layer)
+
+
+        # torch.Size([1, 128, 64, 64])
+        self.image_size = image_size
+        self.cat_conv = nn.ModuleList([])
+        self.first_conv = nn.ModuleList([])
+        self.concat_conv = nn.ModuleList([])
+
+        # creating conv list
+        for f in [128,256]:
+        #for f in [128,256]:
+          first_conv = nn.Conv2d(f, f * 2, kernel_size = 3, padding = 1, stride = 2)
+          self.first_conv.append(first_conv)
+
+        # conv after loop conv
+        self.first_conv.append(torch.nn.Conv2d(512, 512, kernel_size=1, stride=2))
+        self.first_conv.append(torch.nn.Conv2d(512, 256, kernel_size=1, stride=2))
+        self.first_conv.append(torch.nn.Conv2d(256, 256, kernel_size=1, stride=2))
+        self.first_conv.append(torch.nn.Conv2d(256, 256, kernel_size=1, stride=2))
+        self.first_conv.append(torch.nn.Conv2d(256, 256, kernel_size=1, stride=2))
+
+        # merge conv for random
+        self.random_conv = torch.nn.Conv2d(512, 256, kernel_size=1)
+
+        # concat conv at the end
+        for f in [512,512,256,128,64,32]:
+          concat_conv = nn.Conv2d(f * 2, f, kernel_size = 3, padding = 1)
+          self.concat_conv.append(concat_conv)
+
+        if self.image_size == 1024:
+          self.trasnpose_conv = torch.nn.ConvTranspose2d(3, 3, 3, stride=2, padding=1, output_padding=1)
+
+        # the final conv just does [1, 3, 1024, 1024] -> [1, 3, 1024, 1024] or [1, 3, 512, 512] -> [1, 3, 512, 512]
+        self.out_conv = nn.Conv2d(3, 3, 3, padding = 1)
+
+
+
+        # font conv (up)
+        # torch.Size([1, 128, 64, 64])
+        # input is 64px image
+        self.font_conv = nn.ModuleList([])
+        #self.font_conv.append(nn.Conv2d(3, 128, 3, padding = 1))
+        self.init_conv = nn.Conv2d(3, 128, 3, padding = 1)
+
+        for i in [128, 64]:
+          # vlt kernel_size fix
+          self.font_conv.append(nn.ConvTranspose2d(i, int(i/2), stride=2, kernel_size = 3, padding=1, output_padding=1))
+
+        self.font_conv.append(nn.Conv2d(32, 3, 3, padding = 1))
+
+
+        # todo, probably better way of doing up
+        # todo: shape check
+        #for i in [128, 64]:
+        #  if freq_chan_attn:
+        #      sle = FCANet(
+        #          chan_in = chan_out,
+        #          chan_out = sle_chan_out,
+        #          width = 2 ** (res + 1)
+        #      )
+        #  else:
+        #      sle = GlobalContext(
+        #          chan_in = chan_out,
+        #          chan_out = sle_chan_out
+        #      )
+        #  attn = PreNorm(chan_in, LinearAttention(chan_in))
+        #  nn.ModuleList([
+        #          nn.Sequential(
+        #              upsample(),
+        #              Blur(),
+        #              nn.Conv2d(i, int(i/2) * 2, 3, padding = 1),
+        #              norm_class(int(i/2) * 2),
+        #              nn.GLU(dim = 1)
+        #          ),
+        #          sle,
+        #          attn
+        #      ])
+
+        #self.m2 = nn.Conv2d(32, 3, 3, padding = 1)
+
+    def forward(self, x):
+        #print(x.shape)
+        # original has random input of [1, 256] and that gets into [1, 256, 1, 1]
+
+        y = torch.rand(1, 256, 1 ,1).to(self.device)
+        #y = rearrange(x, 'b c -> b c () ()')
+
+        # conv the image to make concat later
+        first = []
+        second = []
+
+        x = self.init_conv(x)
+        z = zz = x # creating a copy
+
+        # font conv up
+        for i, f in enumerate(self.font_conv):
+          result = f(x)
+          second.append(result)
+          x = result
+
+        # font conv down
+        for i, f in enumerate(self.first_conv):
+          result = f(z)
+          first.append(result)
+          z = result
+
+        # concat results into one list
+        #first = first + second
+        # [::-1] means to mirror the list
+        first = second[::-1] + list(zz.unsqueeze(0)) + first
+
+        # concat with random array and conv to original dimension
+        x = torch.cat([z,y], dim=1)
+        x = self.random_conv(x)
+
+        x = self.initial_conv(x)
+        x = F.normalize(x, dim = 1)
+        residuals = dict()
+
+
+        #x = z
+
+        count = 0
+        for (res, (up, sle, attn)) in zip(self.res_layers, self.layers):
+            if exists(attn):
+                x = attn(x) + x
+
+            x = up(x)
+
+            if exists(sle):
+                out_res = self.sle_map[res]
+                residual = sle(x)
+                residuals[out_res] = residual
+
+            next_res = res + 1
+            if next_res in residuals:
+                x = x * residuals[next_res]
+
+            # concat with conv picture and conv
+            # stopping once final picture is reached
+            if not (x.shape[1] == 3 and x.shape[2] == 512 and x.shape[3] == 512) and self.image_size == 512:
+              x = torch.cat([x, first[len(first)-count-5]], dim=1)
+              x = self.concat_conv[count](x)
+              count += 1
+
+            elif not (x.shape[1] == 3 and x.shape[2] == 512 and x.shape[3] == 512) and self.image_size == 1024:
+              x = torch.cat([x, first[len(first)-count-5]], dim=1)
+              x = self.concat_conv[count](x)
+              count += 1
+            elif (x.shape[1] == 3 and x.shape[2] == 512 and x.shape[3] == 512) and self.image_size == 1024:
+              # rgb image size 512 -> 1024 with transposeconv
+              x = self.trasnpose_conv(x)
+              break
+
+        return self.out_conv(x)
+
+
+# unfinished test
+"""
+class SimpleFontGenerator256(pl.LightningModule):
+    def __init__(
+        self,
+        *,
+        image_size=256,
+        latent_dim = 256,
+        fmap_max = 512,
+        fmap_inverse_coef = 12,
+        transparent = False,
+        greyscale = False,
+        attn_res_layers = [],
+        freq_chan_attn = False
+    ):
+        super().__init__()
+        resolution = log2(image_size)
+        assert is_power_of_two(image_size), 'image size must be a power of 2'
+
+        if transparent:
+            init_channel = 4
+        elif greyscale:
+            init_channel = 1
+        else:
+            init_channel = 3
+
+        #fmap_max = default(fmap_max, latent_dim)
+
+        self.initial_conv = nn.Sequential(
+            nn.ConvTranspose2d(latent_dim, latent_dim * 2, 4),
+            norm_class(latent_dim * 2),
+            nn.GLU(dim = 1)
+        )
+
+        num_layers = int(resolution) - 2
+        features = list(map(lambda n: (n,  2 ** (fmap_inverse_coef - n)), range(2, num_layers + 2)))
+        features = list(map(lambda n: (n[0], min(n[1], fmap_max)), features))
+        features = list(map(lambda n: 3 if n[0] >= 8 else n[1], features))
+        features = [latent_dim, *features]
+
+        in_out_features = list(zip(features[:-1], features[1:]))
+        #in_out_features = [(256, 512), (512, 256), (256, 128), (128, 64), (64, 32)]
+
+        self.res_layers = range(2, num_layers + 2) # range(2, 8)
+        #self.res_layers = range(2, 7)
+
+        self.layers = nn.ModuleList([])
+
+        self.res_to_feature_map = dict(zip(self.res_layers, in_out_features))
+
+        self.sle_map = ((3, 7), (4, 8), (5, 9), (6, 10))
+        self.sle_map = list(filter(lambda t: t[0] <= resolution and t[1] <= resolution, self.sle_map))
+        self.sle_map = dict(self.sle_map)
+
+        self.num_layers_spatial_res = 1
+
+        for (res, (chan_in, chan_out)) in zip(self.res_layers, in_out_features):
+
+            image_width = 2 ** res
+
+
+            attn = None
+            if image_width in attn_res_layers:
+                attn = PreNorm(chan_in, LinearAttention(chan_in))
+
+            sle = None
+            if res in self.sle_map:
+                residual_layer = self.sle_map[res]
+                sle_chan_out = self.res_to_feature_map[residual_layer - 1][-1]
+
+                if freq_chan_attn:
+                    sle = FCANet(
+                        chan_in = chan_out,
+                        chan_out = sle_chan_out,
+                        width = 2 ** (res + 1)
+                    )
+                else:
+                    sle = GlobalContext(
+                        chan_in = chan_out,
+                        chan_out = sle_chan_out
+                    )
+
+            layer = nn.ModuleList([
+                nn.Sequential(
+                    upsample(),
+                    Blur(),
+                    nn.Conv2d(chan_in, chan_out * 2, 3, padding = 1),
+                    norm_class(chan_out * 2),
+                    nn.GLU(dim = 1)
+                ),
+                sle,
+                attn
+            ])
+            self.layers.append(layer)
+
+
+        # torch.Size([1, 128, 64, 64])
+        self.image_size = image_size
+        self.cat_conv = nn.ModuleList([])
+        self.first_conv = nn.ModuleList([])
+        self.concat_conv = nn.ModuleList([])
+
+        # creating conv list
+        for f in [128,256]:
+        #for f in [128,256]:
+          first_conv = nn.Conv2d(f, f * 2, kernel_size = 3, padding = 1, stride = 2)
+          self.first_conv.append(first_conv)
+
+        # conv after loop conv
+        self.first_conv.append(torch.nn.Conv2d(512, 512, kernel_size=1, stride=2))
+        self.first_conv.append(torch.nn.Conv2d(512, 512, kernel_size=1, stride=2))
+        self.first_conv.append(torch.nn.Conv2d(512, 256, kernel_size=1, stride=2))
+        self.first_conv.append(torch.nn.Conv2d(256, 256, kernel_size=1, stride=2))
+        self.first_conv.append(torch.nn.Conv2d(256, 256, kernel_size=1, stride=2))
+
+        # merge conv for random
+        self.random_conv = torch.nn.Conv2d(512, 256, kernel_size=1)
+
+        # concat conv at the end
+        for f in [512,512,256,128,64,32]:
+          concat_conv = nn.Conv2d(f * 2, f, kernel_size = 3, padding = 1)
+          self.concat_conv.append(concat_conv)
+
+        # final conv [1, 32, 256, 256] -> [1, 3, 256, 256]
+        self.out_conv = nn.Conv2d(32, 3, 3, padding = 1)
+
+        # font conv (up)
+        # torch.Size([1, 128, 32, 32])
+        # input is 32px image
+        self.font_conv = nn.ModuleList([])
+        self.init_conv = nn.Conv2d(3, 128, 3, padding = 1)
+
+        for i in [128, 64]:
+          self.font_conv.append(nn.ConvTranspose2d(i, int(i/2), stride=2, kernel_size = 3, padding=1, output_padding=1))
+
+    def forward(self, x):
+        #print(x.shape)
+        # original has random input of [1, 256] and that gets into [1, 256, 1, 1]
+
+        y = torch.rand(1, 256, 1 ,1).to(self.device)
+        #y = rearrange(x, 'b c -> b c () ()')
+
+        # conv the image to make concat later
+        first = []
+        second = []
+
+        x = self.init_conv(x)
+        z = zz = x # creating a copy
+
+        # font conv up
+        for i, f in enumerate(self.font_conv):
+          result = f(x)
+          second.append(result)
+          x = result
+
+        # font conv down
+        for i, f in enumerate(self.first_conv):
+          result = f(z)
+          first.append(result)
+          z = result
+
+        # concat results into one list
+        #first = first + second
+        # [::-1] means to mirror the list
+        first = second[::-1] + list(zz.unsqueeze(0)) + first
+
+        print("first.shape")
+        for f in first:
+          print(f.shape)
+
+        # concat with random array and conv to original dimension
+        x = torch.cat([z,y], dim=1)
+        x = self.random_conv(x)
+
+        x = self.initial_conv(x)
+        x = F.normalize(x, dim = 1)
+        residuals = dict()
+
+
+        #x = z
+
+        count = 0
+        for (res, (up, sle, attn)) in zip(self.res_layers, self.layers):
+            if exists(attn):
+                x = attn(x) + x
+
+            x = up(x)
+
+            if exists(sle):
+                out_res = self.sle_map[res]
+                residual = sle(x)
+                residuals[out_res] = residual
+
+            next_res = res + 1
+            if next_res in residuals:
+                x = x * residuals[next_res]
+
+            # concat with conv picture and conv
+            # stopping once final picture is reached
+            if not (x.shape[1] == 3 and x.shape[2] == 256 and x.shape[3] == 256):
+              print(x.shape, first[len(first)-count-6].shape)
+              x = torch.cat([x, first[len(first)-count-6]], dim=1)
+              x = self.concat_conv[count](x)
+              count += 1
+
+        return self.out_conv(x)
+"""

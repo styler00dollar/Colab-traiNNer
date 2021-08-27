@@ -141,6 +141,26 @@ class CustomTrainClass(pl.LightningModule):
         greyscale = cfg['network_G']['greyscale'],
         freq_chan_attn = cfg['network_G']['freq_chan_attn'])
 
+    elif cfg['network_G']['netG'] == 'SimpleFontGenerator512':
+      from arch.experimental.lightweight_gan_arch import SimpleFontGenerator512
+      self.netG = SimpleFontGenerator512(image_size=cfg['network_G']['image_size'],
+        latent_dim = cfg['network_G']['latent_dim'],
+        fmap_max = cfg['network_G']['fmap_max'],
+        fmap_inverse_coef = cfg['network_G']['fmap_inverse_coef'],
+        transparent = cfg['network_G']['transparent'],
+        greyscale = cfg['network_G']['greyscale'],
+        freq_chan_attn = cfg['network_G']['freq_chan_attn'])
+    
+    elif cfg['network_G']['netG'] == 'SimpleFontGenerator256':
+      from arch.experimental.lightweight_gan_arch import SimpleFontGenerator256
+      self.netG = SimpleFontGenerator256(image_size=cfg['network_G']['image_size'],
+        latent_dim = cfg['network_G']['latent_dim'],
+        fmap_max = cfg['network_G']['fmap_max'],
+        fmap_inverse_coef = cfg['network_G']['fmap_inverse_coef'],
+        transparent = cfg['network_G']['transparent'],
+        greyscale = cfg['network_G']['greyscale'],
+        freq_chan_attn = cfg['network_G']['freq_chan_attn'])
+
 
     ############################
 
@@ -589,7 +609,7 @@ class CustomTrainClass(pl.LightningModule):
               use_dropout=cfg['train']['use_dropout'], spatial=cfg['train']['spatial'], version=cfg['train']['version'], lpips=cfg['train']['lpips'])
     model_path = os.path.abspath('loss/lpips_weights/v0.1/%s.pth'%(cfg['train']['pnet_type']))
     print('Loading model from: %s'%model_path)
-    self.perceptual_loss.load_state_dict(torch.load(model_path), strict=False)
+    self.perceptual_loss.load_state_dict(torch.load(model_path, map_location=torch.device(self.device)), strict=False)
 
     # metrics
     self.psnr_metric = PSNR()
@@ -695,8 +715,8 @@ class CustomTrainClass(pl.LightningModule):
       if cfg['network_G']['netG'] == 'CAIN':
         out = self.netG(train_batch[0], train_batch[1])
 
-      # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan
-      if cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
+      # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan / SimpleFontGenerator256 / SimpleFontGenerator512
+      if cfg['network_G']['netG'] == "SimpleFontGenerator512" or cfg['network_G']['netG'] == "SimpleFontGenerator256" or cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
         if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
             # masked test with inpaint dataloader
             tmp = torch.cat([train_batch[0], train_batch[1]],1)
@@ -879,8 +899,8 @@ class CustomTrainClass(pl.LightningModule):
         #########################
         if cfg['network_D']['netD'] != None:
           # Try to fool the discriminator
-          Tensor = torch.cuda.FloatTensor #if cuda else torch.FloatTensor
-          fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1)
+          Tensor = torch.FloatTensor
+          fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1).to(self.device)
           if cfg['train']['diffaug'] == True:
             d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(DiffAugment(out, cfg['train']['policy'])), fake)
           else:
@@ -893,9 +913,9 @@ class CustomTrainClass(pl.LightningModule):
 
       # train discriminator
       if optimizer_idx == 1:
-        Tensor = torch.cuda.FloatTensor #if cuda else torch.FloatTensor
-        valid = Variable(Tensor((out.shape[0])).fill_(1.0), requires_grad=False).unsqueeze(-1)
-        fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1)
+        Tensor = torch.FloatTensor #if cuda else torch.FloatTensor
+        valid = Variable(Tensor((out.shape[0])).fill_(1.0), requires_grad=False).unsqueeze(-1).to(self.device)
+        fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1).to(self.device)
 
         if cfg['train']['diffaug'] == True:
           dis_real_loss = self.MSELoss(self.netD(DiffAugment(train_batch[2], cfg['train']['policy'])), valid)
@@ -1021,8 +1041,8 @@ class CustomTrainClass(pl.LightningModule):
       out = self.netG(train_batch[0])
 
     ############################
-    # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan
-    if cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
+    # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan / SimpleFontGenerator256 / SimpleFontGenerator512
+    if cfg['network_G']['netG'] == "SimpleFontGenerator512" or cfg['network_G']['netG'] == "SimpleFontGenerator256" or cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
       if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
           # masked test with inpaint dataloader
           tmp = torch.cat([train_batch[0], train_batch[1]],1)

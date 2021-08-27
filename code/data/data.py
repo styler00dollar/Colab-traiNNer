@@ -581,7 +581,7 @@ class DS_lrhr(Dataset):
 
 
           hr_image = hr_image[random_pos1:random_pos1+self.hr_size, random_pos2:random_pos2+self.hr_size]
-          lr_image = lr_image[int(random_pos1/self.scale):int((random_pos1/self.scale)+self.hr_size/self.scale), 
+          lr_image = lr_image[int(random_pos1/self.scale):int((random_pos1/self.scale)+self.hr_size/self.scale),
                               int(random_pos2/self.scale):int((random_pos2/self.scale)+self.hr_size/self.scale)]
 
         # to tensor
@@ -778,3 +778,182 @@ class DS_lrhr_batch_oft_val(Dataset):
 
 
         return lr_image, hr_image, lr_path
+
+
+
+
+# assuming 8x8 grids (26 big letters, 26 small letters and then 10 numbers)
+class DS_fontgen(Dataset):
+    def __init__(self, hr_path):
+        self.samples = []
+        for hr_path, _, fnames in sorted(os.walk(hr_path)):
+            for fname in sorted(fnames):
+                path = os.path.join(hr_path, fname)
+                if ".png" in path or ".jpg" in path or ".webp" in path:
+                  self.samples.append(path)
+        if len(self.samples) == 0:
+            raise RuntimeError("Found 0 files in subfolders of: " + hr_path)
+
+        #self.lr_path = lr_path
+        self.amount_tiles = 8
+        self.tilesize = 64
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, index):
+        # getting hr image
+        hr_path = self.samples[index]
+        hr_image = cv2.imread(hr_path)
+        hr_image = cv2.cvtColor(hr_image, cv2.COLOR_BGR2RGB)
+
+        # getting lr image
+        #lr_path = os.path.join(self.lr_path, os.path.basename(hr_path))
+        #lr_image = cv2.imread(lr_path)
+        #lr_image = cv2.cvtColor(lr_image, cv2.COLOR_BGR2RGB)
+
+        # randomly cropping one letter from the image
+        pos_total = []
+
+        #tilesize = hr_image.shape[2] / self.amount_tiles
+
+        self.total_size = 0 # the current amount of images that got a random position
+
+        while True:
+          # determine random position
+          x_rand = random.randint(0,self.amount_tiles-1)
+          y_rand = random.randint(0,self.amount_tiles-1)
+
+          pos_rand = [x_rand, y_rand]
+
+          # there are two empty spots, just skipping them
+          if ((pos_rand in pos_total) != True) and (x_rand != 7 and y_rand != 7) and (x_rand != 6 and y_rand != 7):
+            pos_total.append(pos_rand)
+            self.total_size += 1
+
+          # just returning one for now
+          if self.total_size == 1:
+            break
+
+        for i in pos_total:
+          # todo check if 0 is x and 1 is y
+          # height = img.shape[0]
+          # width = img.shape[1]
+          # channels = img.shape[2]
+
+          #print(int(self.tilesize*i[1]), int((self.tilesize+1)*i[1]), int(self.tilesize*i[0]), int((self.tilesize+1)*i[0]))
+          #print("----------------")
+          #print((self.tilesize+1), i[1])
+          lr_image = hr_image[int(self.tilesize*i[1]):int(self.tilesize*(i[1]+1)), int(self.tilesize*i[0]):int(self.tilesize*(i[0]+1))]
+
+        # to tensor
+        hr_image = torch.from_numpy(hr_image).permute(2, 0, 1)/255
+        lr_image = torch.from_numpy(lr_image).permute(2, 0, 1)/255
+
+        #print("train")
+        #print(lr_image.shape)
+        #print(hr_image.shape)
+        return 0, lr_image, hr_image
+
+
+
+
+
+class DS_fontgen_val(Dataset):
+    def __init__(self, lr_path, hr_path):
+        self.samples = []
+        for hr_path, _, fnames in sorted(os.walk(hr_path)):
+            for fname in sorted(fnames):
+                path = os.path.join(hr_path, fname)
+                if ".png" in path or ".jpg" in path or ".webp" in path:
+                  self.samples.append(path)
+        if len(self.samples) == 0:
+            raise RuntimeError("Found 0 files in subfolders of: " + hr_path)
+
+        self.lr_path = lr_path
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, index):
+        # getting hr image
+        hr_path = self.samples[index]
+        hr_image = cv2.imread(hr_path)
+        hr_image = cv2.cvtColor(hr_image, cv2.COLOR_BGR2RGB)
+
+        lr_path = os.path.join(self.lr_path, os.path.basename(hr_path))
+        lr_image = cv2.imread(lr_path)
+        lr_image = cv2.cvtColor(lr_image, cv2.COLOR_BGR2RGB)
+
+        # to tensor
+        hr_image = torch.from_numpy(hr_image).permute(2, 0, 1)/255
+        lr_image = torch.from_numpy(lr_image).permute(2, 0, 1)/255
+
+        #print("val")
+        #print(hr_image.shape)
+        #print(lr_image.shape)
+        return lr_image, hr_image, lr_path
+
+
+
+
+# 4x4
+# assuming 8x8 grids (26 big letters, 26 small letters and then 10 numbers)
+class DS_fontgen_tiled(Dataset):
+    def __init__(self, hr_path):
+        self.samples = []
+        for hr_path, _, fnames in sorted(os.walk(hr_path)):
+            for fname in sorted(fnames):
+                path = os.path.join(hr_path, fname)
+                if ".png" in path or ".jpg" in path or ".webp" in path:
+                  self.samples.append(path)
+        if len(self.samples) == 0:
+            raise RuntimeError("Found 0 files in subfolders of: " + hr_path)
+
+        #self.lr_path = lr_path
+        self.amount_tiles = 8
+        self.tilesize = 64
+        self.image_size = 512
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, index):
+        # getting hr image
+        hr_path = self.samples[index]
+        hr_image = cv2.imread(hr_path)
+        hr_image = cv2.cvtColor(hr_image, cv2.COLOR_BGR2RGB)
+
+        # randomly cropping from 4x4 grid
+        x_rand = random.randint(0,1)
+        y_rand = random.randint(0,1)
+        hr_image = sample[x_rand*self.image_size:(x_rand+1)*self.image_size, y_rand*self.image_size:(y_rand+1)*self.image_size]
+        # now assuming like in previous dataloader, one 512px image
+
+        pos_total = []
+        self.total_size = 0
+
+        while True:
+          # determine random position
+          x_rand = random.randint(0,self.amount_tiles-1)
+          y_rand = random.randint(0,self.amount_tiles-1)
+
+          pos_rand = [x_rand, y_rand]
+
+          # there are two empty spots, just skipping them
+          if ((pos_rand in pos_total) != True) and (x_rand != 7 and y_rand != 7) and (x_rand != 6 and y_rand != 7):
+            pos_total.append(pos_rand)
+            self.total_size += 1
+
+          # just returning one for now
+          if self.total_size == 1:
+            break
+
+        for i in pos_total:
+          lr_image = hr_image[int(self.tilesize*i[1]):int(self.tilesize*(i[1]+1)), int(self.tilesize*i[0]):int(self.tilesize*(i[0]+1))]
+
+        # to tensor
+        hr_image = torch.from_numpy(hr_image).permute(2, 0, 1)/255
+        lr_image = torch.from_numpy(lr_image).permute(2, 0, 1)/255
+
+        return 0, lr_image, hr_image
