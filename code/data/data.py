@@ -878,20 +878,22 @@ class DS_fontgen_val(Dataset):
     def __getitem__(self, index):
         # getting hr image
         hr_path = self.samples[index]
-        hr_image = cv2.imread(hr_path)
-        hr_image = cv2.cvtColor(hr_image, cv2.COLOR_BGR2RGB)
-
         lr_path = os.path.join(self.lr_path, os.path.basename(hr_path))
+        hr_image = cv2.imread(hr_path)
         lr_image = cv2.imread(lr_path)
-        lr_image = cv2.cvtColor(lr_image, cv2.COLOR_BGR2RGB)
 
-        # to tensor
-        hr_image = torch.from_numpy(hr_image).permute(2, 0, 1)/255
-        lr_image = torch.from_numpy(lr_image).permute(2, 0, 1)/255
+        if cfg['datasets']['train']['grayscale'] == True:
+          hr_image = cv2.cvtColor(hr_image, cv2.COLOR_BGR2GRAY)
+          lr_image = cv2.cvtColor(lr_image, cv2.COLOR_BGR2GRAY)
+          hr_image = torch.from_numpy(hr_image).unsqueeze(2).permute(2, 0, 1)/255
+          lr_image = torch.from_numpy(lr_image).unsqueeze(2).permute(2, 0, 1)/255
 
-        #print("val")
-        #print(hr_image.shape)
-        #print(lr_image.shape)
+        else:
+          hr_image = cv2.cvtColor(hr_image, cv2.COLOR_BGR2RGB)
+          lr_image = cv2.cvtColor(lr_image, cv2.COLOR_BGR2RGB)
+          hr_image = torch.from_numpy(hr_image).permute(2, 0, 1)/255
+          lr_image = torch.from_numpy(lr_image).permute(2, 0, 1)/255
+
         return lr_image, hr_image, lr_path
 
 
@@ -921,13 +923,16 @@ class DS_fontgen_tiled(Dataset):
     def __getitem__(self, index):
         # getting hr image
         hr_path = self.samples[index]
-        hr_image = cv2.imread(hr_path)
-        hr_image = cv2.cvtColor(hr_image, cv2.COLOR_BGR2RGB)
+
+        if cfg['datasets']['train']['grayscale'] == True:
+          hr_image = cv2.imread(hr_path, cv2.IMREAD_GRAYSCALE)
+        else:
+          hr_image = cv2.imread(hr_path)
 
         # randomly cropping from 4x4 grid
         x_rand = random.randint(0,1)
         y_rand = random.randint(0,1)
-        hr_image = sample[x_rand*self.image_size:(x_rand+1)*self.image_size, y_rand*self.image_size:(y_rand+1)*self.image_size]
+        hr_image = hr_image[x_rand*self.image_size:(x_rand+1)*self.image_size, y_rand*self.image_size:(y_rand+1)*self.image_size]
         # now assuming like in previous dataloader, one 512px image
 
         pos_total = []
@@ -953,7 +958,15 @@ class DS_fontgen_tiled(Dataset):
           lr_image = hr_image[int(self.tilesize*i[1]):int(self.tilesize*(i[1]+1)), int(self.tilesize*i[0]):int(self.tilesize*(i[0]+1))]
 
         # to tensor
-        hr_image = torch.from_numpy(hr_image).permute(2, 0, 1)/255
-        lr_image = torch.from_numpy(lr_image).permute(2, 0, 1)/255
+        #hr_image = torch.from_numpy(hr_image).permute(2, 0, 1)/255
+        #lr_image = torch.from_numpy(lr_image).permute(2, 0, 1)/255
+
+        # creating torch tensor
+        if cfg['datasets']['train']['grayscale'] == True:
+          hr_image = torch.from_numpy(hr_image).unsqueeze(2).permute(2, 0, 1)/255
+          lr_image = torch.from_numpy(lr_image).unsqueeze(2).permute(2, 0, 1)/255
+        else:
+          hr_image = torch.from_numpy(hr_image).permute(2, 0, 1).unsqueeze(0)/255
+          lr_image = torch.from_numpy(lr_image).permute(2, 0, 1).unsqueeze(0)/255
 
         return 0, lr_image, hr_image

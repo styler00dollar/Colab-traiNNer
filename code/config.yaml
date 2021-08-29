@@ -4,7 +4,7 @@ gpus: 1 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
-use_amp: False
+use_amp: True
 use_swa: False
 progress_bar_refresh_rate: 20
 default_root_dir: '/content/'
@@ -18,25 +18,25 @@ datasets:
     # DS_lrhr: loads lr from dataroot_LR and hr from dataroot_HR
     # DS_lrhr_batch_oft: loads grayscale-hr (3x3 400px) from dataroot_LR and generates lr by downscaling otf randomly
 
-    mode: DS_fontgen # DS_video | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
-    grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
-    dataroot_HR: '/content/hr' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/lr' # Original, with a single directory
+    mode: DS_fontgen_tiled # DS_fontgen | DS_fontgen_tiled | DS_video | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
+    grayscale: True # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
+    dataroot_HR: '/content/data' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/content/data' # Original, with a single directory
     loading_backend: 'PIL' # PIL, OpenCV (currently only in DS_inpaint_tiled_batch)
 
     n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     batch_size: 1
     batch_size_DL: 1
-    HR_size: 256 # The resolution the network will get. Random crop gets applied if that resolution does not match.
+    HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
     masks: '/content/masks/'
-    max_epochs: 10000
-    save_step_frequency: 20 # also validation frequency
+    max_epochs: 2000
+    save_step_frequency: 50000 # also validation frequency
 
     # batch
     # If a tiled dataloader is used, specify image charactaristics. Random crop will not be applied. Maybe in the future.
-    image_size: 256 # Size of one tile
+    image_size: 512 # Size of one tile
     amount_tiles: 2 # Amount of tiles inside the merged grid image
 
     # if edge data is required
@@ -44,16 +44,16 @@ datasets:
     canny_max: 150
 
   val:
-    dataroot_HR: '/content/val_hr'
-    dataroot_LR: '/content/val_lr' # Inpainting will use this directory as input
+    dataroot_HR: '/content/drive/MyDrive/Colab-BasicSR/SimpleFontGenerator512/val_input_hr'
+    dataroot_LR: '/content/drive/MyDrive/Colab-BasicSR/SimpleFontGenerator512/val_input_lr' # Inpainting will use this directory as input
 
 path:
     pretrain_model_G: 
     pretrain_model_D: 
     checkpoint_path:
-    checkpoint_save_path: '/content/'
-    validation_output_path: '/content/validation/'
-    log_path: '/content/'
+    checkpoint_save_path: '/content/drive/MyDrive/Colab-BasicSR/SimpleFontGenerator512'
+    validation_output_path: '/content/drive/MyDrive/Colab-BasicSR/SimpleFontGenerator512/val_output/'
+    log_path: '/content/drive/MyDrive/Colab-BasicSR/SimpleFontGenerator512'
 
 # Generator options:
 network_G:
@@ -392,15 +392,20 @@ network_G:
     fmap_max: 512
     fmap_inverse_coef: 12
     transparent: False # init_channel = 4
-    greyscale: False # init_channel = 1
+    greyscale: True # init_channel = 1
     freq_chan_attn: False
+
+
+    # ----Interpolation Generators----
+    #netG: CAIN
+    #depth: 3
 
 # Discriminator options:
 network_D:
     d_loss_fool_weight: 1 # inside the generator loop, trying to fool the disciminator
     d_loss_weight: 1 # inside own discriminator update
     
-    #netD: # in case there is no discriminator, leave it empty
+    netD: # in case there is no discriminator, leave it empty
 
     # VGG
     #netD: VGG
@@ -602,8 +607,8 @@ network_D:
     # timm
     # pip install timm
     # you can loop up models here: https://rwightman.github.io/pytorch-image-models/
-    netD: timm
-    timm_model: "tf_efficientnetv2_b0"
+    #netD: timm
+    #timm_model: "tf_efficientnetv2_b0"
 
 train: 
     scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
@@ -626,7 +631,7 @@ train:
     eps: 1e-6
 
     # Losses:
-    L1Loss_weight: 1
+    L1Loss_weight: 10
 
     # HFENLoss
     HFEN_weight: 0

@@ -69,6 +69,11 @@ class DFNetDataModule(pl.LightningDataModule):
           self.DFNetdataset_validation = DS_fontgen_val(self.val_lr, self.val_hr)
           self.DFNetdataset_test = DS_fontgen_val(self.val_lr, self.val_hr)
 
+        elif cfg['datasets']['train']['mode'] == 'DS_fontgen_tiled':
+          from .data import DS_fontgen_tiled, DS_fontgen_val
+          self.DFNetdataset_train = DS_fontgen_tiled(self.dir_hr)
+          self.DFNetdataset_validation = DS_fontgen_val(self.val_lr, self.val_hr)
+          self.DFNetdataset_test = DS_fontgen_val(self.val_lr, self.val_hr)
         else:
           print("Mode not found.")
 

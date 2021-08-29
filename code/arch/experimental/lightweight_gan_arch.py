@@ -440,7 +440,6 @@ class Generator(pl.LightningModule):
         return self.out_conv(x)
 
 
-
 class SimpleFontGenerator512(pl.LightningModule):
     def __init__(
         self,
@@ -459,11 +458,11 @@ class SimpleFontGenerator512(pl.LightningModule):
         assert is_power_of_two(image_size), 'image size must be a power of 2'
 
         if transparent:
-            init_channel = 4
+            self.init_channel = 4
         elif greyscale:
-            init_channel = 1
+            self.init_channel = 1
         else:
-            init_channel = 3
+            self.init_channel = 3
 
         #fmap_max = default(fmap_max, latent_dim)
 
@@ -479,7 +478,8 @@ class SimpleFontGenerator512(pl.LightningModule):
         features = list(map(lambda n: 3 if n[0] >= 8 else n[1], features))
         features = [latent_dim, *features]
 
-        in_out_features = list(zip(features[:-1], features[1:]))
+        #in_out_features = list(zip(features[:-1], features[1:]))
+        in_out_features = [(256, 512), (512, 512), (512, 256), (256, 128), (128, 64), (64, 32), (32, self.init_channel)]
 
         self.res_layers = range(2, num_layers + 2)
         self.layers = nn.ModuleList([])
@@ -493,6 +493,10 @@ class SimpleFontGenerator512(pl.LightningModule):
         self.num_layers_spatial_res = 1
 
         for (res, (chan_in, chan_out)) in zip(self.res_layers, in_out_features):
+            # hotfix, output should have same amount of output channels
+            #if chan_out == 3:
+            #  chan_out = self.init_channel
+
             image_width = 2 ** res
 
             attn = None
@@ -529,7 +533,6 @@ class SimpleFontGenerator512(pl.LightningModule):
             ])
             self.layers.append(layer)
 
-
         # torch.Size([1, 128, 64, 64])
         self.image_size = image_size
         self.cat_conv = nn.ModuleList([])
@@ -557,11 +560,11 @@ class SimpleFontGenerator512(pl.LightningModule):
           concat_conv = nn.Conv2d(f * 2, f, kernel_size = 3, padding = 1)
           self.concat_conv.append(concat_conv)
 
-        if self.image_size == 1024:
-          self.trasnpose_conv = torch.nn.ConvTranspose2d(3, 3, 3, stride=2, padding=1, output_padding=1)
+        #if self.image_size == 1024:
+        #  self.trasnpose_conv = torch.nn.ConvTranspose2d(3, 3, 3, stride=2, padding=1, output_padding=1)
 
         # the final conv just does [1, 3, 1024, 1024] -> [1, 3, 1024, 1024] or [1, 3, 512, 512] -> [1, 3, 512, 512]
-        self.out_conv = nn.Conv2d(3, 3, 3, padding = 1)
+        self.out_conv = nn.Conv2d(self.init_channel, self.init_channel, 3, padding = 1)
 
 
 
@@ -570,13 +573,13 @@ class SimpleFontGenerator512(pl.LightningModule):
         # input is 64px image
         self.font_conv = nn.ModuleList([])
         #self.font_conv.append(nn.Conv2d(3, 128, 3, padding = 1))
-        self.init_conv = nn.Conv2d(3, 128, 3, padding = 1)
+        self.init_conv = nn.Conv2d(self.init_channel, 128, 3, padding = 1)
 
         for i in [128, 64]:
           # vlt kernel_size fix
           self.font_conv.append(nn.ConvTranspose2d(i, int(i/2), stride=2, kernel_size = 3, padding=1, output_padding=1))
 
-        self.font_conv.append(nn.Conv2d(32, 3, 3, padding = 1))
+        self.font_conv.append(nn.Conv2d(32, self.init_channel, 3, padding = 1))
 
 
         # todo, probably better way of doing up
@@ -609,7 +612,6 @@ class SimpleFontGenerator512(pl.LightningModule):
         #self.m2 = nn.Conv2d(32, 3, 3, padding = 1)
 
     def forward(self, x):
-        #print(x.shape)
         # original has random input of [1, 256] and that gets into [1, 256, 1, 1]
 
         y = torch.rand(1, 256, 1 ,1).to(self.device)
@@ -654,30 +656,27 @@ class SimpleFontGenerator512(pl.LightningModule):
         for (res, (up, sle, attn)) in zip(self.res_layers, self.layers):
             if exists(attn):
                 x = attn(x) + x
-
-            x = up(x)
-
+            x = up(x) # 32 -> 3 channels in the end
             if exists(sle):
                 out_res = self.sle_map[res]
                 residual = sle(x)
                 residuals[out_res] = residual
-
             next_res = res + 1
             if next_res in residuals:
                 x = x * residuals[next_res]
 
             # concat with conv picture and conv
             # stopping once final picture is reached
-            if not (x.shape[1] == 3 and x.shape[2] == 512 and x.shape[3] == 512) and self.image_size == 512:
+            if not (x.shape[1] == self.init_channel and x.shape[2] == 512 and x.shape[3] == 512) and self.image_size == 512:
               x = torch.cat([x, first[len(first)-count-5]], dim=1)
               x = self.concat_conv[count](x)
               count += 1
 
-            elif not (x.shape[1] == 3 and x.shape[2] == 512 and x.shape[3] == 512) and self.image_size == 1024:
+            elif not (x.shape[1] == self.init_channel and x.shape[2] == 512 and x.shape[3] == 512) and self.image_size == 1024:
               x = torch.cat([x, first[len(first)-count-5]], dim=1)
               x = self.concat_conv[count](x)
               count += 1
-            elif (x.shape[1] == 3 and x.shape[2] == 512 and x.shape[3] == 512) and self.image_size == 1024:
+            elif (x.shape[1] == self.init_channel and x.shape[2] == 512 and x.shape[3] == 512) and self.image_size == 1024:
               # rgb image size 512 -> 1024 with transposeconv
               x = self.trasnpose_conv(x)
               break
@@ -797,7 +796,7 @@ class SimpleFontGenerator256(pl.LightningModule):
         self.first_conv.append(torch.nn.Conv2d(512, 256, kernel_size=1, stride=2))
         self.first_conv.append(torch.nn.Conv2d(256, 256, kernel_size=1, stride=2))
         self.first_conv.append(torch.nn.Conv2d(256, 256, kernel_size=1, stride=2))
-        
+
         # merge conv for random
         self.random_conv = torch.nn.Conv2d(512, 256, kernel_size=1)
 
@@ -805,7 +804,7 @@ class SimpleFontGenerator256(pl.LightningModule):
         for f in [512,512,256,128,64,32]:
           concat_conv = nn.Conv2d(f * 2, f, kernel_size = 3, padding = 1)
           self.concat_conv.append(concat_conv)
-        
+
         # final conv [1, 32, 256, 256] -> [1, 3, 256, 256]
 
         # font conv (up)
@@ -843,7 +842,7 @@ class SimpleFontGenerator256(pl.LightningModule):
         for i, f in enumerate(self.first_conv):
           result = f(z)
           first.append(result)
-          z = result  
+          z = result
 
         # concat results into one list
         #first = first + second
