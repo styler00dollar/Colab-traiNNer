@@ -7,7 +7,7 @@ use_tpu: False
 use_amp: True
 use_swa: False
 progress_bar_refresh_rate: 20
-default_root_dir: '/content/'
+default_root_dir: '/'
 
 # Dataset options:
 datasets:
@@ -18,21 +18,21 @@ datasets:
     # DS_lrhr: loads lr from dataroot_LR and hr from dataroot_HR
     # DS_lrhr_batch_oft: loads grayscale-hr (3x3 400px) from dataroot_LR and generates lr by downscaling otf randomly
 
-    mode: DS_fontgen_tiled # DS_fontgen | DS_fontgen_tiled | DS_video | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
+    mode: DS_video # DS_fontgen | DS_fontgen_tiled | DS_video | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
     grayscale: True # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
-    dataroot_HR: '/content/data' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/data' # Original, with a single directory
+    dataroot_HR: '/' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/' # Original, with a single directory
     loading_backend: 'PIL' # PIL, OpenCV (currently only in DS_inpaint_tiled_batch)
 
-    n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
-    batch_size: 1
+    n_workers: 16 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
+    batch_size: 3
     batch_size_DL: 1
     HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
     masks: '/content/masks/'
     max_epochs: 2000
-    save_step_frequency: 50000 # also validation frequency
+    save_step_frequency: 5000 # also validation frequency
 
     # batch
     # If a tiled dataloader is used, specify image charactaristics. Random crop will not be applied. Maybe in the future.
@@ -44,16 +44,16 @@ datasets:
     canny_max: 150
 
   val:
-    dataroot_HR: '/content/drive/MyDrive/Colab-BasicSR/SimpleFontGenerator512/val_input_hr'
-    dataroot_LR: '/content/drive/MyDrive/Colab-BasicSR/SimpleFontGenerator512/val_input_lr' # Inpainting will use this directory as input
+    dataroot_HR: '/'
+    dataroot_LR: '/' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: 
-    pretrain_model_D: 
+    pretrain_model_G:
+    pretrain_model_D:
     checkpoint_path:
-    checkpoint_save_path: '/content/drive/MyDrive/Colab-BasicSR/SimpleFontGenerator512'
-    validation_output_path: '/content/drive/MyDrive/Colab-BasicSR/SimpleFontGenerator512/val_output/'
-    log_path: '/content/drive/MyDrive/Colab-BasicSR/SimpleFontGenerator512'
+    checkpoint_save_path: '/'
+    validation_output_path: '/'
+    log_path: '/'
 
 # Generator options:
 network_G:
@@ -386,19 +386,19 @@ network_G:
     #netG: AdaFill
 
     # lightweight_gan (2021)
-    netG: SimpleFontGenerator512 # lightweight_gan | SimpleFontGenerator512 (64->512) | SimpleFontGenerator256 (32->256)
-    image_size: 512
-    latent_dim: 256
-    fmap_max: 512
-    fmap_inverse_coef: 12
-    transparent: False # init_channel = 4
-    greyscale: True # init_channel = 1
-    freq_chan_attn: False
+    #netG: SimpleFontGenerator512 # lightweight_gan | SimpleFontGenerator512 (64->512) | SimpleFontGenerator256 (32->256)
+    #image_size: 512
+    #latent_dim: 256
+    #fmap_max: 512
+    #fmap_inverse_coef: 12
+    #transparent: False # init_channel = 4
+    #greyscale: True # init_channel = 1
+    #freq_chan_attn: False
 
 
     # ----Interpolation Generators----
-    #netG: CAIN
-    #depth: 3
+    netG: CAIN
+    depth: 3
 
 # Discriminator options:
 network_D:
@@ -612,7 +612,7 @@ network_D:
 
 train: 
     scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
-    lr: 0.0001
+    lr: 0.000001
     
     # AdamP, AGDP, MADGRAD, cosangulargrad, tanangulargrad
     weight_decay: 0.01
@@ -631,7 +631,7 @@ train:
     eps: 1e-6
 
     # Losses:
-    L1Loss_weight: 10
+    L1Loss_weight: 0
 
     # HFENLoss
     HFEN_weight: 0
@@ -652,7 +652,7 @@ train:
     reduction_realtive: 'mean'
 
     # L1CosineSim (3-channel input)
-    L1CosineSim_weight: 0
+    L1CosineSim_weight: 1
     loss_lambda: 5
     reduction_L1CosineSim: 'mean'
 
@@ -690,7 +690,7 @@ train:
     p: 1
 
     # Contextual_Loss (3-channel input)
-    Contexual_weight: 0
+    Contexual_weight: 1
     crop_quarter: False
     max_1d_size: 100
     distance_type: 'cosine' # ["11", "l2", "consine"]

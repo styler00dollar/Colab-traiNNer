@@ -74,6 +74,11 @@ class DFNetDataModule(pl.LightningDataModule):
           self.DFNetdataset_train = DS_fontgen_tiled(self.dir_hr)
           self.DFNetdataset_validation = DS_fontgen_val(self.val_lr, self.val_hr)
           self.DFNetdataset_test = DS_fontgen_val(self.val_lr, self.val_hr)
+        elif cfg['datasets']['train']['mode'] == 'DS_video':
+          from .data_video import VimeoTriplet, VimeoTriplet_val
+          self.DFNetdataset_train = VimeoTriplet(self.dir_hr)
+          self.DFNetdataset_validation = VimeoTriplet_val(self.val_hr)
+          self.DFNetdataset_test = VimeoTriplet_val(self.val_hr)
         else:
           print("Mode not found.")
 
@@ -81,7 +86,7 @@ class DFNetDataModule(pl.LightningDataModule):
         return DataLoader(self.DFNetdataset_train, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.DFNetdataset_validation, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(self.DFNetdataset_validation, batch_size=1, num_workers=self.num_workers)
 
     def test_dataloader(self):
         return DataLoader(self.DFNetdataset_test, batch_size=self.batch_size, num_workers=self.num_workers)

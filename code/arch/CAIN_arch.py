@@ -9,7 +9,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import json
-
 def sub_mean(x):
     mean = x.mean(2, keepdim=True).mean(3, keepdim=True)
     x -= mean
@@ -21,7 +20,9 @@ class ConvNorm(nn.Module):
         super(ConvNorm, self).__init__()
 
         reflection_padding = kernel_size // 2
-        self.reflection_pad = nn.ReflectionPad2d(reflection_padding)
+        #self.reflection_pad = nn.ReflectionPad2d(reflection_padding)
+        # because of tensorrt
+        self.reflection_pad = torch.nn.ZeroPad2d(reflection_padding)
         self.conv = nn.Conv2d(in_feat, out_feat, stride=stride, kernel_size=kernel_size, bias=True)
 
     def forward(self, x):
@@ -42,7 +43,7 @@ class meanShift(nn.Module):
             self.shifter =  nn.Conv2d(1, 1, kernel_size=1, stride=1, padding=0)
             self.shifter.weight.data = torch.eye(1).view(1, 1, 1, 1)
             self.shifter.bias.data = torch.Tensor([l])
-        elif nChannel == 3:
+        elif nChannel == 3:  
             r = rgbMean[0] * rgbRange * float(sign)
             g = rgbMean[1] * rgbRange * float(sign)
             b = rgbMean[2] * rgbRange * float(sign)
@@ -79,14 +80,14 @@ class ResBlock(nn.Module):
             act,
             ConvNorm(out_feat, out_feat, kernel_size=kernel_size, stride=1)
         )
-
+        
 
     def forward(self, x):
         res = x
         out = self.body(x)
         out += res
 
-        return out
+        return out 
 
 
 ## Channel Attention (CA) Layer
@@ -144,7 +145,7 @@ class ResidualGroup(nn.Module):
         return res
 
 class Interpolation(nn.Module):
-    def __init__(self, n_resgroups, n_resblocks, n_feats,
+    def __init__(self, n_resgroups, n_resblocks, n_feats, 
                  reduction=16, act=nn.LeakyReLU(0.2, True), norm=False):
         super(Interpolation, self).__init__()
 
@@ -155,10 +156,10 @@ class Interpolation(nn.Module):
                 n_resblocks=12,
                 n_feat=n_feats,
                 kernel_size=3,
-                reduction=reduction,
-                act=act,
+                reduction=reduction, 
+                act=act, 
                 norm=norm)
-            for _ in range(3)]
+            for _ in range(2)]
         self.body = nn.Sequential(*modules_body)
 
         self.tailConv = nn.Conv2d(n_feats, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)

@@ -1,5 +1,5 @@
 import yaml
-
+import cv2
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
@@ -1103,7 +1103,15 @@ class CustomTrainClass(pl.LightningModule):
 
       filename_with_extention = os.path.basename(f)
       filename = os.path.splitext(filename_with_extention)[0]
-      save_image(out[counter], os.path.join(validation_output, filename, str(self.trainer.global_step) + '.png'))
+      
+      # if its yuv (cain), currently only supports batch_size 1
+      if cfg['network_G']['netG'] == 'CAIN':
+        out = out.squeeze(0).permute(1, 2, 0).cpu().numpy()*255
+        out = out.astype(np.uint8)
+        out = cv2.cvtColor(out, cv2.COLOR_YUV2RGB)
+        cv2.imwrite(os.path.join(validation_output, filename, str(self.trainer.global_step) + '.png'), out)
+      else:
+        save_image(out[counter], os.path.join(validation_output, filename, str(self.trainer.global_step) + '.png'))
 
       counter += 1
 

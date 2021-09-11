@@ -20,8 +20,9 @@ class VimeoTriplet(Dataset):
         for f in upper_folders:
           self.samples.append(glob.glob(f + "/*/"))
 
-
-        self.samples = [item for sublist in self.samples for item in sublist]
+        # for subfolders
+        #self.samples = [item for sublist in self.samples for item in sublist]
+        self.samples = upper_folders
 
         self.transforms = transforms.Compose([
             transforms.ToTensor()
@@ -31,7 +32,7 @@ class VimeoTriplet(Dataset):
         return len(self.samples)
 
     def __getitem__(self, index):
-        imgpaths = [self.samples[index] + '/im1.webp', self.samples[index] + '/im2.webp', self.samples[index] + '/im3.webp']
+        imgpaths = [self.samples[index] + '/frame1.jpg', self.samples[index] + '/frame2.jpg', self.samples[index] + '/frame3.jpg']
         # Load images
         img1 = cv2.imread(imgpaths[0])
         img2 = cv2.imread(imgpaths[1])
@@ -49,9 +50,9 @@ class VimeoTriplet(Dataset):
             img2 = Image.fromarray(img2[0:0+256, 192:256+256])
             img3 = Image.fromarray(img3[0:0+256, 192:256+256])
         """
-        img1 = cv2.resize(img1, (720, 576))
-        img2 = cv2.resize(img2, (720, 576))
-        img3 = cv2.resize(img3, (720, 576))
+        img1 = cv2.resize(img1, (1280, 720))
+        img2 = cv2.resize(img2, (1280, 720))
+        img3 = cv2.resize(img3, (1280, 720))
 
         # Data augmentation COLOR_YUV_I4202RGB
         img1 = self.transforms(img1)
@@ -76,7 +77,9 @@ class VimeoTriplet_val(Dataset):
           self.samples.append(glob.glob(f + "/*/"))
 
 
-        self.samples = [item for sublist in self.samples for item in sublist]
+        # this is for subfolders
+        #self.samples = [item for sublist in self.samples for item in sublist]
+        self.samples = upper_folders
 
         self.transforms = transforms.Compose([
             transforms.ToTensor()
@@ -86,7 +89,7 @@ class VimeoTriplet_val(Dataset):
         return len(self.samples)
 
     def __getitem__(self, index):
-        imgpaths = [self.samples[index] + '/im1.webp', self.samples[index] + '/im2.webp', self.samples[index] + '/im3.webp']
+        imgpaths = [self.samples[index] + '/frame1.jpg', self.samples[index] + '/frame2.jpg', self.samples[index] + '/frame3.jpg']
         # Load images
         img1 = cv2.imread(imgpaths[0])
         img2 = cv2.imread(imgpaths[1])
@@ -104,9 +107,9 @@ class VimeoTriplet_val(Dataset):
             img2 = Image.fromarray(img2[0:0+256, 192:256+256])
             img3 = Image.fromarray(img3[0:0+256, 192:256+256])
         """
-        img1 = cv2.resize(img1, (720, 576))
-        img2 = cv2.resize(img2, (720, 576))
-        img3 = cv2.resize(img3, (720, 576))
+        img1 = cv2.resize(img1, (1280, 720))
+        img2 = cv2.resize(img2, (1280, 720))
+        img3 = cv2.resize(img3, (1280, 720))
 
         # Data augmentation COLOR_YUV_I4202RGB
         img1 = self.transforms(img1)
