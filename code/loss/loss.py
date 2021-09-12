@@ -154,8 +154,6 @@ class HFENLoss(nn.Module):  # Edge loss with pre_smooth
         # HFEN loss
         log1 = self.filter(x)
         log2 = self.filter(y)
-        print(log1.shape)
-        print(log2.shape)
         hfen_loss = self.criterion(log1, log2)
         if self.norm:
             hfen_loss /= y.norm()
