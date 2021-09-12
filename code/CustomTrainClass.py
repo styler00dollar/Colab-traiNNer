@@ -1116,7 +1116,8 @@ class CustomTrainClass(pl.LightningModule):
 
       # if its yuv (cain), currently only supports batch_size 1
       if cfg['network_G']['netG'] == 'CAIN':
-        out = out.squeeze(0).permute(1, 2, 0).cpu().numpy()*255
+        out = out.data.mul(255).mul(255 / 255).clamp(0, 255).round()
+        out = out.squeeze(0).permute(1, 2, 0).cpu().numpy() #*255
         out = out.astype(np.uint8)
         out = cv2.cvtColor(out, cv2.COLOR_YUV2RGB)
         cv2.imwrite(os.path.join(validation_output, filename, str(self.trainer.global_step) + '.png'), out)
