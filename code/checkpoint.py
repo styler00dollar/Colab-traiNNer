@@ -53,6 +53,11 @@ class CheckpointEveryNSteps(pl.Callback):
             if cfg['network_D']['netD'] != None:
               torch.save(trainer.model.netD.state_dict(), os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_D.pth"))
 
+            # saving jit for cain
+            if cfg['network_G']['netG'] == 'CAIN':
+                traced_model = torch.jit.trace(trainer.model.netG, (torch.randn(1,3,256,256).cuda(),torch.randn(1,3,256,256).cuda()))
+                torch.jit.save(traced_model, os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_G.pt"))
+            
             # run validation once checkpoint was made
             trainer.run_evaluation()
 
@@ -73,4 +78,8 @@ class CheckpointEveryNSteps(pl.Callback):
         else:
           print("Checkpoint " + f"{self.prefix}_{epoch}_{global_step}_G.pth saved")
 
+        if cfg['network_G']['netG'] == 'CAIN':
+            traced_model = torch.jit.trace(trainer.model.netG, (torch.randn(1,3,256,256).cuda(),torch.randn(1,3,256,256).cuda()))
+            torch.jit.save(traced_model, os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_G.pt"))
+        
 #Trainer(callbacks=[CheckpointEveryNSteps()])
