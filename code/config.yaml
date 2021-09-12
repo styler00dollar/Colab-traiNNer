@@ -4,10 +4,10 @@ gpus: 1 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
-use_amp: True
+use_amp: False
 use_swa: False
 progress_bar_refresh_rate: 20
-default_root_dir: '/'
+default_root_dir: '/content/'
 
 # Dataset options:
 datasets:
@@ -18,14 +18,14 @@ datasets:
     # DS_lrhr: loads lr from dataroot_LR and hr from dataroot_HR
     # DS_lrhr_batch_oft: loads grayscale-hr (3x3 400px) from dataroot_LR and generates lr by downscaling otf randomly
 
-    mode: DS_video # DS_fontgen | DS_fontgen_tiled | DS_video | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
-    grayscale: True # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
-    dataroot_HR: '/' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/' # Original, with a single directory
+    mode: DS_video # DS_video | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
+    grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
+    dataroot_HR: '/content/data' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/content/data' # Original, with a single directory
     loading_backend: 'PIL' # PIL, OpenCV (currently only in DS_inpaint_tiled_batch)
 
-    n_workers: 16 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
-    batch_size: 3
+    n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
+    batch_size: 1
     batch_size_DL: 1
     HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
@@ -44,16 +44,16 @@ datasets:
     canny_max: 150
 
   val:
-    dataroot_HR: '/'
-    dataroot_LR: '/' # Inpainting will use this directory as input
+    dataroot_HR: '/content/data'
+    dataroot_LR: '/content/data' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G:
-    pretrain_model_D:
+    pretrain_model_G: 
+    pretrain_model_D: 
     checkpoint_path:
-    checkpoint_save_path: '/'
-    validation_output_path: '/'
-    log_path: '/'
+    checkpoint_save_path: '/content/'
+    validation_output_path: '/content/validation/'
+    log_path: '/content/'
 
 # Generator options:
 network_G:
@@ -386,13 +386,13 @@ network_G:
     #netG: AdaFill
 
     # lightweight_gan (2021)
-    #netG: SimpleFontGenerator512 # lightweight_gan | SimpleFontGenerator512 (64->512) | SimpleFontGenerator256 (32->256)
+    #netG: lightweight_gan
     #image_size: 512
     #latent_dim: 256
     #fmap_max: 512
     #fmap_inverse_coef: 12
-    #transparent: False # init_channel = 4
-    #greyscale: True # init_channel = 1
+    #transparent: False
+    #greyscale: False
     #freq_chan_attn: False
 
 
@@ -405,7 +405,7 @@ network_D:
     d_loss_fool_weight: 1 # inside the generator loop, trying to fool the disciminator
     d_loss_weight: 1 # inside own discriminator update
     
-    netD: # in case there is no discriminator, leave it empty
+    #netD: # in case there is no discriminator, leave it empty
 
     # VGG
     #netD: VGG
@@ -607,12 +607,12 @@ network_D:
     # timm
     # pip install timm
     # you can loop up models here: https://rwightman.github.io/pytorch-image-models/
-    #netD: timm
-    #timm_model: "tf_efficientnetv2_b0"
+    netD: timm
+    timm_model: "tf_efficientnetv2_b0"
 
 train: 
     scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
-    lr: 0.000001
+    lr: 0.0001
     
     # AdamP, AGDP, MADGRAD, cosangulargrad, tanangulargrad
     weight_decay: 0.01
@@ -631,11 +631,11 @@ train:
     eps: 1e-6
 
     # Losses:
-    L1Loss_weight: 0
+    L1Loss_weight: 1
 
     # HFENLoss
-    HFEN_weight: 0
-    loss_f: L1CosineSim()
+    HFEN_weight: 1
+    loss_f: L1CosineSim # L1Loss | L1CosineSim
     kernel: 'log'
     kernel_size: 15
     sigma: 2.5
@@ -652,7 +652,7 @@ train:
     reduction_realtive: 'mean'
 
     # L1CosineSim (3-channel input)
-    L1CosineSim_weight: 1
+    L1CosineSim_weight: 0
     loss_lambda: 5
     reduction_L1CosineSim: 'mean'
 
@@ -663,7 +663,7 @@ train:
 
     # FFTLoss
     FFTLoss_weight: 0
-    loss_f: L1Loss
+    loss_f_fft: L1Loss
     reduction_fft: 'mean'
 
     OFLoss_weight: 0

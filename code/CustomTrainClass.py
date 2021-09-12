@@ -150,7 +150,7 @@ class CustomTrainClass(pl.LightningModule):
         transparent = cfg['network_G']['transparent'],
         greyscale = cfg['network_G']['greyscale'],
         freq_chan_attn = cfg['network_G']['freq_chan_attn'])
-    
+
     elif cfg['network_G']['netG'] == 'SimpleFontGenerator256':
       from arch.experimental.lightweight_gan_arch import SimpleFontGenerator256
       self.netG = SimpleFontGenerator256(image_size=cfg['network_G']['image_size'],
@@ -579,17 +579,24 @@ class CustomTrainClass(pl.LightningModule):
     # loss functions
     self.l1 = nn.L1Loss()
 
-    self.HFENLoss = HFENLoss(loss_f=cfg['train']['loss_f'], kernel=cfg['train']['kernel'], kernel_size=cfg['train']['kernel_size'], sigma = cfg['train']['sigma'], norm = cfg['train']['norm'])
+    if cfg['train']['loss_f'] == 'L1Loss':
+      loss_f = torch.nn.L1Loss()
+    elif cfg['train']['loss_f'] == 'L1CosineSim':
+      loss_f = L1CosineSim(loss_lambda=cfg['train']['loss_lambda'], reduction=cfg['train']['reduction_L1CosineSim'])
+
+    self.HFENLoss = HFENLoss(loss_f=loss_f, kernel=cfg['train']['kernel'], kernel_size=cfg['train']['kernel_size'], sigma = cfg['train']['sigma'], norm = cfg['train']['norm'])
     self.ElasticLoss = ElasticLoss(a=cfg['train']['a'], reduction=cfg['train']['reduction_elastic'])
     self.RelativeL1 = RelativeL1(eps=cfg['train']['eps'], reduction=cfg['train']['reduction_realtive'])
     self.L1CosineSim = L1CosineSim(loss_lambda=cfg['train']['loss_lambda'], reduction=cfg['train']['reduction_L1CosineSim'])
     self.ClipL1 = ClipL1(clip_min=cfg['train']['clip_min'], clip_max=cfg['train']['clip_max'])
 
-    if cfg['train']['loss_f'] == 'L1Loss':
-      loss_f = torch.nn.L1Loss
-    # todo
 
-    self.FFTloss = FFTloss(loss_f = loss_f, reduction=cfg['train']['reduction_fft'])
+    if cfg['train']['loss_f_fft'] == 'L1Loss':
+      loss_f_fft = torch.nn.L1Loss
+    elif cfg['train']['loss_f_fft'] == 'L1CosineSim':
+      loss_f_fft = L1CosineSim(loss_lambda=cfg['train']['loss_lambda'], reduction=cfg['train']['reduction_L1CosineSim'])
+
+    self.FFTloss = FFTloss(loss_f = loss_f_fft, reduction=cfg['train']['reduction_fft'])
     self.OFLoss = OFLoss()
     self.GPLoss = GPLoss(trace=cfg['train']['trace'], spl_denorm=cfg['train']['spl_denorm'])
     self.CPLoss = CPLoss(rgb=cfg['train']['rgb'], yuv=cfg['train']['yuv'], yuvgrad=cfg['train']['yuvgrad'], trace=cfg['train']['trace'], spl_denorm=cfg['train']['spl_denorm'], yuv_denorm=cfg['train']['yuv_denorm'])
@@ -610,6 +617,9 @@ class CustomTrainClass(pl.LightningModule):
     model_path = os.path.abspath('loss/lpips_weights/v0.1/%s.pth'%(cfg['train']['pnet_type']))
     print('Loading model from: %s'%model_path)
     self.perceptual_loss.load_state_dict(torch.load(model_path, map_location=torch.device(self.device)), strict=False)
+    #for param in self.perceptual_loss.features.parameters():
+    #  param.requires_grad = False
+
 
     # metrics
     self.psnr_metric = PSNR()
@@ -1103,7 +1113,7 @@ class CustomTrainClass(pl.LightningModule):
 
       filename_with_extention = os.path.basename(f)
       filename = os.path.splitext(filename_with_extention)[0]
-      
+
       # if its yuv (cain), currently only supports batch_size 1
       if cfg['network_G']['netG'] == 'CAIN':
         out = out.squeeze(0).permute(1, 2, 0).cpu().numpy()*255

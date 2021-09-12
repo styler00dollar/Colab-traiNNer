@@ -474,28 +474,25 @@ apply_gaussian_filter = apply_1Dfilter
 #TODO: use this in the initialization of class FilterX, so it can be used on
 # forward with an image (LoG, Gaussian, etc)
 def load_filter(kernel, kernel_size=3, in_channels=3, out_channels=3,
-                stride=1, padding=True, groups=3, dim: int =2,
+                stride=1, padding=True, groups=3, dim:int=2,
                 requires_grad=False):
-    '''
-        Loads a kernel's coefficients into a Conv layer that
-            can be used to convolve an image with, by default,
-            for depthwise convolution
-        Can use nn.Conv1d, nn.Conv2d or nn.Conv3d, depending on
-            the dimension set in dim (1,2,3)
-        #From Pytorch Conv2D:
-            https://pytorch.org/docs/master/_modules/torch/nn/modules/conv.html#Conv2d
-            When `groups == in_channels` and `out_channels == K * in_channels`,
-            where `K` is a positive integer, this operation is also termed in
-            literature as depthwise convolution.
-             At groups= :attr:`in_channels`, each input channel is convolved with
-             its own set of filters, of size:
-             :math:`\left\lfloor\frac{out\_channels}{in\_channels}\right\rfloor`.
-    '''
+    r""" Loads a kernel's coefficients into a Conv layer that can
+    be used to convolve an image with, by default, for depthwise
+    convolution. Can use nn.Conv1d, nn.Conv2d or nn.Conv3d, depending
+    on the dimension set in dim (1,2,3).
+    From Pytorch Conv2D:
+        https://pytorch.org/docs/master/_modules/torch/nn/modules/conv.html#Conv2d
+        When `groups == in_channels` and `out_channels == K * in_channels`,
+        where `K` is a positive integer, this operation is also termed in
+        literature as depthwise convolution.
+            At groups= :attr:`in_channels`, each input channel is convolved with
+            its own set of filters, of size:
+            :math:`\left\lfloor\frac{out\_channels}{in\_channels}\right\rfloor`.
+    """
 
-    '''#TODO: check if this is necessary, probably not
-    if isinstance(kernel_size, numbers.Number):
-        kernel_size = [kernel_size] * dim
-    '''
+    # TODO: check if this is necessary, probably not
+    # if isinstance(kernel_size, numbers.Number):
+    #     kernel_size = [kernel_size] * dim
 
     # Reshape to 2d depthwise convolutional weight
     kernel = kernel_conv_w(kernel, in_channels)
@@ -515,17 +512,16 @@ def load_filter(kernel, kernel_size=3, in_channels=3, out_channels=3,
         conv = nn.Conv3d
     else:
         raise RuntimeError(
-            'Only 1, 2 and 3 dimensions are supported for convolution. \
-            Received {}.'.format(dim)
+            "Only 1, 2 and 3 dimensions are supported for convolution."
+            f"Received {dim}."
         )
 
-    filter = conv(in_channels=in_channels, out_channels=out_channels,
-                        kernel_size=kernel_size, stride=stride, padding=padding,
-                        groups=groups, bias=False)
-    filter.weight.data = kernel
-    filter.weight.requires_grad = requires_grad
-    return filter
-
+    cfilter = conv(in_channels=in_channels, out_channels=out_channels,
+        kernel_size=kernel_size, stride=stride, padding=pad,
+        groups=groups, bias=False)
+    cfilter.weight.data = kernel
+    cfilter.weight.requires_grad = requires_grad
+    return cfilter
 
 def compute_padding(kernel_size):
     '''

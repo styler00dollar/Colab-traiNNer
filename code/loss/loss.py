@@ -110,54 +110,55 @@ class GradientPenaltyLoss(nn.Module):
         return loss
 
 
-class HFENLoss(nn.Module): # Edge loss with pre_smooth
+class HFENLoss(nn.Module):  # Edge loss with pre_smooth
     """Calculates high frequency error norm (HFEN) between target and
-     prediction used to quantify the quality of reconstruction of edges
-     and fine features.
-
-     Uses a rotationally symmetric LoG (Laplacian of Gaussian) filter to
-     capture edges. The original filter kernel is of size 15×15 pixels,
-     and has a standard deviation of 1.5 pixels.
-     ks = 2 * int(truncate * sigma + 0.5) + 1, so use truncate=4.5
-
-     HFEN is computed as the norm of the result obtained by LoG filtering the
-     difference between the reconstructed and reference images.
-
+    prediction used to quantify the quality of reconstruction of edges
+    and fine features.
+    Uses a rotationally symmetric LoG (Laplacian of Gaussian) filter to
+    capture edges. The original filter kernel is of size 15×15 pixels,
+    and has a standard deviation of 1.5 pixels.
+    ks = 2 * int(truncate * sigma + 0.5) + 1, so use truncate=4.5
+    HFEN is computed as the norm of the result obtained by LoG filtering the
+    difference between the reconstructed and reference images.
+    Refs:
     [1]: Ravishankar and Bresler: MR Image Reconstruction From Highly
     Undersampled k-Space Data by Dictionary Learning, 2011
         https://ieeexplore.ieee.org/document/5617283
     [2]: Han et al: Image Reconstruction Using Analysis Model Prior, 2016
         https://www.hindawi.com/journals/cmmm/2016/7571934/
-
-    Parameters
-    ----------
-    img1 : torch.Tensor or torch.autograd.Variable
-        Predicted image
-    img2 : torch.Tensor or torch.autograd.Variable
-        Target image
-    norm: if true, follows [2], who define a normalized version of HFEN.
-        If using RelativeL1 criterion, it's already normalized.
+    Args:
+        norm: if true, follows [2], who define a normalized version of
+            HFEN. If using RelativeL1 criterion, it's already normalized.
     """
-    def __init__(self, loss_f=None, kernel='log', kernel_size=15, sigma = 2.5, norm = False): #1.4 ~ 1.5
+    def __init__(self, loss_f=None, kernel:str='log',
+        kernel_size:int=15, sigma:float=2.5,
+        norm:bool=False): #1.4 ~ 1.5
         super(HFENLoss, self).__init__()
         # can use different criteria
         self.criterion = loss_f
         self.norm = norm
-        #can use different kernels like DoG instead:
+        # can use different kernels like DoG instead:
         if kernel == 'dog':
             kernel = get_dog_kernel(kernel_size, sigma)
         else:
             kernel = get_log_kernel(kernel_size, sigma)
         self.filter = load_filter(kernel=kernel, kernel_size=kernel_size)
 
-    def forward(self, img1, img2):
-        self.filter.to(img1.device)
+    def forward(self, x, y):
+        """ Applies HFEN
+        Args:
+            x: Predicted images
+            y: Target images
+        """
+        self.filter.to(x.device)
         # HFEN loss
-        log1 = self.filter(img1)
-        log2 = self.filter(img2)
+        log1 = self.filter(x)
+        log2 = self.filter(y)
+        print(log1.shape)
+        print(log2.shape)
         hfen_loss = self.criterion(log1, log2)
         if self.norm:
-            hfen_loss /= img2.norm()
+            hfen_loss /= y.norm()
         return hfen_loss
 
 
