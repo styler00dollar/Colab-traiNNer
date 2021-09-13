@@ -617,7 +617,7 @@ class CustomTrainClass(pl.LightningModule):
     model_path = os.path.abspath('loss/lpips_weights/v0.1/%s.pth'%(cfg['train']['pnet_type']))
     print('Loading model from: %s'%model_path)
     self.perceptual_loss.load_state_dict(torch.load(model_path, map_location=torch.device(self.device)), strict=False)
-    for param in self.perceptual_loss.features.parameters():
+    for param in self.perceptual_loss.parameters():
       param.requires_grad = False
 
     # metrics
