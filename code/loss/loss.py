@@ -1,4 +1,4 @@
-""""
+"""
 BasicSR/codes/models/modules/loss.py (8-Nov-20)
 https://github.com/victorca25/BasicSR/blob/dev2/codes/models/modules/loss.py
 """
@@ -374,7 +374,7 @@ class FFTloss(torch.nn.Module):
 
     def forward(self, img1, img2):
         zeros=torch.zeros(img1.size()).to(img1.device)
-        return self.criterion(torch.fft(torch.stack((img1,zeros),-1),2),torch.fft(torch.stack((img2,zeros),-1),2))
+        return self.criterion(torch.fft.fft(torch.stack((img1,zeros),-1),2),torch.fft.fft(torch.stack((img2,zeros),-1),2))
 
 
 class OFLoss(torch.nn.Module):

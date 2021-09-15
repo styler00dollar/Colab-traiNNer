@@ -566,11 +566,15 @@ class CustomTrainClass(pl.LightningModule):
 
     elif cfg['network_D']['netD'] == 'timm':
       import timm
-      self.netD = timm.create_model(cfg['network_D']['timm_model'], num_classes=1, pretrained=True)
+      self.netD = timm.create_model(cfg['network_D']['timm_model'], num_classes=2, pretrained=True)
+
+    elif cfg['network_D']['netD'] == 'resnet3d':
+      from arch.resnet3d_arch import generate_model
+      self.netD = generate_model(cfg['network_D']['model_depth'])
 
     # only doing init, if not 'TranformerDiscriminator', 'EfficientNet', 'ResNeSt', 'resnet', 'ViT', 'DeepViT', 'mobilenetV3'
     # should probably be rewritten
-    if cfg['network_D']['netD'] == 'NFNet' or cfg['network_D']['netD'] == 'context_encoder' or cfg['network_D']['netD'] == 'VGG' or cfg['network_D']['netD'] == 'VGG_fea' or cfg['network_D']['netD'] == 'Discriminator_VGG_128_SN' or cfg['network_D']['netD'] == 'VGGFeatureExtractor' or cfg['network_D']['netD'] == 'NLayerDiscriminator' or cfg['network_D']['netD'] == 'MultiscaleDiscriminator' or cfg['network_D']['netD'] == 'Discriminator_ResNet_128' or cfg['network_D']['netD'] == 'ResNet101FeatureExtractor' or  cfg['network_D']['netD'] == 'MINCNet' or cfg['network_D']['netD'] == 'PixelDiscriminator' or cfg['network_D']['netD'] == 'ResNeSt' or cfg['network_D']['netD'] == 'RepVGG' or cfg['network_D']['netD'] == 'squeezenet' or cfg['network_D']['netD'] == 'SwinTransformer':
+    if cfg['network_D']['netD'] == 'resnet3d' or cfg['network_D']['netD'] == 'NFNet' or cfg['network_D']['netD'] == 'context_encoder' or cfg['network_D']['netD'] == 'VGG' or cfg['network_D']['netD'] == 'VGG_fea' or cfg['network_D']['netD'] == 'Discriminator_VGG_128_SN' or cfg['network_D']['netD'] == 'VGGFeatureExtractor' or cfg['network_D']['netD'] == 'NLayerDiscriminator' or cfg['network_D']['netD'] == 'MultiscaleDiscriminator' or cfg['network_D']['netD'] == 'Discriminator_ResNet_128' or cfg['network_D']['netD'] == 'ResNet101FeatureExtractor' or  cfg['network_D']['netD'] == 'MINCNet' or cfg['network_D']['netD'] == 'PixelDiscriminator' or cfg['network_D']['netD'] == 'ResNeSt' or cfg['network_D']['netD'] == 'RepVGG' or cfg['network_D']['netD'] == 'squeezenet' or cfg['network_D']['netD'] == 'SwinTransformer':
       if self.global_step == 0:
         weights_init(self.netD, 'kaiming')
         print("Discriminator weight init complete.")
@@ -910,10 +914,19 @@ class CustomTrainClass(pl.LightningModule):
           # Try to fool the discriminator
           Tensor = torch.FloatTensor
           fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1).to(self.device)
-          if cfg['train']['diffaug'] == True:
-            d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(DiffAugment(out, cfg['train']['policy'])), fake)
+          if cfg['network_D']['netD'] == 'resnet3d':
+            # 3d
+            if cfg['train']['diffaug'] == True:
+              d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(DiffAugment(torch.stack([train_batch[0], out, train_batch[1]], dim=1), cfg['train']['policy'])), fake)
+            else:
+              d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(torch.stack([train_batch[0], out, train_batch[1]], dim=1)), fake)
+
           else:
-            d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(out), fake)
+            # 2d
+            if cfg['train']['diffaug'] == True:
+              d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(DiffAugment(out, cfg['train']['policy'])), fake)
+            else:
+              d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(out), fake)
 
           writer.add_scalar('loss/d_loss_fool', d_loss_fool, self.trainer.global_step)
 
@@ -926,12 +939,22 @@ class CustomTrainClass(pl.LightningModule):
         valid = Variable(Tensor((out.shape[0])).fill_(1.0), requires_grad=False).unsqueeze(-1).to(self.device)
         fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1).to(self.device)
 
-        if cfg['train']['diffaug'] == True:
-          dis_real_loss = self.MSELoss(self.netD(DiffAugment(train_batch[2], cfg['train']['policy'])), valid)
-          dis_fake_loss = self.MSELoss(self.netD(out), fake)
+        if cfg['network_D']['netD'] == 'resnet3d':
+          # 3d
+          if cfg['train']['diffaug'] == True:
+            dis_real_loss = self.MSELoss(self.netD(DiffAugment(torch.stack([train_batch[0], train_batch[2], train_batch[1]], dim=1), cfg['train']['policy'])), valid)
+            dis_fake_loss = self.MSELoss(self.netD(torch.stack([train_batch[0], out, train_batch[1]], dim=1)), fake)
+          else:
+            dis_real_loss = self.MSELoss(self.netD(torch.stack([train_batch[0], train_batch[2], train_batch[1]], dim=1)), valid)
+            dis_fake_loss = self.MSELoss(self.netD(torch.stack([train_batch[0], out, train_batch[1]], dim=1)), fake)
         else:
-          dis_real_loss = self.MSELoss(self.netD(train_batch[2]), valid)
-          dis_fake_loss = self.MSELoss(self.netD(out), fake)
+          # 2d
+          if cfg['train']['diffaug'] == True:
+            dis_real_loss = self.MSELoss(self.netD(DiffAugment(train_batch[2], cfg['train']['policy'])), valid)
+            dis_fake_loss = self.MSELoss(self.netD(out), fake)
+          else:
+            dis_real_loss = self.MSELoss(self.netD(train_batch[2]), valid)
+            dis_fake_loss = self.MSELoss(self.netD(out), fake)
 
 
         # Total loss

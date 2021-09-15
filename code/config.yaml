@@ -7,7 +7,7 @@ use_tpu: False
 use_amp: False
 use_swa: False
 progress_bar_refresh_rate: 20
-default_root_dir: '/content/'
+default_root_dir: '/content'
 
 # Dataset options:
 datasets:
@@ -24,7 +24,7 @@ datasets:
     dataroot_LR: '/content/data' # Original, with a single directory
     loading_backend: 'PIL' # PIL, OpenCV (currently only in DS_inpaint_tiled_batch)
 
-    n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
+    n_workers: 2 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     batch_size: 1
     batch_size_DL: 1
     HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
@@ -50,10 +50,10 @@ datasets:
 path:
     pretrain_model_G: 
     pretrain_model_D: 
-    checkpoint_path:
+    checkpoint_path: 
     checkpoint_save_path: '/content/'
-    validation_output_path: '/content/validation/'
-    log_path: '/content/'
+    validation_output_path: '/content/val/'
+    log_path: '/content/logs'
 
 # Generator options:
 network_G:
@@ -607,12 +607,15 @@ network_D:
     # timm
     # pip install timm
     # you can loop up models here: https://rwightman.github.io/pytorch-image-models/
-    netD: timm
-    timm_model: "tf_efficientnetv2_b0"
+    #netD: timm
+    #timm_model: "tf_efficientnetv2_b0"
+
+    netD: resnet3d
+    model_depth: 50 # [10, 18, 34, 50, 101, 152, 200]
 
 train: 
     scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
-    lr: 0.0001
+    lr: 0.000001
     
     # AdamP, AGDP, MADGRAD, cosangulargrad, tanangulargrad
     weight_decay: 0.01
@@ -631,10 +634,10 @@ train:
     eps: 1e-6
 
     # Losses:
-    L1Loss_weight: 1
+    L1Loss_weight: 0
 
     # HFENLoss
-    HFEN_weight: 1
+    HFEN_weight: 0
     loss_f: L1CosineSim # L1Loss | L1CosineSim
     kernel: 'log'
     kernel_size: 15
@@ -662,7 +665,7 @@ train:
     clip_max: 10.0
 
     # FFTLoss
-    FFTLoss_weight: 0
+    FFTLoss_weight: 1
     loss_f_fft: L1Loss
     reduction_fft: 'mean'
 
@@ -685,12 +688,12 @@ train:
     StyleLoss_weight: 0
 
     # TVLoss
-    TVLoss_weight: 0
+    TVLoss_weight: 0.00001
     tv_type: 'tv'
     p: 1
 
     # Contextual_Loss (3-channel input)
-    Contexual_weight: 1
+    Contexual_weight: 0
     crop_quarter: False
     max_1d_size: 100
     distance_type: 'cosine' # ["11", "l2", "consine"]
@@ -710,7 +713,7 @@ train:
     StyleLoss_weight: 0
 
     # PerceptualLoss
-    perceptual_weight: 0
+    perceptual_weight: 1
     net: PNetLin # PNetLin, DSSIM (?)
     pnet_type: 'vgg' # alex, squeeze, vgg
     pnet_rand: False
