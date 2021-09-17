@@ -566,7 +566,7 @@ class CustomTrainClass(pl.LightningModule):
 
     elif cfg['network_D']['netD'] == 'timm':
       import timm
-      self.netD = timm.create_model(cfg['network_D']['timm_model'], num_classes=2, pretrained=True)
+      self.netD = timm.create_model(cfg['network_D']['timm_model'], num_classes=1, pretrained=True)
 
     elif cfg['network_D']['netD'] == 'resnet3d':
       from arch.resnet3d_arch import generate_model
