@@ -14,6 +14,36 @@ def sub_mean(x):
     x -= mean
     return x, mean
 
+# https://github.com/fangwei123456/PixelUnshuffle-pytorch/blob/master/PixelUnshuffle/__init__.py
+def pixel_unshuffle(input, downscale_factor):
+    '''
+    input: batchSize * c * k*w * k*h
+    kdownscale_factor: k
+    batchSize * c * k*w * k*h -> batchSize * k*k*c * w * h
+    '''
+    c = input.shape[1]
+
+    kernel = torch.zeros(size=[downscale_factor * downscale_factor * c,
+                               1, downscale_factor, downscale_factor],
+                         device=input.device)
+    for y in range(downscale_factor):
+        for x in range(downscale_factor):
+            kernel[x + y * downscale_factor::downscale_factor*downscale_factor, 0, y, x] = 1
+    return F.conv2d(input, kernel, stride=downscale_factor, groups=c)
+
+class PixelUnshuffle(nn.Module):
+    def __init__(self, downscale_factor):
+        super(PixelUnshuffle, self).__init__()
+        self.downscale_factor = downscale_factor
+    def forward(self, input):
+        '''
+        input: batchSize * c * k*w * k*h
+        kdownscale_factor: k
+        batchSize * c * k*w * k*h -> batchSize * k*k*c * w * h
+        '''
+
+        return pixel_unshuffle(input, self.downscale_factor)
+
 
 class ConvNorm(nn.Module):
     def __init__(self, in_feat, out_feat, kernel_size, stride=1, norm=False):
@@ -179,7 +209,9 @@ class Interpolation(nn.Module):
 class Encoder(nn.Module):
     def __init__(self, in_channels=3, depth=3):
         super(Encoder, self).__init__()
-        self.shuffler = torch.nn.PixelUnshuffle(2**depth)
+        #self.shuffler = torch.nn.PixelUnshuffle(2**depth)
+        # custom unshuffle
+        self.shuffler = PixelUnshuffle(2**depth)
         relu = nn.LeakyReLU(0.2, True)
         self.interpolate = Interpolation(5, 12, in_channels * (4**depth), act=relu)
 
