@@ -262,6 +262,11 @@ class CustomTrainClass(pl.LightningModule):
       from arch.CAIN_arch import CAIN
       self.netG = CAIN(cfg['network_G']['depth'])
 
+    elif cfg['network_G']['netG'] == 'rife':
+      from arch.rife_arch import IFNet
+      self.netG = IFNet()
+
+
     if cfg['path']['checkpoint_path'] is None and cfg['network_G']['netG'] != 'GLEAN' and cfg['network_G']['netG'] != 'srflow' and cfg['network_G']['netG'] != 'GFPGAN':
       if self.global_step == 0:
       #if self.trainer.global_step == 0:
@@ -725,7 +730,7 @@ class CustomTrainClass(pl.LightningModule):
 
       ############################
       # if frame interpolation
-      if cfg['network_G']['netG'] == 'CAIN':
+      if cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife':
         out = self.netG(train_batch[0], train_batch[1])
 
       # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan / SimpleFontGenerator256 / SimpleFontGenerator512
@@ -978,34 +983,34 @@ class CustomTrainClass(pl.LightningModule):
 
       if cfg['network_G']['finetune'] is None or cfg['network_G']['finetune'] == False:
         if cfg['train']['scheduler'] == 'Adam':
-          opt_g = torch.optim.Adam(input_G, lr=cfg['train']['lr'])
+          opt_g = torch.optim.Adam(input_G, lr=cfg['train']['lr_g'])
           if cfg['network_D']['netD'] != None:
-            opt_d = torch.optim.Adam(input_D, lr=cfg['train']['lr'])
+            opt_d = torch.optim.Adam(input_D, lr=cfg['train']['lr_d'])
         if cfg['train']['scheduler'] == 'AdamP':
           from adamp import AdamP
-          opt_g = AdamP(input_G, lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
+          opt_g = AdamP(input_G, lr=cfg['train']['lr_g'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
           if cfg['network_D']['netD'] != None:
-            opt_d = AdamP(input_D, lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
+            opt_d = AdamP(input_D, lr=cfg['train']['lr_d'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), weight_decay=float(cfg['train']['weight_decay']))
         if cfg['train']['scheduler'] == 'SGDP':
           from adamp import SGDP
-          opt_g = SGDP(input_G, lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
+          opt_g = SGDP(input_G, lr=cfg['train']['lr_g'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
           if cfg['network_D']['netD'] != None:
-            opt_d = SGDP(input_D, lr=cfg['train']['lr'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
+            opt_d = SGDP(input_D, lr=cfg['train']['lr_d'], weight_decay=cfg['train']['weight_decay'], momentum=cfg['train']['momentum'], nesterov=cfg['train']['nesterov'])
         if cfg['train']['scheduler'] == 'MADGRAD':
           from madgrad import MADGRAD
-          opt_g = MADGRAD(input_G, lr=cfg['train']['lr'], momentum =cfg['train']['momentum'], weight_decay=cfg['train']['weight_decay'], eps=cfg['train']['eps'])
+          opt_g = MADGRAD(input_G, lr=cfg['train']['lr_g'], momentum =cfg['train']['momentum'], weight_decay=cfg['train']['weight_decay'], eps=cfg['train']['eps'])
           if cfg['network_D']['netD'] != None:
-            opt_d = MADGRAD(input_D, lr=cfg['train']['lr'], momentum = cfg['train']['momentum'], weight_decay=cfg['train']['weight_decay'], eps=cfg['train']['eps'])
+            opt_d = MADGRAD(input_D, lr=cfg['train']['lr_d'], momentum = cfg['train']['momentum'], weight_decay=cfg['train']['weight_decay'], eps=cfg['train']['eps'])
         if cfg['train']['scheduler'] == 'cosangulargrad':
           from arch.optimizer.cosangulargrad import cosangulargrad
-          opt_g = cosangulargrad(input_G, lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), eps=cfg['train']['eps'], weight_decay=cfg['train']['weight_decay'])
+          opt_g = cosangulargrad(input_G, lr=cfg['train']['lr_g'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), eps=cfg['train']['eps'], weight_decay=cfg['train']['weight_decay'])
           if cfg['network_D']['netD'] != None:
-            opt_d = cosangulargrad(input_D, lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), eps=cfg['train']['eps'], weight_decay=cfg['train']['weight_decay'])
+            opt_d = cosangulargrad(input_D, lr=cfg['train']['lr_d'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), eps=cfg['train']['eps'], weight_decay=cfg['train']['weight_decay'])
         if cfg['train']['scheduler'] == 'tanangulargrad':
           from arch.optimizer.tanangulargrad import tanangulargrad
-          opt_g = tanangulargrad(input_G, lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), eps=cfg['train']['eps'], weight_decay=cfg['train']['weight_decay'])
+          opt_g = tanangulargrad(input_G, lr=cfg['train']['lr_g'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), eps=cfg['train']['eps'], weight_decay=cfg['train']['weight_decay'])
           if cfg['network_D']['netD'] != None:
-            opt_d = tanangulargrad(input_D, lr=cfg['train']['lr'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), eps=cfg['train']['eps'], weight_decay=cfg['train']['weight_decay'])
+            opt_d = tanangulargrad(input_D, lr=cfg['train']['lr_d'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), eps=cfg['train']['eps'], weight_decay=cfg['train']['weight_decay'])
 
 
       if cfg['network_D']['netD'] != None:
@@ -1033,8 +1038,9 @@ class CustomTrainClass(pl.LightningModule):
 
 
     # if frame interpolation
-    if cfg['network_G']['netG'] == 'CAIN':
+    if cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife':
       out = self.netG(train_batch[0][0], train_batch[0][1])
+
     #########################
     if cfg['network_G']['netG'] == 'MANet' or cfg['network_G']['netG'] == 'context_encoder' or cfg['network_G']['netG'] == 'aotgan' or cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
       # generate fake (one output generator)
@@ -1137,7 +1143,7 @@ class CustomTrainClass(pl.LightningModule):
       filename = os.path.splitext(filename_with_extention)[0]
 
       # if its yuv (cain), currently only supports batch_size 1
-      if cfg['network_G']['netG'] == 'CAIN':
+      if cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife':
         out = out.data.mul(255).mul(255 / 255).clamp(0, 255).round()
         out = out.squeeze(0).permute(1, 2, 0).cpu().numpy() #*255
         out = out.astype(np.uint8)

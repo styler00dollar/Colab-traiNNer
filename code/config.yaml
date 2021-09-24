@@ -32,7 +32,7 @@ datasets:
 
     masks: '/content/masks/'
     max_epochs: 2000
-    save_step_frequency: 5000 # also validation frequency
+    save_step_frequency: 100 # also validation frequency
 
     # batch
     # If a tiled dataloader is used, specify image charactaristics. Random crop will not be applied. Maybe in the future.
@@ -48,9 +48,9 @@ datasets:
     dataroot_LR: '/content/data' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: 
+    pretrain_model_G:
     pretrain_model_D: 
-    checkpoint_path: 
+    checkpoint_path:
     checkpoint_save_path: '/content/'
     validation_output_path: '/content/val/'
     log_path: '/content/logs'
@@ -397,15 +397,18 @@ network_G:
 
 
     # ----Interpolation Generators----
-    netG: CAIN
-    depth: 3
+    #netG: CAIN
+    #depth: 3
+
+    # rife 3.8
+    netG: rife
 
 # Discriminator options:
 network_D:
     d_loss_fool_weight: 1 # inside the generator loop, trying to fool the disciminator
     d_loss_weight: 1 # inside own discriminator update
     
-    #netD: # in case there is no discriminator, leave it empty
+    netD: # in case there is no discriminator, leave it empty
 
     # VGG
     #netD: VGG
@@ -610,12 +613,13 @@ network_D:
     #netD: timm
     #timm_model: "tf_efficientnetv2_b0"
 
-    netD: resnet3d
-    model_depth: 50 # [10, 18, 34, 50, 101, 152, 200]
+    #netD: resnet3d
+    #model_depth: 50 # [10, 18, 34, 50, 101, 152, 200]
 
 train: 
     scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
-    lr: 0.000001
+    lr_g: 0.0001
+    lr_d: 0.0001
     
     # AdamP, AGDP, MADGRAD, cosangulargrad, tanangulargrad
     weight_decay: 0.01
@@ -655,7 +659,7 @@ train:
     reduction_realtive: 'mean'
 
     # L1CosineSim (3-channel input)
-    L1CosineSim_weight: 0
+    L1CosineSim_weight: 1
     loss_lambda: 5
     reduction_L1CosineSim: 'mean'
 
@@ -665,7 +669,7 @@ train:
     clip_max: 10.0
 
     # FFTLoss
-    FFTLoss_weight: 1
+    FFTLoss_weight: 0
     loss_f_fft: L1Loss
     reduction_fft: 'mean'
 
@@ -688,7 +692,7 @@ train:
     StyleLoss_weight: 0
 
     # TVLoss
-    TVLoss_weight: 0.00001
+    TVLoss_weight: 0
     tv_type: 'tv'
     p: 1
 
@@ -713,7 +717,7 @@ train:
     StyleLoss_weight: 0
 
     # PerceptualLoss
-    perceptual_weight: 1
+    perceptual_weight: 0
     net: PNetLin # PNetLin, DSSIM (?)
     pnet_type: 'vgg' # alex, squeeze, vgg
     pnet_rand: False

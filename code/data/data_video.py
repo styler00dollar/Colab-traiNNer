@@ -21,8 +21,8 @@ class VimeoTriplet(Dataset):
           self.samples.append(glob.glob(f + "/*/"))
 
         # for subfolders
-        #self.samples = [item for sublist in self.samples for item in sublist]
-        self.samples = upper_folders
+        self.samples = [item for sublist in self.samples for item in sublist]
+        #self.samples = upper_folders
 
         self.transforms = transforms.Compose([
             transforms.ToTensor()
@@ -32,7 +32,7 @@ class VimeoTriplet(Dataset):
         return len(self.samples)
 
     def __getitem__(self, index):
-        imgpaths = [self.samples[index] + '/frame1.jpg', self.samples[index] + '/frame2.jpg', self.samples[index] + '/frame3.jpg']
+        imgpaths = [self.samples[index] + '/im1.png', self.samples[index] + '/im2.png', self.samples[index] + '/im3.png']
         # Load images
         img1 = cv2.imread(imgpaths[0])
         img2 = cv2.imread(imgpaths[1])
@@ -50,9 +50,9 @@ class VimeoTriplet(Dataset):
             img2 = Image.fromarray(img2[0:0+256, 192:256+256])
             img3 = Image.fromarray(img3[0:0+256, 192:256+256])
         """
-        img1 = cv2.resize(img1, (1280, 720))
-        img2 = cv2.resize(img2, (1280, 720))
-        img3 = cv2.resize(img3, (1280, 720))
+        img1 = cv2.resize(img1, (128, 128))
+        img2 = cv2.resize(img2, (128, 128))
+        img3 = cv2.resize(img3, (128, 128))
 
         # Data augmentation COLOR_YUV_I4202RGB
         img1 = self.transforms(img1)
@@ -89,7 +89,7 @@ class VimeoTriplet_val(Dataset):
         return len(self.samples)
 
     def __getitem__(self, index):
-        imgpaths = [self.samples[index] + '/frame1.jpg', self.samples[index] + '/frame2.jpg', self.samples[index] + '/frame3.jpg']
+        imgpaths = [self.samples[index] + '/im1.jpg', self.samples[index] + '/im2.jpg', self.samples[index] + '/im3.jpg']
         # Load images
         img1 = cv2.imread(imgpaths[0])
         img2 = cv2.imread(imgpaths[1])
@@ -107,9 +107,9 @@ class VimeoTriplet_val(Dataset):
             img2 = Image.fromarray(img2[0:0+256, 192:256+256])
             img3 = Image.fromarray(img3[0:0+256, 192:256+256])
         """
-        img1 = cv2.resize(img1, (1280, 720))
-        img2 = cv2.resize(img2, (1280, 720))
-        img3 = cv2.resize(img3, (1280, 720))
+        img1 = cv2.resize(img1, (128, 128))
+        img2 = cv2.resize(img2, (128, 128))
+        img3 = cv2.resize(img3, (128, 128))
 
         # Data augmentation COLOR_YUV_I4202RGB
         img1 = self.transforms(img1)
