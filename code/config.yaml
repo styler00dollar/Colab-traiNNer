@@ -401,7 +401,10 @@ network_G:
     #depth: 3
 
     # rife 3.8
-    netG: rife
+    #netG: rife
+
+    # RRIN (2020)
+    netG: RRIN
 
 # Discriminator options:
 network_D:
