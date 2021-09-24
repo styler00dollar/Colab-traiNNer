@@ -160,4 +160,4 @@ class IFNet(nn.Module):
         '''
         mask_list[2] = torch.sigmoid(mask_list[2])
         merged[2] = merged[2][0] * mask_list[2] + merged[2][1] * (1 - mask_list[2])
-        return merged[2][:, :w, :h]
+        return merged[2][:, :, :h , :w]
