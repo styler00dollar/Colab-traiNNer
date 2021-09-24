@@ -270,6 +270,9 @@ class CustomTrainClass(pl.LightningModule):
       from arch.RRIN_arch import Net
       self.netG = Net()
 
+    elif cfg['network_G']['netG'] == 'ABME':
+      from arch.ABME_arch import ABME
+      self.netG = ABME()
 
     if cfg['path']['checkpoint_path'] is None and cfg['network_G']['netG'] != 'GLEAN' and cfg['network_G']['netG'] != 'srflow' and cfg['network_G']['netG'] != 'GFPGAN':
       if self.global_step == 0:
@@ -734,7 +737,7 @@ class CustomTrainClass(pl.LightningModule):
 
       ############################
       # if frame interpolation
-      if cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN':
+      if cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME':
         out = self.netG(train_batch[0], train_batch[1])
 
       # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan / SimpleFontGenerator256 / SimpleFontGenerator512
@@ -1042,7 +1045,7 @@ class CustomTrainClass(pl.LightningModule):
 
 
     # if frame interpolation
-    if cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN':
+    if cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME':
       out = self.netG(train_batch[0][0], train_batch[0][1])
 
     #########################
