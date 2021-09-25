@@ -385,7 +385,7 @@ class Generator(pl.LightningModule):
 
     def forward(self, x):
         # original has random input of [1, 256] and that gets into [1, 256, 1, 1]
-        y = torch.rand(1, 256, 1 ,1).to(self.device)
+        y = torch.rand(x.shape[0], 256, 1 ,1).to(self.device)
         #y = rearrange(x, 'b c -> b c () ()')
 
         # conv the image to make concat later
@@ -614,7 +614,7 @@ class SimpleFontGenerator512(pl.LightningModule):
     def forward(self, x):
         # original has random input of [1, 256] and that gets into [1, 256, 1, 1]
 
-        y = torch.rand(1, 256, 1 ,1).to(self.device)
+        y = torch.rand(x.shape[0], 256, 1 ,1).to(self.device)
         #y = rearrange(x, 'b c -> b c () ()')
 
         # conv the image to make concat later
@@ -822,7 +822,7 @@ class SimpleFontGenerator256(pl.LightningModule):
     def forward(self, x):
         # original has random input of [1, 256] and that gets into [1, 256, 1, 1]
 
-        y = torch.rand(1, 256, 1 ,1).to(self.device)
+        y = torch.rand(x.shape[0], 256, 1 ,1).to(self.device)
         #y = rearrange(x, 'b c -> b c () ()')
 
         # conv the image to make concat later
