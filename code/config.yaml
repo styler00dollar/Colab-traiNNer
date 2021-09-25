@@ -736,6 +736,8 @@ train:
     # only if the network outputs 2 images, will use l1
     stage1_weight: 0 
 
+    Lap_weight: 1
+
     # pytorch loss functions
     MSE_weight: 0
 

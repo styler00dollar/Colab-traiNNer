@@ -3,7 +3,7 @@ import cv2
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
-from loss.loss import CharbonnierLoss, GANLoss, GradientPenaltyLoss, HFENLoss, TVLoss, GradientLoss, ElasticLoss, RelativeL1, L1CosineSim, ClipL1, MaskedL1Loss, MultiscalePixelLoss, FFTloss, OFLoss, L1_regularization, ColorLoss, AverageLoss, GPLoss, CPLoss, SPL_ComputeWithTrace, SPLoss, Contextual_Loss, StyleLoss
+from loss.loss import LapLoss, CharbonnierLoss, GANLoss, GradientPenaltyLoss, HFENLoss, TVLoss, GradientLoss, ElasticLoss, RelativeL1, L1CosineSim, ClipL1, MaskedL1Loss, MultiscalePixelLoss, FFTloss, OFLoss, L1_regularization, ColorLoss, AverageLoss, GPLoss, CPLoss, SPL_ComputeWithTrace, SPLoss, Contextual_Loss, StyleLoss
 from loss.metrics import *
 from torchvision.utils import save_image
 from torch.autograd import Variable
@@ -639,6 +639,9 @@ class CustomTrainClass(pl.LightningModule):
     # pytorch loss
     self.HuberLoss = nn.HuberLoss()
     self.SmoothL1Loss = nn.SmoothL1Loss()
+    self.SoftMarginLoss = nn.SoftMarginLoss()
+
+    self.LapLoss = LapLoss()
 
     # metrics
     self.psnr_metric = PSNR()
@@ -886,6 +889,11 @@ class CustomTrainClass(pl.LightningModule):
           SmoothL1_forward = cfg['train']['SmoothL1_weight']*self.SmoothL1Loss(out, train_batch[2])
           total_loss += SmoothL1_forward
           writer.add_scalar('loss/SmoothL1', SmoothL1_forward, self.trainer.global_step) 
+
+        if cfg['train']['Lap_weight'] > 0:
+          Lap_forward = cfg['train']['Lap_weight']*(self.LapLoss(out, train_batch[2])).mean()
+          total_loss += Lap_forward
+          writer.add_scalar('loss/Lap', Lap_forward, self.trainer.global_step) 
 
         #########################
         # exotic loss
