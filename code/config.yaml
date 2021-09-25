@@ -406,6 +406,9 @@ network_G:
     # RRIN (2020)
     netG: RRIN
 
+    # ABME (2021)
+    #netG: ABME
+
 # Discriminator options:
 network_D:
     d_loss_fool_weight: 1 # inside the generator loop, trying to fool the disciminator
@@ -662,7 +665,7 @@ train:
     reduction_realtive: 'mean'
 
     # L1CosineSim (3-channel input)
-    L1CosineSim_weight: 1
+    L1CosineSim_weight: 0
     loss_lambda: 5
     reduction_L1CosineSim: 'mean'
 
@@ -732,6 +735,15 @@ train:
 
     # only if the network outputs 2 images, will use l1
     stage1_weight: 0 
+
+    # pytorch loss functions
+    MSE_weight: 0
+
+    BCE_weight: 0
+
+    Huber_weight: 0
+
+    SmoothL1_weight: 0
 
     # Differentiable Augmentation for Data-Efficient GAN Training
     diffaug: False

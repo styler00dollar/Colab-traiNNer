@@ -636,6 +636,10 @@ class CustomTrainClass(pl.LightningModule):
     for param in self.perceptual_loss.parameters():
       param.requires_grad = False
 
+    # pytorch loss
+    self.HuberLoss = nn.HuberLoss()
+    self.SmoothL1Loss = nn.SmoothL1Loss()
+
     # metrics
     self.psnr_metric = PSNR()
     self.ssim_metric = SSIM()
@@ -862,6 +866,26 @@ class CustomTrainClass(pl.LightningModule):
           perceptual_loss = cfg['train']['perceptual_weight'] * tmp
           writer.add_scalar('loss/perceptual', perceptual_loss, self.trainer.global_step)
           total_loss +=perceptual_loss
+
+        if cfg['train']['MSE_weight'] > 0:
+          MSE_forward = cfg['train']['MSE_weight']*self.MSELoss(out, train_batch[2])
+          total_loss += MSE_forward
+          writer.add_scalar('loss/MSE', MSE_forward, self.trainer.global_step)
+
+        if cfg['train']['BCE_weight'] > 0:
+          BCE_forward = cfg['train']['BCE_weight']*self.BCE(out, train_batch[2])
+          total_loss += BCE_forward
+          writer.add_scalar('loss/BCE', BCE_forward, self.trainer.global_step)
+
+        if cfg['train']['Huber_weight'] > 0:
+          Huber_forward = cfg['train']['Huber_weight']*self.HuberLoss(out, train_batch[2])
+          total_loss += Huber_forward
+          writer.add_scalar('loss/Huber', Huber_forward, self.trainer.global_step) 
+
+        if cfg['train']['SmoothL1_weight'] > 0:
+          SmoothL1_forward = cfg['train']['SmoothL1_weight']*self.SmoothL1Loss(out, train_batch[2])
+          total_loss += SmoothL1_forward
+          writer.add_scalar('loss/SmoothL1', SmoothL1_forward, self.trainer.global_step) 
 
         #########################
         # exotic loss
