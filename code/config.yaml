@@ -404,10 +404,14 @@ network_G:
     #netG: rife
 
     # RRIN (2020)
-    netG: RRIN
+    #netG: RRIN
 
     # ABME (2021)
     #netG: ABME
+
+    # EDSC (2021)
+    # pip install cupy
+    netG: EDSC
 
 # Discriminator options:
 network_D:
