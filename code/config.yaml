@@ -1,6 +1,6 @@
 name: template
 scale: 1
-gpus: 1 # amount of gpus, 0 = cpu
+gpus: 0 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
@@ -32,7 +32,7 @@ datasets:
 
     masks: '/content/masks/'
     max_epochs: 2000
-    save_step_frequency: 100 # also validation frequency
+    save_step_frequency: 1000 # also validation frequency
 
     # batch
     # If a tiled dataloader is used, specify image charactaristics. Random crop will not be applied. Maybe in the future.
@@ -395,10 +395,12 @@ network_G:
     #greyscale: False
     #freq_chan_attn: False
 
-
     # ----Interpolation Generators----
-    #netG: CAIN
-    #depth: 3
+    # cain (2020)
+    netG: CAIN
+    depth: 3
+    conv: doconv # doconv | conv2d
+    RG: 2 # ResidualGroup amount
 
     # rife 3.8
     #netG: rife
@@ -409,9 +411,9 @@ network_G:
     # ABME (2021)
     #netG: ABME
 
-    # EDSC (2021)
+    # EDSC (2021) (2^x image size)
     # pip install cupy
-    netG: EDSC
+    #netG: EDSC
 
 # Discriminator options:
 network_D:
@@ -628,7 +630,7 @@ network_D:
 
 train: 
     scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
-    lr_g: 0.0001
+    lr_g: 0.001
     lr_d: 0.0001
     
     # AdamP, AGDP, MADGRAD, cosangulargrad, tanangulargrad
@@ -648,7 +650,7 @@ train:
     eps: 1e-6
 
     # Losses:
-    L1Loss_weight: 0
+    L1Loss_weight: 1
 
     # HFENLoss
     HFEN_weight: 0
@@ -740,7 +742,7 @@ train:
     # only if the network outputs 2 images, will use l1
     stage1_weight: 0 
 
-    Lap_weight: 1
+    Lap_weight: 0
 
     # pytorch loss functions
     MSE_weight: 0

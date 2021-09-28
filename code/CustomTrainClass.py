@@ -748,7 +748,7 @@ class CustomTrainClass(pl.LightningModule):
 
       ############################
       # if frame interpolation
-      if cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC' or cfg['network_G']['netG'] == 'BDCN':
+      if cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':
         out = self.netG(train_batch[0], train_batch[1])
 
       # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan / SimpleFontGenerator256 / SimpleFontGenerator512

@@ -14,6 +14,13 @@ def sub_mean(x):
     x -= mean
     return x, mean
 
+import yaml
+with open("config.yaml", "r") as ymlfile:
+    cfg = yaml.safe_load(ymlfile)
+
+if cfg['network_G']['conv'] == 'doconv':
+  from .conv.doconv import *
+
 # https://github.com/fangwei123456/PixelUnshuffle-pytorch/blob/master/PixelUnshuffle/__init__.py
 def pixel_unshuffle(input, downscale_factor):
     '''
@@ -29,7 +36,11 @@ def pixel_unshuffle(input, downscale_factor):
     for y in range(downscale_factor):
         for x in range(downscale_factor):
             kernel[x + y * downscale_factor::downscale_factor*downscale_factor, 0, y, x] = 1
-    return F.conv2d(input, kernel, stride=downscale_factor, groups=c)
+
+    if cfg['network_G']['conv'] == 'doconv':
+      return F.conv2d(input, kernel, stride=downscale_factor, groups=c)
+    elif cfg['network_G']['conv'] == 'conv2d':
+      return DOConv2d(input, kernel, stride=downscale_factor, groups=c)
 
 class PixelUnshuffle(nn.Module):
     def __init__(self, downscale_factor):
@@ -53,7 +64,12 @@ class ConvNorm(nn.Module):
         #self.reflection_pad = nn.ReflectionPad2d(reflection_padding)
         # because of tensorrt
         self.reflection_pad = torch.nn.ZeroPad2d(reflection_padding)
-        self.conv = nn.Conv2d(in_feat, out_feat, stride=stride, kernel_size=kernel_size, bias=True)
+
+        if cfg['network_G']['conv'] == 'doconv':
+          self.conv = nn.Conv2d(in_feat, out_feat, stride=stride, kernel_size=kernel_size, bias=True)
+        elif cfg['network_G']['conv'] == 'conv2d':
+          self.conv = DOConv2d(in_feat, out_feat, stride=stride, kernel_size=kernel_size, bias=True)
+
 
     def forward(self, x):
         out = self.reflection_pad(x)
@@ -70,7 +86,11 @@ class meanShift(nn.Module):
         if nChannel == 1:
             l = rgbMean[0] * rgbRange * float(sign)
 
-            self.shifter =  nn.Conv2d(1, 1, kernel_size=1, stride=1, padding=0)
+            if cfg['network_G']['conv'] == 'doconv':
+              self.shifter =  DOConv2d(1, 1, kernel_size=1, stride=1, padding=0)
+            elif cfg['network_G']['conv'] == 'conv2d':
+              self.shifter =  nn.Conv2d(1, 1, kernel_size=1, stride=1, padding=0)
+
             self.shifter.weight.data = torch.eye(1).view(1, 1, 1, 1)
             self.shifter.bias.data = torch.Tensor([l])
         elif nChannel == 3:  
@@ -78,14 +98,23 @@ class meanShift(nn.Module):
             g = rgbMean[1] * rgbRange * float(sign)
             b = rgbMean[2] * rgbRange * float(sign)
 
-            self.shifter =  nn.Conv2d(3, 3, kernel_size=1, stride=1, padding=0)
+            if cfg['network_G']['conv'] == 'doconv':
+              self.shifter =  DOConv2d(3, 3, kernel_size=1, stride=1, padding=0)
+            elif cfg['network_G']['conv'] == 'conv2d':
+              self.shifter =  nn.Conv2d(3, 3, kernel_size=1, stride=1, padding=0)
+
             self.shifter.weight.data = torch.eye(3).view(3, 3, 1, 1)
             self.shifter.bias.data = torch.Tensor([r, g, b])
         else:
             r = rgbMean[0] * rgbRange * float(sign)
             g = rgbMean[1] * rgbRange * float(sign)
             b = rgbMean[2] * rgbRange * float(sign)
-            self.shifter =  nn.Conv2d(6, 6, kernel_size=1, stride=1, padding=0)
+
+            if cfg['network_G']['conv'] == 'doconv':
+              self.shifter =  DOConv2d(6, 6, kernel_size=1, stride=1, padding=0)
+            elif cfg['network_G']['conv'] == 'conv2d':
+              self.shifter =  nn.Conv2d(6, 6, kernel_size=1, stride=1, padding=0)
+
             self.shifter.weight.data = torch.eye(6).view(6, 6, 1, 1)
             self.shifter.bias.data = torch.Tensor([r, g, b, r, g, b])
 
@@ -127,12 +156,22 @@ class CALayer(nn.Module):
         # global average pooling: feature --> point
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         # feature channel downscale and upscale --> channel weight
-        self.conv_du = nn.Sequential(
-            nn.Conv2d(channel, channel // reduction, 1, padding=0, bias=False),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(channel // reduction, channel, 1, padding=0, bias=False),
-            nn.Sigmoid()
-        )
+
+
+        if cfg['network_G']['conv'] == 'doconv':
+          self.conv_du = nn.Sequential(
+              DOConv2d(channel, channel // reduction, 1, padding=0, bias=False),
+              nn.ReLU(inplace=True),
+              DOConv2d(channel // reduction, channel, 1, padding=0, bias=False),
+              nn.Sigmoid()
+          )
+        elif cfg['network_G']['conv'] == 'conv2d':
+          self.conv_du = nn.Sequential(
+              nn.Conv2d(channel, channel // reduction, 1, padding=0, bias=False),
+              nn.ReLU(inplace=True),
+              nn.Conv2d(channel // reduction, channel, 1, padding=0, bias=False),
+              nn.Sigmoid()
+          )
 
     def forward(self, x):
         y = self.avg_pool(x)
@@ -179,7 +218,11 @@ class Interpolation(nn.Module):
                  reduction=16, act=nn.LeakyReLU(0.2, True), norm=False):
         super(Interpolation, self).__init__()
 
-        self.headConv = nn.Conv2d(n_feats*2, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
+        if cfg['network_G']['conv'] == 'doconv':
+          self.headConv = DOConv2d(n_feats*2, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
+        elif cfg['network_G']['conv'] == 'conv2d':
+          self.headConv = nn.Conv2d(n_feats*2, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
+
         modules_body = [
             ResidualGroup(
                 RCAB,
@@ -189,10 +232,13 @@ class Interpolation(nn.Module):
                 reduction=reduction, 
                 act=act, 
                 norm=norm)
-            for _ in range(2)]
+            for _ in range(cfg['network_G']['RG'])]
         self.body = nn.Sequential(*modules_body)
 
-        self.tailConv = nn.Conv2d(n_feats, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
+        if cfg['network_G']['conv'] == 'doconv':
+          self.tailConv = DOConv2d(n_feats, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
+        elif cfg['network_G']['conv'] == 'conv2d':
+          self.tailConv = nn.Conv2d(n_feats, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
 
     def forward(self, x0, x1):
         # Build input tensor
