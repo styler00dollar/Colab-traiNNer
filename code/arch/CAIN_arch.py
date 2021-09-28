@@ -27,6 +27,11 @@ if cfg['network_G']['conv'] == 'gated':
 if cfg['network_G']['conv'] == 'TBC':
   from .conv.TBC import *
 
+if cfg['network_G']['conv'] == 'dynamic':
+  from .conv.dynamicconv import *
+  nof_kernels_param = cfg['network_G']['nof_kernels']
+  reduce_param = cfg['network_G']['reduce']
+
 # https://github.com/fangwei123456/PixelUnshuffle-pytorch/blob/master/PixelUnshuffle/__init__.py
 def pixel_unshuffle(input, downscale_factor):
     '''
@@ -43,7 +48,7 @@ def pixel_unshuffle(input, downscale_factor):
         for x in range(downscale_factor):
             kernel[x + y * downscale_factor::downscale_factor*downscale_factor, 0, y, x] = 1
 
-    # GatedConv2dWithActivation, doconv and TBC does not support kernel as input, using normal conv2d because of this
+    # GatedConv2dWithActivation, doconv, TBC and dynamic does not support kernel as input, using normal conv2d because of this
     return F.conv2d(input, kernel, stride=downscale_factor, groups=c)
 
 class PixelUnshuffle(nn.Module):
@@ -75,6 +80,8 @@ class ConvNorm(nn.Module):
           self.conv = GatedConv2dWithActivation(in_feat, out_feat, stride=stride, kernel_size=kernel_size, bias=True)
         elif cfg['network_G']['conv'] == 'TBC':
           self.conv = TiedBlockConv2d(in_feat, out_feat, stride=stride, kernel_size=kernel_size, bias=True)
+        elif cfg['network_G']['conv'] == 'dynamic':
+          self.conv = DynamicConvolution(nof_kernels_param, reduce_param, in_channels=in_feat, out_channels=out_feat, stride=stride, kernel_size=kernel_size, bias=True)
         elif cfg['network_G']['conv'] == 'conv2d':
           self.conv = nn.Conv2d(in_feat, out_feat, stride=stride, kernel_size=kernel_size, bias=True)
 
@@ -100,6 +107,8 @@ class meanShift(nn.Module):
               self.shifter =  GatedConv2dWithActivation(1, 1, kernel_size=1, stride=1, padding=0)   
             elif cfg['network_G']['conv'] == 'TBC':     
               self.shifter =  TiedBlockConv2d(1, 1, kernel_size=1, stride=1, padding=0)   
+            elif cfg['network_G']['conv'] == 'dynamic':
+              self.shifter =  DynamicConvolution(nof_kernels_param, reduce_param, in_channels=1, out_channels=1, kernel_size=1, stride=1, padding=0)   
             elif cfg['network_G']['conv'] == 'conv2d':
               self.shifter =  nn.Conv2d(1, 1, kernel_size=1, stride=1, padding=0)
 
@@ -116,6 +125,8 @@ class meanShift(nn.Module):
               self.shifter =  GatedConv2dWithActivation(3, 3, kernel_size=1, stride=1, padding=0)
             elif cfg['network_G']['conv'] == 'TBC':   
               self.shifter =  TiedBlockConv2d(3, 3, kernel_size=1, stride=1, padding=0)
+            elif cfg['network_G']['conv'] == 'dynamic':
+              self.shifter =  DynamicConvolution(nof_kernels_param, reduce_param, in_channels=3, out_channels=3, kernel_size=1, stride=1, padding=0)
             elif cfg['network_G']['conv'] == 'conv2d':
               self.shifter =  nn.Conv2d(3, 3, kernel_size=1, stride=1, padding=0)
 
@@ -132,6 +143,8 @@ class meanShift(nn.Module):
               self.shifter =  GatedConv2dWithActivation(6, 6, kernel_size=1, stride=1, padding=0)
             elif cfg['network_G']['conv'] == 'TBC':  
               self.shifter =  TiedBlockConv2d(6, 6, kernel_size=1, stride=1, padding=0)
+            elif cfg['network_G']['conv'] == 'dynamic':
+              self.shifter =  DynamicConvolution(nof_kernels_param, reduce_param, in_channels=6, out_channels=6, kernel_size=1, stride=1, padding=0)  
             elif cfg['network_G']['conv'] == 'conv2d':
               self.shifter =  nn.Conv2d(6, 6, kernel_size=1, stride=1, padding=0)
 
@@ -194,6 +207,13 @@ class CALayer(nn.Module):
               nn.Sigmoid()
           )
 
+        elif cfg['network_G']['conv'] == 'dynamic':
+          self.conv_du = nn.Sequential(
+              DynamicConvolution(nof_kernels_param, reduce_param, in_channels=channel, out_channels= (channel // reduction), kernel_size=1, padding=0, bias=False),
+              nn.ReLU(inplace=True),
+              DynamicConvolution(nof_kernels_param, reduce_param, in_channels=(channel // reduction), out_channels=channel, kernel_size=1, padding=0, bias=False),
+              nn.Sigmoid()
+          )
         # shape error if gated is used here
         elif cfg['network_G']['conv'] == 'conv2d' or cfg['network_G']['conv'] == 'gated':
           self.conv_du = nn.Sequential(
@@ -255,6 +275,8 @@ class Interpolation(nn.Module):
           self.headConv = GatedConv2dWithActivation(n_feats*2, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
         elif cfg['network_G']['conv'] == 'TBC':  
           self.headConv = TiedBlockConv2d(n_feats*2, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
+        elif cfg['network_G']['conv'] == 'dynamic':
+          self.headConv = DynamicConvolution(nof_kernels_param, reduce_param, in_channels=n_feats*2, out_channels=n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
         elif cfg['network_G']['conv'] == 'conv2d':
           self.headConv = nn.Conv2d(n_feats*2, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
 
@@ -276,6 +298,8 @@ class Interpolation(nn.Module):
           self.tailConv = GatedConv2dWithActivation(n_feats, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3) 
         elif cfg['network_G']['conv'] == 'TBC':  
           self.tailConv = TiedBlockConv2d(n_feats, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3) 
+        elif cfg['network_G']['conv'] == 'dynamic':
+          self.tailConv = DynamicConvolution(nof_kernels_param, reduce_param, in_channels=n_feats, out_channels=n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3) 
         elif cfg['network_G']['conv'] == 'conv2d':
           self.tailConv = nn.Conv2d(n_feats, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
 

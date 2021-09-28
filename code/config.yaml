@@ -1,6 +1,6 @@
 name: template
 scale: 1
-gpus: 0 # amount of gpus, 0 = cpu
+gpus: 1 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
@@ -32,7 +32,7 @@ datasets:
 
     masks: '/content/masks/'
     max_epochs: 2000
-    save_step_frequency: 100 # also validation frequency
+    save_step_frequency: 1000 # also validation frequency
 
     # batch
     # If a tiled dataloader is used, specify image charactaristics. Random crop will not be applied. Maybe in the future.
@@ -399,8 +399,11 @@ network_G:
     # cain (2020)
     netG: CAIN
     depth: 3
-    conv: TBC # doconv | conv2d | gated | TBC
+    conv: dynamic # doconv | conv2d | gated | TBC | dynamic
     RG: 2 # ResidualGroup amount
+    # for dynamic
+    nof_kernels: 4
+    reduce: 4
 
     # rife 3.8
     #netG: rife
