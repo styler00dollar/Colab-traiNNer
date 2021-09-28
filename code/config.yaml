@@ -24,7 +24,7 @@ datasets:
     dataroot_LR: '/content/data' # Original, with a single directory
     loading_backend: 'PIL' # PIL, OpenCV (currently only in DS_inpaint_tiled_batch)
 
-    n_workers: 2 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
+    n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     batch_size: 1
     batch_size_DL: 1
     HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
@@ -32,7 +32,7 @@ datasets:
 
     masks: '/content/masks/'
     max_epochs: 2000
-    save_step_frequency: 1000 # also validation frequency
+    save_step_frequency: 100 # also validation frequency
 
     # batch
     # If a tiled dataloader is used, specify image charactaristics. Random crop will not be applied. Maybe in the future.
@@ -399,7 +399,7 @@ network_G:
     # cain (2020)
     netG: CAIN
     depth: 3
-    conv: doconv # doconv | conv2d
+    conv: gated # doconv | conv2d | gated
     RG: 2 # ResidualGroup amount
 
     # rife 3.8
