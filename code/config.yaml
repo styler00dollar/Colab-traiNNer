@@ -399,7 +399,7 @@ network_G:
     # cain (2020)
     netG: CAIN
     depth: 3
-    conv: gated # doconv | conv2d | gated
+    conv: TBC # doconv | conv2d | gated | TBC
     RG: 2 # ResidualGroup amount
 
     # rife 3.8
