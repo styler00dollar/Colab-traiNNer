@@ -84,9 +84,42 @@ if __name__ == '__main__':
     trainer.checkpoint_connector.restore_training_state(checkpoint)
     pl.Trainer.global_step = checkpoint['global_step']
     pl.Trainer.epoch = checkpoint['epoch']
+    pl.Trainer.optimizers = checkpoint['optimizer_states']
+
+    # overwriting lr with config lr
+    # https://github.com/PyTorchLightning/pytorch-lightning/issues/7320
+    optimizer_states = checkpoint['optimizer_states']
+    count = 0
+    for optimizer, opt_state in zip(trainer.optimizers, optimizer_states):
+      if count == 0:
+        for g in opt_state.param_groups:
+          g['lr'] = cfg['train']['lr_g']
+        count += 1
+      else:
+        for d in opt_state.param_groups:
+          d['lr'] = cfg['train']['lr_d']
+          
+      optimizer.load_state_dict(opt_state)
+
+      # move optimizer to GPU 1 weight at a time
+      # avoids OOM
+      if trainer.root_gpu is not None:
+          for state in optimizer.state.values():
+              for k, v in state.items():
+                  if isinstance(v, torch.Tensor):
+                      state[k] = v.cuda(trainer.root_gpu)
+    
+      # restore the lr schedulers
+      lr_schedulers = checkpoint['lr_schedulers']
+      for scheduler, lrs_state in zip(trainer.lr_schedulers, lr_schedulers):
+        scheduler['scheduler'].load_state_dict(lrs_state)
+
+    del checkpoint
+    torch.cuda.empty_cache()
+
     print("Checkpoint was loaded successfully.")
 
-  #############################################
 
+  #############################################
 
   trainer.fit(model, dm)
