@@ -1,6 +1,6 @@
 name: template
 scale: 1
-gpus: 1 # amount of gpus, 0 = cpu
+gpus: 0 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
@@ -399,7 +399,7 @@ network_G:
     # cain (2020)
     netG: CAIN
     depth: 3
-    conv: dynamic # doconv | conv2d | gated | TBC | dynamic
+    conv: MBConv # doconv | conv2d | gated | TBC | dynamic | MBConv
     RG: 2 # ResidualGroup amount
     # for dynamic
     nof_kernels: 4
