@@ -278,6 +278,10 @@ class CustomTrainClass(pl.LightningModule):
       from arch.EDSC_arch import Network
       self.netG = Network()
 
+    elif cfg['network_G']['netG'] == 'CTSDG':
+      from arch.CTSDG_arch import Generator
+      self.netG = Generator()
+
     if cfg['path']['checkpoint_path'] is None and cfg['network_G']['netG'] != 'GLEAN' and cfg['network_G']['netG'] != 'srflow' and cfg['network_G']['netG'] != 'GFPGAN':
       if self.global_step == 0:
       #if self.trainer.global_step == 0:
@@ -628,7 +632,8 @@ class CustomTrainClass(pl.LightningModule):
 
     self.MSELoss = torch.nn.MSELoss()
     self.L1Loss = nn.L1Loss()
-    self.BCE = torch.nn.BCEWithLogitsLoss()
+    self.BCELogits = torch.nn.BCEWithLogitsLoss()
+    self.BCE = torch.nn.BCELoss()
 
     # perceptual loss
     from arch.networks_basic import PNetLin
@@ -677,6 +682,8 @@ class CustomTrainClass(pl.LightningModule):
       # train_batch[0] = masked
       # train_batch[1] = mask (lr)
       # train_batch[2] = original
+      # train_batch[3] = edge
+      # train_batch[4] = grayscale
 
       # super resolution
       # train_batch[0] = Null
@@ -697,6 +704,10 @@ class CustomTrainClass(pl.LightningModule):
 
       # train generator
       ############################
+      if cfg['network_G']['netG'] == 'CTSDG':
+        # input_image, input_edge, mask
+        out, projected_image, projected_edge = self.netG(train_batch[0], train_batch[3], train_batch[1])
+
       if cfg['network_G']['netG'] == 'MANet' or cfg['network_G']['netG'] == 'context_encoder' or cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
         # generate fake (1 output)
         out = self(train_batch[0],train_batch[1])
@@ -880,9 +891,9 @@ class CustomTrainClass(pl.LightningModule):
           writer.add_scalar('loss/MSE', MSE_forward, self.trainer.global_step)
 
         if cfg['train']['BCE_weight'] > 0:
-          BCE_forward = cfg['train']['BCE_weight']*self.BCE(out, train_batch[2])
-          total_loss += BCE_forward
-          writer.add_scalar('loss/BCE', BCE_forward, self.trainer.global_step)
+          BCELogits_forward = cfg['train']['BCE_weight']*self.BCELogits(out, train_batch[2])
+          total_loss += BCELogits_forward
+          writer.add_scalar('loss/BCELogits', BCELogits_forward, self.trainer.global_step)
 
         if cfg['train']['Huber_weight'] > 0:
           Huber_forward = cfg['train']['Huber_weight']*self.HuberLoss(out, train_batch[2])
@@ -955,6 +966,16 @@ class CustomTrainClass(pl.LightningModule):
           nll_loss = torch.mean(nll)
           total_loss += cfg['network_G']['nll_weight']*nll_loss
           writer.add_scalar('loss/nll_loss', nll_loss, self.trainer.global_step)
+
+        # CTSDG
+        if cfg['network_G']['netG'] == 'CTSDG':
+          edge_loss = self.BCE(projected_edge, train_batch[3])
+          total_loss += edge_loss
+          writer.add_scalar('loss/edge_loss', edge_loss, self.trainer.global_step)
+
+          projected_loss = self.L1Loss(projected_image, train_batch[2])
+          total_loss += projected_loss
+          writer.add_scalar('loss/projected_loss', projected_loss, self.trainer.global_step)
 
         #return total_loss
         #########################
@@ -1067,6 +1088,8 @@ class CustomTrainClass(pl.LightningModule):
     # train_batch[0] = masked (lr)
     # train_batch[1] = mask
     # train_batch[2] = path
+    # train_batch[3] = edges
+    # train_batch[4] = grayscale
 
     # super resolution
     # train_batch[0] = lr
@@ -1079,6 +1102,10 @@ class CustomTrainClass(pl.LightningModule):
     # train_batch[1] = img2
     # train_batch[2] = imgpath
 
+    
+    if cfg['network_G']['netG'] == 'CTSDG':
+      out, _, _ = self.netG(train_batch[0], train_batch[3], train_batch[1])
+      out = train_batch[0]*(train_batch[1])+out*(1-train_batch[1])
 
     # if frame interpolation
     if cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':

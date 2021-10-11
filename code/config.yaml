@@ -1,6 +1,6 @@
 name: template
 scale: 1
-gpus: 0 # amount of gpus, 0 = cpu
+gpus: 1 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
@@ -18,10 +18,10 @@ datasets:
     # DS_lrhr: loads lr from dataroot_LR and hr from dataroot_HR
     # DS_lrhr_batch_oft: loads grayscale-hr (3x3 400px) from dataroot_LR and generates lr by downscaling otf randomly
 
-    mode: DS_video # DS_video | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
+    mode: DS_inpaint_tiled # DS_video | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
     grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
-    dataroot_HR: '/content/data' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/data' # Original, with a single directory
+    dataroot_HR: '/content/hr' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/content/hr' # Original, with a single directory
     loading_backend: 'PIL' # PIL, OpenCV (currently only in DS_inpaint_tiled_batch)
 
     n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
@@ -44,8 +44,8 @@ datasets:
     canny_max: 150
 
   val:
-    dataroot_HR: '/content/data'
-    dataroot_LR: '/content/data' # Inpainting will use this directory as input
+    dataroot_HR: '/content/val_lr'
+    dataroot_LR: '/content/val_lr' # Inpainting will use this directory as input
 
 path:
     pretrain_model_G:
@@ -395,15 +395,18 @@ network_G:
     #greyscale: False
     #freq_chan_attn: False
 
+    # CTSDG (2021)
+    netG: CTSDG
+
     # ----Interpolation Generators----
     # cain (2020)
-    netG: CAIN
-    depth: 3
-    conv: MBConv # doconv | conv2d | gated | TBC | dynamic | MBConv
-    RG: 2 # ResidualGroup amount
+    #netG: CAIN
+    #depth: 3
+    #conv: MBConv # doconv | conv2d | gated | TBC | dynamic | MBConv
+    #RG: 2 # ResidualGroup amount
     # for dynamic
-    nof_kernels: 4
-    reduce: 4
+    #nof_kernels: 4
+    #reduce: 4
 
     # rife 3.8
     #netG: rife
@@ -633,7 +636,7 @@ network_D:
 
 train: 
     scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
-    lr_g: 0.001
+    lr_g: 0.0001
     lr_d: 0.0001
     
     # AdamP, AGDP, MADGRAD, cosangulargrad, tanangulargrad

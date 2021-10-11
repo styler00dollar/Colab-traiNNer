@@ -48,8 +48,8 @@ class DFNetDataModule(pl.LightningDataModule):
         elif cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled':
           from .data import DS_inpaint_tiled, DS_inpaint_tiled_val
           self.DFNetdataset_train = DS_inpaint_tiled(self.dir_hr, self.mask_dir, self.image_size, self.amount_tiles, self.canny_min, self.canny_max)
-          self.DFNetdataset_validation = DS_inpaint_tiled_val(self.val_hr)
-          self.DFNetdataset_test = DS_inpaint_tiled_val(self.val_lr)
+          self.DFNetdataset_validation = DS_inpaint_tiled_val(self.val_hr, self.canny_min, self.canny_max)
+          self.DFNetdataset_test = DS_inpaint_tiled_val(self.val_lr, self.canny_min, self.canny_max)
 
         elif cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
           from .data import DS_inpaint_tiled_batch, DS_inpaint_tiled_batch_val

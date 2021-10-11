@@ -81,11 +81,11 @@ class DS_inpaint(Dataset):
         sample = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
 
         # if edges are required
-        if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS':
+        if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS' or cfg['network_G']['netG'] == 'CTSDG':
           grayscale = cv2.cvtColor(np.array(sample), cv2.COLOR_RGB2GRAY)
           edges = cv2.Canny(grayscale,100,150)
           grayscale = torch.from_numpy(grayscale).unsqueeze(0)/255
-          edges = torch.from_numpy(edges).unsqueeze(0)
+          edges = torch.from_numpy(edges).unsqueeze(0).type(torch.float)
 
         if random.uniform(0, 1) < 0.5:
           # generating mask automatically with 50% chance
@@ -116,7 +116,7 @@ class DS_inpaint(Dataset):
           return masked, mask, sample, edges, grayscale
 
         # PRVS
-        elif cfg['network_G']['netG'] == 'PRVS':
+        elif cfg['network_G']['netG'] == 'PRVS' or cfg['network_G']['netG'] == 'CTSDG':
           return masked, mask, sample, edges
 
         else:
@@ -146,11 +146,11 @@ class DS_inpaint_val(Dataset):
         sample = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
 
         # if edges are required
-        if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS':
+        if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS' or cfg['network_G']['netG'] == 'CTSDG':
           grayscale = cv2.cvtColor(sample, cv2.COLOR_RGB2GRAY)
           edges = cv2.Canny(grayscale,100,150)
           grayscale = torch.from_numpy(grayscale).unsqueeze(0)
-          edges = torch.from_numpy(edges).unsqueeze(0)
+          edges = torch.from_numpy(edges).unsqueeze(0).type(torch.float)
 
         green_mask = 1-np.all(sample == [0,255,0], axis=-1).astype(int)
         green_mask = torch.from_numpy(green_mask.astype(np.float32)).unsqueeze(0)
@@ -166,7 +166,7 @@ class DS_inpaint_val(Dataset):
           return sample, green_mask, sample_path, edges, grayscale
 
         # PRVS
-        elif cfg['network_G']['netG'] == 'PRVS':
+        elif cfg['network_G']['netG'] == 'PRVS' or cfg['network_G']['netG'] == 'CTSDG':
           return sample, green_mask, sample_path, edges
 
         else:
@@ -213,11 +213,11 @@ class DS_inpaint_tiled(Dataset):
         sample = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
 
         # if edges are required
-        if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS':
+        if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS' or cfg['network_G']['netG'] == 'CTSDG':
           grayscale = cv2.cvtColor(np.array(sample), cv2.COLOR_RGB2GRAY)
           edges = cv2.Canny(grayscale,self.canny_min,self.canny_max)
           grayscale = torch.from_numpy(grayscale).unsqueeze(0)/255
-          edges = torch.from_numpy(edges).unsqueeze(0)
+          edges = torch.from_numpy(edges).unsqueeze(0).type(torch.float)
 
         if random.uniform(0, 1) < 0.5:
           # generating mask automatically with 50% chance
@@ -247,7 +247,7 @@ class DS_inpaint_tiled(Dataset):
           return masked, mask, sample, edges, grayscale
 
         # PRVS
-        elif cfg['network_G']['netG'] == 'PRVS':
+        elif cfg['network_G']['netG'] == 'PRVS' or cfg['network_G']['netG'] == 'CTSDG':
           return masked, mask, sample, edges
 
         else:
@@ -256,7 +256,7 @@ class DS_inpaint_tiled(Dataset):
 
 
 class DS_inpaint_tiled_val(Dataset):
-    def __init__(self, root):
+    def __init__(self, root, canny_min = 100, canny_max = 150):
         self.samples = []
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
@@ -265,6 +265,11 @@ class DS_inpaint_tiled_val(Dataset):
                   self.samples.append(path)
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + root)
+        
+        # for edges
+        self.canny_min = canny_min
+        self.canny_max = canny_max
+
 
     def __len__(self):
         return len(self.samples)
@@ -275,14 +280,14 @@ class DS_inpaint_tiled_val(Dataset):
         sample = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
 
         # if edges are required
-        if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS':
+        if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS' or cfg['network_G']['netG'] == 'CTSDG':
           grayscale = cv2.cvtColor(sample, cv2.COLOR_RGB2GRAY)
           edges = cv2.Canny(grayscale,self.canny_min,self.canny_max)
           grayscale = torch.from_numpy(grayscale).unsqueeze(0)
-          edges = torch.from_numpy(edges).unsqueeze(0)
+          edges = torch.from_numpy(edges).unsqueeze(0).type(torch.float32)
 
         green_mask = 1-np.all(sample == [0,255,0], axis=-1).astype(int)
-        green_mask = torch.from_numpy(green_mask).unsqueeze(0)
+        green_mask = torch.from_numpy(green_mask).unsqueeze(0).type(torch.float32)
         sample = torch.from_numpy(sample.astype(np.float32)).permute(2, 0, 1)/255
         sample = sample * green_mask
 
@@ -295,7 +300,7 @@ class DS_inpaint_tiled_val(Dataset):
           return sample, green_mask, sample_path, edges, grayscale
 
         # PRVS
-        elif cfg['network_G']['netG'] == 'PRVS':
+        elif cfg['network_G']['netG'] == 'PRVS' or cfg['network_G']['netG'] == 'CTSDG':
           return sample, green_mask, sample_path, edges
 
         else:
@@ -373,11 +378,11 @@ class DS_inpaint_tiled_batch(Dataset):
             sample_add = torch.from_numpy(sample_add).permute(2, 0, 1).unsqueeze(0)/255
 
             # if edges are required
-            if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS':
+            if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS' or cfg['network_G']['netG'] == 'CTSDG':
               grayscale = cv2.cvtColor(np.array(sample_add), cv2.COLOR_RGB2GRAY)
               edges = cv2.Canny(grayscale,self.canny_min,self.canny_max)
               grayscale = torch.from_numpy(grayscale).unsqueeze(0)/255
-              edges = torch.from_numpy(edges).unsqueeze(0)
+              edges = torch.from_numpy(edges).unsqueeze(0).type(torch.float)
 
 
             self.total_size += 1
@@ -388,11 +393,11 @@ class DS_inpaint_tiled_batch(Dataset):
 
 
             # if edges are required
-            if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS':
+            if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS' or cfg['network_G']['netG'] == 'CTSDG':
               grayscale = cv2.cvtColor(np.array(sample_add2), cv2.COLOR_RGB2GRAY)
               edges = cv2.Canny(grayscale,self.canny_min,self.canny_max)
               grayscale = torch.from_numpy(grayscale).unsqueeze(0)/255
-              edges = torch.from_numpy(edges).unsqueeze(0)
+              edges = torch.from_numpy(edges).unsqueeze(0).type(torch.float)
 
             sample_add2 = torch.from_numpy(sample_add2).permute(2, 0, 1).unsqueeze(0)/255
             sample_add = torch.cat((sample_add, sample_add2), dim=0)
@@ -440,7 +445,7 @@ class DS_inpaint_tiled_batch(Dataset):
           return masked, mask, sample, edges, grayscale
 
         # PRVS
-        elif cfg['network_G']['netG'] == 'PRVS':
+        elif cfg['network_G']['netG'] == 'PRVS' or cfg['network_G']['netG'] == 'CTSDG':
           return masked, mask, sample, edges
 
         else:
@@ -477,11 +482,11 @@ class DS_inpaint_tiled_batch_val(Dataset):
 
 
         # if edges are required
-        if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS':
+        if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS' or cfg['network_G']['netG'] == 'CTSDG':
           grayscale = cv2.cvtColor(sample, cv2.COLOR_RGB2GRAY)
           edges = cv2.Canny(grayscale,self.canny_min,self.canny_max)
           grayscale = torch.from_numpy(grayscale).unsqueeze(0)
-          edges = torch.from_numpy(edges).unsqueeze(0)
+          edges = torch.from_numpy(edges).unsqueeze(0).type(torch.float)
 
         green_mask = 1-np.all(sample == [0,255,0], axis=-1).astype(int)
         green_mask = torch.from_numpy(green_mask).unsqueeze(0)
@@ -501,7 +506,7 @@ class DS_inpaint_tiled_batch_val(Dataset):
           return sample, green_mask, sample_path, edges, grayscale
 
         # PRVS
-        elif cfg['network_G']['netG'] == 'PRVS':
+        elif cfg['network_G']['netG'] == 'PRVS' or cfg['network_G']['netG'] == 'CTSDG':
           return sample, green_mask, sample_path, edges
 
         else:
