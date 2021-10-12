@@ -220,9 +220,9 @@ class TVLoss(nn.Module):
 
 
 class GradientLoss(nn.Module):
-    def __init__(self, loss_f = None, reduction='mean', gradientdir='2d'): #2d or 4d
+    def __init__(self, reduction='mean', gradientdir='2d'): #2d or 4d
         super(GradientLoss, self).__init__()
-        self.criterion = loss_f
+        self.criterion = torch.nn.L1Loss()
         self.gradientdir = gradientdir
 
     def forward(self, input, target):
@@ -1135,3 +1135,53 @@ class LapLoss(torch.nn.Module):
         pyr_input  = laplacian_pyramid(img=input, kernel=self.gauss_kernel, max_levels=self.max_levels)
         pyr_target = laplacian_pyramid(img=target, kernel=self.gauss_kernel, max_levels=self.max_levels)
         return sum(torch.nn.functional.l1_loss(a, b) for a, b in zip(pyr_input, pyr_target))
+
+# https://github.com/victorca25/traiNNer/blob/f332913117a37672cfe4c681e93bf54a111240eb/codes/models/modules/loss.py#L457
+def get_outnorm(x:torch.Tensor, out_norm:str='') -> torch.Tensor:
+    """ Common function to get a loss normalization value. Can
+        normalize by either the batch size ('b'), the number of
+        channels ('c'), the image size ('i') or combinations
+        ('bi', 'bci', etc)
+    """
+    # b, c, h, w = x.size()
+    img_shape = x.shape
+
+    if not out_norm:
+        return 1
+
+    norm = 1
+    if 'b' in out_norm:
+        # normalize by batch size
+        # norm /= b
+        norm /= img_shape[0]
+    if 'c' in out_norm:
+        # normalize by the number of channels
+        # norm /= c
+        norm /= img_shape[-3]
+    if 'i' in out_norm:
+        # normalize by image/map size
+        # norm /= h*w
+        norm /= img_shape[-1]*img_shape[-2]
+
+    return norm
+
+class FrobeniusNormLoss(nn.Module):
+    def __init__(self, order='fro',
+        out_norm:str='c', kind:str='vec'):
+        super().__init__()
+        self.order = order
+        self.out_norm = out_norm
+        self.kind = kind
+
+    def forward(self, x:torch.Tensor, y:torch.Tensor)-> torch.Tensor:
+        norm = get_outnorm(x, self.out_norm)
+
+        if self.kind == 'mat':
+            loss = torch.linalg.matrix_norm(
+                x - y, ord=self.order).mean()
+        else:
+            # norm = torch.norm(x - y, p=self.order)
+            loss = torch.linalg.norm(
+                x.view(-1, 1) - y.view(-1, 1), ord=self.order)
+
+        return loss*norm

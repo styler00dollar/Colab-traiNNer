@@ -3,7 +3,7 @@ import cv2
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
-from loss.loss import LapLoss, CharbonnierLoss, GANLoss, GradientPenaltyLoss, HFENLoss, TVLoss, GradientLoss, ElasticLoss, RelativeL1, L1CosineSim, ClipL1, MaskedL1Loss, MultiscalePixelLoss, FFTloss, OFLoss, L1_regularization, ColorLoss, AverageLoss, GPLoss, CPLoss, SPL_ComputeWithTrace, SPLoss, Contextual_Loss, StyleLoss
+from loss.loss import FrobeniusNormLoss, LapLoss, CharbonnierLoss, GANLoss, GradientPenaltyLoss, HFENLoss, TVLoss, GradientLoss, ElasticLoss, RelativeL1, L1CosineSim, ClipL1, MaskedL1Loss, MultiscalePixelLoss, FFTloss, OFLoss, L1_regularization, ColorLoss, AverageLoss, GPLoss, CPLoss, SPL_ComputeWithTrace, SPLoss, Contextual_Loss, StyleLoss
 from loss.metrics import *
 from torchvision.utils import save_image
 from torch.autograd import Variable
@@ -646,6 +646,10 @@ class CustomTrainClass(pl.LightningModule):
       param.requires_grad = False
 
     self.ColorLoss = ColorLoss()
+    self.FrobeniusNormLoss = FrobeniusNormLoss()
+    self.GradientLoss = GradientLoss()
+    self.MultiscalePixelLoss = MultiscalePixelLoss()
+    self.SPLoss = SPLoss()
 
     # pytorch loss
     self.HuberLoss = nn.HuberLoss()
@@ -916,6 +920,27 @@ class CustomTrainClass(pl.LightningModule):
           ColorLoss_forward = cfg['train']['ColorLoss_weight']*(self.ColorLoss(out, train_batch[2]))
           total_loss += ColorLoss_forward
           writer.add_scalar('loss/ColorLoss', ColorLoss_forward, self.trainer.global_step) 
+
+        if cfg['train']['FrobeniusNormLoss_weight'] > 0:
+          FrobeniusNormLoss_forward = cfg['train']['FrobeniusNormLoss_weight']*(self.FrobeniusNormLoss(out, train_batch[2]))
+          total_loss += FrobeniusNormLoss_forward
+          writer.add_scalar('loss/FrobeniusNormLoss', FrobeniusNormLoss_forward, self.trainer.global_step) 
+
+        if cfg['train']['GradientLoss_weight'] > 0:
+          GradientLoss_forward = cfg['train']['GradientLoss_weight']*(self.GradientLoss(out, train_batch[2]))
+          total_loss += GradientLoss_forward
+          writer.add_scalar('loss/GradientLoss', GradientLoss_forward, self.trainer.global_step) 
+
+        if cfg['train']['MultiscalePixelLoss_weight'] > 0:
+          MultiscalePixelLoss_forward = cfg['train']['MultiscalePixelLoss_weight']*(self.MultiscalePixelLoss(out, train_batch[2]))
+          total_loss += MultiscalePixelLoss_forward
+          writer.add_scalar('loss/MultiscalePixelLoss', MultiscalePixelLoss_forward, self.trainer.global_step) 
+
+        if cfg['train']['SPLoss_weight'] > 0:
+          SPLoss_forward = cfg['train']['SPLoss_weight']*(self.SPLoss(out, train_batch[2]))
+          total_loss += SPLoss_forward
+          writer.add_scalar('loss/SPLoss', SPLoss_forward, self.trainer.global_step) 
+
 
         #########################
         # exotic loss
