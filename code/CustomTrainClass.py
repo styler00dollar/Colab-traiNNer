@@ -645,6 +645,8 @@ class CustomTrainClass(pl.LightningModule):
     for param in self.perceptual_loss.parameters():
       param.requires_grad = False
 
+    self.ColorLoss = ColorLoss()
+
     # pytorch loss
     self.HuberLoss = nn.HuberLoss()
     self.SmoothL1Loss = nn.SmoothL1Loss()
@@ -909,6 +911,11 @@ class CustomTrainClass(pl.LightningModule):
           Lap_forward = cfg['train']['Lap_weight']*(self.LapLoss(out, train_batch[2])).mean()
           total_loss += Lap_forward
           writer.add_scalar('loss/Lap', Lap_forward, self.trainer.global_step) 
+
+        if cfg['train']['ColorLoss_weight'] > 0:
+          ColorLoss_forward = cfg['train']['ColorLoss_weight']*(self.ColorLoss(out, train_batch[2]))
+          total_loss += ColorLoss_forward
+          writer.add_scalar('loss/ColorLoss', ColorLoss_forward, self.trainer.global_step) 
 
         #########################
         # exotic loss

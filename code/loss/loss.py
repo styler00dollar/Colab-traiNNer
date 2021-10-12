@@ -3,7 +3,6 @@ BasicSR/codes/models/modules/loss.py (8-Nov-20)
 https://github.com/victorca25/BasicSR/blob/dev2/codes/models/modules/loss.py
 """
 
-
 #TODO: change this file to loss_fns.py?
 import torch
 import torch.nn as nn
@@ -425,14 +424,13 @@ class L1_regularization(torch.nn.Module):
 #TODO: testing
 # Color loss
 class ColorLoss(torch.nn.Module):
-    def __init__(self, loss_f = torch.nn.L1Loss, reduction='mean', ds_f=None):
+    def __init__(self):
         super(ColorLoss, self).__init__()
-        self.ds_f = ds_f
-        self.criterion = loss_f
+        self.criterion = torch.nn.L1Loss()
 
     def forward(self, input, target):
-        input_uv = rgb_to_yuv(self.ds_f(input), consts='uv')
-        target_uv = rgb_to_yuv(self.ds_f(target), consts='uv')
+        input_uv = rgb_to_yuv(input, consts='uv')
+        target_uv = rgb_to_yuv(target, consts='uv')
         return self.criterion(input_uv, target_uv)
 
 #TODO: testing
