@@ -282,6 +282,10 @@ class CustomTrainClass(pl.LightningModule):
       from arch.CTSDG_arch import Generator
       self.netG = Generator()
 
+    elif cfg['network_G']['netG'] == 'MST':
+      from arch.MST_arch import InpaintGateGenerator
+      self.netG = InpaintGateGenerator()
+
     if cfg['path']['checkpoint_path'] is None and cfg['network_G']['netG'] != 'GLEAN' and cfg['network_G']['netG'] != 'srflow' and cfg['network_G']['netG'] != 'GFPGAN':
       if self.global_step == 0:
       #if self.trainer.global_step == 0:
@@ -714,7 +718,7 @@ class CustomTrainClass(pl.LightningModule):
         # input_image, input_edge, mask
         out, projected_image, projected_edge = self.netG(train_batch[0], train_batch[3], train_batch[1])
 
-      if cfg['network_G']['netG'] == 'MANet' or cfg['network_G']['netG'] == 'context_encoder' or cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
+      if cfg['network_G']['netG'] == 'MST' or cfg['network_G']['netG'] == 'MANet' or cfg['network_G']['netG'] == 'context_encoder' or cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
         # generate fake (1 output)
         out = self(train_batch[0],train_batch[1])
 
@@ -1144,7 +1148,7 @@ class CustomTrainClass(pl.LightningModule):
       out = self.netG(train_batch[0][0], train_batch[0][1])
 
     #########################
-    if cfg['network_G']['netG'] == 'MANet' or cfg['network_G']['netG'] == 'context_encoder' or cfg['network_G']['netG'] == 'aotgan' or cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
+    if cfg['network_G']['netG'] == 'MST' or cfg['network_G']['netG'] == 'MANet' or cfg['network_G']['netG'] == 'context_encoder' or cfg['network_G']['netG'] == 'aotgan' or cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
       # generate fake (one output generator)
       out = self(train_batch[0],train_batch[1])
       # masking, taking original content from HR
