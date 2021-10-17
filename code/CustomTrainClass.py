@@ -711,6 +711,8 @@ class CustomTrainClass(pl.LightningModule):
         train_batch[0] = torch.squeeze(train_batch[0], 0)
         train_batch[1] = torch.squeeze(train_batch[1], 0)
         train_batch[2] = torch.squeeze(train_batch[2], 0)
+        if cfg['network_G']['netG'] == 'CTSDG':
+          train_batch[3] = torch.squeeze(train_batch[3], 0)
 
       # train generator
       ############################
@@ -1005,11 +1007,11 @@ class CustomTrainClass(pl.LightningModule):
 
         # CTSDG
         if cfg['network_G']['netG'] == 'CTSDG':
-          edge_loss = self.BCE(projected_edge, train_batch[3])
+          edge_loss = self.BCE(projected_edge, train_batch[3]) * cfg['train']['CTSDG_edge_weight']
           total_loss += edge_loss
           writer.add_scalar('loss/edge_loss', edge_loss, self.trainer.global_step)
 
-          projected_loss = self.L1Loss(projected_image, train_batch[2])
+          projected_loss = self.L1Loss(projected_image, train_batch[2]) * cfg['train']['CTSDG_projected_weight']
           total_loss += projected_loss
           writer.add_scalar('loss/projected_loss', projected_loss, self.trainer.global_step)
 
