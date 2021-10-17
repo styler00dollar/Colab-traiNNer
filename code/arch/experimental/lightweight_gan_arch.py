@@ -14,7 +14,7 @@ import torch.nn.functional as F
 import torchvision
 from torchvision import transforms
 from functools import partial
-from kornia import filter2d
+import kornia
 from einops import rearrange
 
 def exists(val):
@@ -121,7 +121,7 @@ class Blur(nn.Module):
     def forward(self, x):
         f = self.f
         f = f[None, None, :] * f [None, :, None]
-        return filter2d(x, f, normalized=True)
+        return kornia.filters.filter2d(x, f, normalized=True)
 
 # attention
 
