@@ -26,7 +26,7 @@ datasets:
 
     n_workers: 12 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     batch_size: 1
-    batch_size_DL: 5
+    batch_size_DL: 1
     HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
@@ -48,12 +48,12 @@ datasets:
     dataroot_LR: '/content/drive/MyDrive/Colab-BasicSR/lightweightgan_inpaint/val_input' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: #"/content/converted.pth"
+    pretrain_model_G: "/content/converted.pth"
     pretrain_model_D: 
-    checkpoint_path: 
-    checkpoint_save_path: '/content/drive/MyDrive/Colab-BasicSR/CTSDG'
-    validation_output_path: '/content/drive/MyDrive/Colab-BasicSR/CTSDG/val/'
-    log_path: '/content/drive/MyDrive/Colab-BasicSR/CTSDG/logs'
+    checkpoint_path: #"/content/drive/MyDrive/Colab-BasicSR/CTSDG/Checkpoint_7_85000.ckpt"
+    checkpoint_save_path: '/content/drive/MyDrive/Colab-BasicSR/lama'
+    validation_output_path: '/content/drive/MyDrive/Colab-BasicSR/lama/val/'
+    log_path: '/content/drive/MyDrive/Colab-BasicSR/lama/logs'
 
 # Generator options:
 network_G:
@@ -396,7 +396,10 @@ network_G:
     #freq_chan_attn: False
 
     # CTSDG (2021)
-    netG: CTSDG
+    #netG: CTSDG
+
+    # lama (2022) (no AMP)
+    netG: lama
 
     # MST (2021)
     #netG: MST
@@ -639,7 +642,7 @@ network_D:
 
 train: 
     scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
-    lr_g: 0.00001
+    lr_g: 0.0001
     lr_d: 0.0001
     
     # AdamP, AGDP, MADGRAD, cosangulargrad, tanangulargrad
@@ -766,8 +769,8 @@ train:
     SmoothL1_weight: 0
 
     # loss for CTSDG
-    CTSDG_edge_weight: 0.1
-    CTSDG_projected_weight: 0.1
+    CTSDG_edge_weight: 0 #0.01
+    CTSDG_projected_weight: 0 #0.1
 
     # Differentiable Augmentation for Data-Efficient GAN Training
     diffaug: False
