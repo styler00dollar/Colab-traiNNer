@@ -1,6 +1,6 @@
 name: template
 scale: 1
-gpus: 1 # amount of gpus, 0 = cpu
+gpus: 0 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
@@ -18,13 +18,13 @@ datasets:
     # DS_lrhr: loads lr from dataroot_LR and hr from dataroot_HR
     # DS_lrhr_batch_oft: loads grayscale-hr (3x3 400px) from dataroot_LR and generates lr by downscaling otf randomly
 
-    mode: DS_inpaint_tiled_batch # DS_video | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
+    mode: DS_inpaint # DS_video | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
     grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
-    dataroot_HR: '/content/hr/' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/hr/' # Original, with a single directory
+    dataroot_HR: '/content/data/' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/content/data/' # Original, with a single directory
     loading_backend: 'PIL' # PIL, OpenCV (currently only in DS_inpaint_tiled_batch)
 
-    n_workers: 12 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
+    n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     batch_size: 1
     batch_size_DL: 1
     HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
@@ -44,16 +44,16 @@ datasets:
     canny_max: 150
 
   val:
-    dataroot_HR: '/content/drive/MyDrive/Colab-BasicSR/lightweightgan_inpaint/val_input'
-    dataroot_LR: '/content/drive/MyDrive/Colab-BasicSR/lightweightgan_inpaint/val_input' # Inpainting will use this directory as input
+    dataroot_HR: '/content/val_hr/'
+    dataroot_LR: '/content/val_hr/' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: "/content/converted.pth"
+    pretrain_model_G: 
     pretrain_model_D: 
-    checkpoint_path: #"/content/drive/MyDrive/Colab-BasicSR/CTSDG/Checkpoint_7_85000.ckpt"
-    checkpoint_save_path: '/content/drive/MyDrive/Colab-BasicSR/lama'
-    validation_output_path: '/content/drive/MyDrive/Colab-BasicSR/lama/val/'
-    log_path: '/content/drive/MyDrive/Colab-BasicSR/lama/logs'
+    checkpoint_path:
+    checkpoint_save_path: '/content/'
+    validation_output_path: '/content/val/'
+    log_path: '/content/logs'
 
 # Generator options:
 network_G:
@@ -639,6 +639,10 @@ network_D:
 
     #netD: resnet3d
     #model_depth: 50 # [10, 18, 34, 50, 101, 152, 200]
+
+    # from lama (2021)
+    netD: FFCNLayerDiscriminator
+    FFCN_feature_weight: 1
 
 train: 
     scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]

@@ -1185,3 +1185,21 @@ class FrobeniusNormLoss(nn.Module):
                 x.view(-1, 1) - y.view(-1, 1), ord=self.order)
 
         return loss*norm
+
+# https://github.com/saic-mdal/lama/blob/6bb704738d4e791106d8e87099d80831999901fc/saicinpainting/training/losses/feature_matching.py
+from typing import List
+def feature_matching_loss(fake_features: List[torch.Tensor], target_features: List[torch.Tensor], mask=None):
+    if mask is None:
+        res = torch.stack([F.mse_loss(fake_feat, target_feat)
+                           for fake_feat, target_feat in zip(fake_features, target_features)]).mean()
+    else:
+        res = 0
+        norm = 0
+        for fake_feat, target_feat in zip(fake_features, target_features):
+            cur_mask = F.interpolate(mask, size=fake_feat.shape[-2:], mode='bilinear', align_corners=False)
+            error_weights = 1 - cur_mask
+            cur_val = ((fake_feat - target_feat).pow(2) * error_weights).mean()
+            res = res + cur_val
+            norm += 1
+        res = res / norm
+    return res

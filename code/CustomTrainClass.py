@@ -3,7 +3,7 @@ import cv2
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
-from loss.loss import FrobeniusNormLoss, LapLoss, CharbonnierLoss, GANLoss, GradientPenaltyLoss, HFENLoss, TVLoss, GradientLoss, ElasticLoss, RelativeL1, L1CosineSim, ClipL1, MaskedL1Loss, MultiscalePixelLoss, FFTloss, OFLoss, L1_regularization, ColorLoss, AverageLoss, GPLoss, CPLoss, SPL_ComputeWithTrace, SPLoss, Contextual_Loss, StyleLoss
+from loss.loss import feature_matching_loss, FrobeniusNormLoss, LapLoss, CharbonnierLoss, GANLoss, GradientPenaltyLoss, HFENLoss, TVLoss, GradientLoss, ElasticLoss, RelativeL1, L1CosineSim, ClipL1, MaskedL1Loss, MultiscalePixelLoss, FFTloss, OFLoss, L1_regularization, ColorLoss, AverageLoss, GPLoss, CPLoss, SPL_ComputeWithTrace, SPLoss, Contextual_Loss, StyleLoss
 from loss.metrics import *
 from torchvision.utils import save_image
 from torch.autograd import Variable
@@ -600,6 +600,10 @@ class CustomTrainClass(pl.LightningModule):
       from arch.resnet3d_arch import generate_model
       self.netD = generate_model(cfg['network_D']['model_depth'])
 
+    elif cfg['network_D']['netD'] == 'FFCNLayerDiscriminator':
+      from arch.lama_arch import FFCNLayerDiscriminator
+      self.netD = FFCNLayerDiscriminator(3)
+
     # only doing init, if not 'TranformerDiscriminator', 'EfficientNet', 'ResNeSt', 'resnet', 'ViT', 'DeepViT', 'mobilenetV3'
     # should probably be rewritten
     if cfg['network_D']['netD'] == 'resnet3d' or cfg['network_D']['netD'] == 'NFNet' or cfg['network_D']['netD'] == 'context_encoder' or cfg['network_D']['netD'] == 'VGG' or cfg['network_D']['netD'] == 'VGG_fea' or cfg['network_D']['netD'] == 'Discriminator_VGG_128_SN' or cfg['network_D']['netD'] == 'VGGFeatureExtractor' or cfg['network_D']['netD'] == 'NLayerDiscriminator' or cfg['network_D']['netD'] == 'MultiscaleDiscriminator' or cfg['network_D']['netD'] == 'Discriminator_ResNet_128' or cfg['network_D']['netD'] == 'ResNet101FeatureExtractor' or  cfg['network_D']['netD'] == 'MINCNet' or cfg['network_D']['netD'] == 'PixelDiscriminator' or cfg['network_D']['netD'] == 'ResNeSt' or cfg['network_D']['netD'] == 'RepVGG' or cfg['network_D']['netD'] == 'squeezenet' or cfg['network_D']['netD'] == 'SwinTransformer':
@@ -1037,9 +1041,19 @@ class CustomTrainClass(pl.LightningModule):
             if cfg['train']['diffaug'] == True:
               d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(DiffAugment(out, cfg['train']['policy'])), fake)
             else:
-              d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(out), fake)
+              if cfg['network_D']['netD'] == 'FFCNLayerDiscriminator':
+                FFCN_class, FFCN_feature = self.netD(out)
+                d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(FFCN_class, fake)
+              else:
+                d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(out), fake)
 
           writer.add_scalar('loss/d_loss_fool', d_loss_fool, self.trainer.global_step)
+
+        if cfg['network_D']['netD'] == 'FFCNLayerDiscriminator' and cfg['network_D']['FFCN_feature_weight'] > 0:
+          FFCN_class_orig, FFCN_feature_orig = self.netD(out)
+          feature_matching_loss_forward = cfg['network_D']['FFCN_feature_weight'] * feature_matching_loss(FFCN_feature, FFCN_feature_orig, train_batch[1])
+          total_loss += feature_matching_loss_forward
+          writer.add_scalar('loss/feature_matching_loss', feature_matching_loss_forward, self.trainer.global_step)
 
         return total_loss
 
@@ -1061,12 +1075,17 @@ class CustomTrainClass(pl.LightningModule):
         else:
           # 2d
           if cfg['train']['diffaug'] == True:
-            dis_real_loss = self.MSELoss(self.netD(DiffAugment(train_batch[2], cfg['train']['policy'])), valid)
-            dis_fake_loss = self.MSELoss(self.netD(out), fake)
+            discr_out = self.netD(DiffAugment(train_batch[2], cfg['train']['policy']))
           else:
-            dis_real_loss = self.MSELoss(self.netD(train_batch[2]), valid)
-            dis_fake_loss = self.MSELoss(self.netD(out), fake)
+            if cfg['network_D']['netD'] == 'FFCNLayerDiscriminator':
+              discr_out_fake, _ = self.netD(out)
+              discr_out_real, _ = self.netD(train_batch[2])
+            else:
+              discr_out_fake = self.netD(out)
+              discr_out_real = self.netD(train_batch[2])
 
+          dis_fake_loss = self.MSELoss(discr_out_fake, fake)
+          dis_real_loss = self.MSELoss(discr_out_real, fake)
 
         # Total loss
         d_loss = cfg["network_D"]["d_loss_weight"] * ((dis_real_loss + dis_fake_loss) / 2)

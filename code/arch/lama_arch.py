@@ -686,12 +686,14 @@ class FFCResNetGenerator(nn.Module):
     def forward(self, image, mask):
         return self.model(torch.cat([image, mask], dim=1))
 
-"""
 class FFCNLayerDiscriminator(BaseDiscriminator):
     def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d, max_features=512,
                  init_conv_kwargs={}, conv_kwargs={}):
         super().__init__()
         self.n_layers = n_layers
+
+        init_conv_kwargs = {'ratio_gin': 0, 'ratio_gout': 0, 'enable_lfu': False}
+        conv_kwargs = {'ratio_gin': 0, 'ratio_gout': 0, 'enable_lfu': False}
 
         def _act_ctor(inplace=True):
             return nn.LeakyReLU(negative_slope=0.2, inplace=inplace)
@@ -750,5 +752,5 @@ class FFCNLayerDiscriminator(BaseDiscriminator):
                 else:
                     out = out[0]
             feats.append(out)
-        return act[-1], feats
-"""
+        return act[-1].mean().unsqueeze(0).unsqueeze(0), feats
+        #return act[-1]
