@@ -59,7 +59,7 @@ class CheckpointEveryNSteps(pl.Callback):
                 torch.jit.save(traced_model, os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_G.pt"))
             
             # run validation once checkpoint was made
-            trainer.run_evaluation()
+            trainer._run_evaluate()
 
     #def on_epoch_end(self, trainer: pl.Trainer, _):
     #    print("Epoch completed.")
