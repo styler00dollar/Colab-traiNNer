@@ -62,10 +62,7 @@ class CheckpointEveryNSteps(pl.Callback):
             trainer._run_evaluate()
         pl.Trainer.global_step += 1
 
-    #def on_epoch_end(self, trainer: pl.Trainer, _):
-    #    print("Epoch completed.")
-
-    def on_train_end(self, trainer, pl_module):
+    def on_keyboard_interrupt(self, trainer, pl_module):
         epoch = trainer.current_epoch
         global_step = trainer.global_step
         ckpt_path = os.path.join(self.save_path, f"{self.prefix}_{epoch}_{global_step}.ckpt")
@@ -83,4 +80,3 @@ class CheckpointEveryNSteps(pl.Callback):
             traced_model = torch.jit.trace(trainer.model.netG, (torch.randn(1,3,256,256).cuda(),torch.randn(1,3,256,256).cuda()))
             torch.jit.save(traced_model, os.path.join(cfg['path']['checkpoint_save_path'], f"{self.prefix}_{epoch}_{global_step}_G.pt"))
         
-#Trainer(callbacks=[CheckpointEveryNSteps()])
