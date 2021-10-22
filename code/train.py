@@ -82,8 +82,8 @@ if __name__ == '__main__':
     model = model.load_from_checkpoint(cfg['path']['checkpoint_path'])
     #trainer = pl.Trainer(resume_from_checkpoint=checkpoint_path, logger=None, gpus=cfg['gpus'], max_epochs=cfg['datasets']['train']['max_epochs'], progress_bar_refresh_rate=cfg['progress_bar_refresh_rate'], default_root_dir=cfg['default_root_dir'], callbacks=[CheckpointEveryNSteps(save_step_frequency=cfg['datasets']['train']['save_step_frequency'], save_path = cfg['path']['checkpoint_save_path'])])
     checkpoint = torch.load(cfg['path']['checkpoint_path'])
-    trainer.checkpoint_connector.restore(checkpoint, on_gpu=True)
-    trainer.checkpoint_connector.restore_training_state(checkpoint)
+    #trainer.checkpoint_connector.restore(checkpoint)
+    #trainer.checkpoint_connector.restore_training_state(checkpoint)
     pl.Trainer.global_step = checkpoint['global_step']
     pl.Trainer.epoch = checkpoint['epoch']
 
