@@ -752,5 +752,6 @@ class FFCNLayerDiscriminator(BaseDiscriminator):
                 else:
                     out = out[0]
             feats.append(out)
-        return act[-1].mean().unsqueeze(0).unsqueeze(0), feats
+        #return act[-1].mean().unsqueeze(0).unsqueeze(0), feats
         #return act[-1]
+        return torch.mean(act[-1], [1,2,3]).unsqueeze(0).permute(1, 0), feats
