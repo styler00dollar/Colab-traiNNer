@@ -723,9 +723,10 @@ class CustomTrainClass(pl.LightningModule):
   def training_step(self, train_batch, batch_idx, optimizer_idx=0):
       # iteration count is sometimes broken, adding a check and manual increment
       # only increment if generator gets trained (loop gets called a second time for discriminator)
-      if optimizer_idx == 0 and self.iter_check == self.trainer.global_step:
-        self.trainer.global_step += 1
-      self.iter_check = self.trainer.global_step
+      if self.trainer.global_step != 0:
+        if optimizer_idx == 0 and self.iter_check == self.trainer.global_step:
+          self.trainer.global_step += 1
+        self.iter_check = self.trainer.global_step
 
       # inpainting:
       # train_batch[0][0] = batch_size
