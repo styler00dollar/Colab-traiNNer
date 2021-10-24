@@ -3,7 +3,7 @@ import cv2
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
-from loss.loss import feature_matching_loss, FrobeniusNormLoss, LapLoss, CharbonnierLoss, GANLoss, GradientPenaltyLoss, HFENLoss, TVLoss, GradientLoss, ElasticLoss, RelativeL1, L1CosineSim, ClipL1, MaskedL1Loss, MultiscalePixelLoss, FFTloss, OFLoss, L1_regularization, ColorLoss, AverageLoss, GPLoss, CPLoss, SPL_ComputeWithTrace, SPLoss, Contextual_Loss, StyleLoss
+from loss.loss import FocalFrequencyLoss, feature_matching_loss, FrobeniusNormLoss, LapLoss, CharbonnierLoss, GANLoss, GradientPenaltyLoss, HFENLoss, TVLoss, GradientLoss, ElasticLoss, RelativeL1, L1CosineSim, ClipL1, MaskedL1Loss, MultiscalePixelLoss, FFTloss, OFLoss, L1_regularization, ColorLoss, AverageLoss, GPLoss, CPLoss, SPL_ComputeWithTrace, SPLoss, Contextual_Loss, StyleLoss
 from loss.metrics import *
 from torchvision.utils import save_image
 from torch.autograd import Variable
@@ -673,6 +673,7 @@ class CustomTrainClass(pl.LightningModule):
     self.L1Loss = nn.L1Loss()
     self.BCELogits = torch.nn.BCEWithLogitsLoss()
     self.BCE = torch.nn.BCELoss()
+    self.FFLoss = FocalFrequencyLoss()
 
     # perceptual loss
     from arch.networks_basic import PNetLin
@@ -982,10 +983,13 @@ class CustomTrainClass(pl.LightningModule):
           total_loss += SPLoss_forward
           writer.add_scalar('loss/SPLoss', SPLoss_forward, self.trainer.global_step)
 
+        if cfg['train']['FFLoss_weight'] > 0:
+          FFLoss_forward = cfg['train']['FFLoss_weight']*(self.FFLoss(out, train_batch[2]))
+          total_loss += FFLoss_forward
+          writer.add_scalar('loss/FFLoss', FFLoss_forward, self.trainer.global_step)
 
         #########################
         # exotic loss
-
         # if model has two output, also calculate loss for such an image
         # example with just l1 loss
         if cfg['network_G']['netG'] == 'deepfillv1' or cfg['network_G']['netG'] == 'deepfillv2' or cfg['network_G']['netG'] == 'Adaptive':

@@ -645,7 +645,7 @@ network_D:
     #FFCN_feature_weight: 1
 
     #netD: effV2
-    #conv: conv2d # conv2d | fft
+    #conv: fft # fft | conv2d
     #size: s # s | m | l | xl
 
     # x-transformers
@@ -773,6 +773,7 @@ train:
     GradientLoss_weight: 0
     MultiscalePixelLoss_weight: 0
     SPLoss_weight: 0
+    FFLoss_weight: 0
 
     # only if the network outputs 2 images, will use l1
     stage1_weight: 0 
