@@ -20,8 +20,8 @@ datasets:
 
     mode: DS_inpaint # DS_video | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
     grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
-    dataroot_HR: '/content/data/' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/data/' # Original, with a single directory
+    dataroot_HR: '/content/val_hr' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/content/val_hr' # Original, with a single directory
     loading_backend: 'PIL' # PIL, OpenCV (currently only in DS_inpaint_tiled_batch)
 
     n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
@@ -32,7 +32,7 @@ datasets:
 
     masks: '/content/masks/'
     max_epochs: 2000
-    save_step_frequency: 1000 # also validation frequency
+    save_step_frequency: 10 # also validation frequency
 
     # batch
     # If a tiled dataloader is used, specify image charactaristics. Random crop will not be applied. Maybe in the future.
@@ -251,18 +251,18 @@ network_G:
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
-    #netG: DFNet
-    #c_img: 3
-    #c_mask: 1
-    #c_alpha: 3
-    #mode: nearest
-    #norm: batch
-    #act_en: relu
-    #act_de: leaky_relu
-    #en_ksize: [7, 5, 5, 3, 3, 3, 3, 3]
-    #de_ksize: [3, 3, 3, 3, 3, 3, 3, 3]
-    #blend_layers: [0, 1, 2, 3, 4, 5]
-    #conv_type: normal # partial | normal | deform
+    netG: DFNet
+    c_img: 3
+    c_mask: 1
+    c_alpha: 3
+    mode: nearest
+    norm: batch
+    act_en: relu
+    act_de: leaky_relu
+    en_ksize: [7, 5, 5, 3, 3, 3, 3, 3]
+    de_ksize: [3, 3, 3, 3, 3, 3, 3, 3]
+    blend_layers: [0, 1, 2, 3, 4, 5]
+    conv_type: normal # partial | normal | deform
     
 
     # EdgeConnect (2019)
@@ -399,7 +399,7 @@ network_G:
     #netG: CTSDG
 
     # lama (2022) (no AMP)
-    netG: lama
+    #netG: lama
 
     # MST (2021)
     #netG: MST
@@ -641,8 +641,21 @@ network_D:
     #model_depth: 50 # [10, 18, 34, 50, 101, 152, 200]
 
     # from lama (2021)
-    netD: FFCNLayerDiscriminator
-    FFCN_feature_weight: 1
+    #netD: FFCNLayerDiscriminator
+    #FFCN_feature_weight: 1
+
+    #netD: effV2
+    #conv: conv2d # conv2d | fft
+    #size: s # s | m | l | xl
+
+    # x-transformers
+    # pip install x-transformers
+    netD: x_transformers
+    image_size: 512
+    patch_size: 32
+    dim: 512
+    depth: 6
+    heads: 8
 
 train: 
     scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]

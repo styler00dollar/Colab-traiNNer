@@ -604,6 +604,33 @@ class CustomTrainClass(pl.LightningModule):
       from arch.lama_arch import FFCNLayerDiscriminator
       self.netD = FFCNLayerDiscriminator(3)
 
+    elif cfg['network_D']['netD'] == 'effV2':
+      if cfg['network_D']['size'] == "s":
+        from arch.efficientnetV2_arch import effnetv2_s
+        self.netD = effnetv2_s()
+      elif cfg['network_D']['size'] == "m":
+        from arch.efficientnetV2_arch import effnetv2_m
+        self.netD = effnetv2_m()
+      elif cfg['network_D']['size'] == "l":
+        from arch.efficientnetV2_arch import effnetv2_l
+        self.netD = effnetv2_l()
+      elif cfg['network_D']['size'] == "xl":
+        from arch.efficientnetV2_arch import effnetv2_xl
+        self.netD = effnetv2_xl()
+
+    elif cfg['network_D']['netD'] == 'x_transformers':
+      from x_transformers import ViTransformerWrapper, Encoder
+      self.netD = ViTransformerWrapper(
+          image_size = cfg['network_D']['image_size'],
+          patch_size = cfg['network_D']['patch_size'],
+          num_classes = 1,
+          attn_layers = Encoder(
+              dim = cfg['network_D']['dim'],
+              depth = cfg['network_D']['depth'],
+              heads = cfg['network_D']['heads'],
+          )
+      )
+
     # only doing init, if not 'TranformerDiscriminator', 'EfficientNet', 'ResNeSt', 'resnet', 'ViT', 'DeepViT', 'mobilenetV3'
     # should probably be rewritten
     if cfg['network_D']['netD'] == 'resnet3d' or cfg['network_D']['netD'] == 'NFNet' or cfg['network_D']['netD'] == 'context_encoder' or cfg['network_D']['netD'] == 'VGG' or cfg['network_D']['netD'] == 'VGG_fea' or cfg['network_D']['netD'] == 'Discriminator_VGG_128_SN' or cfg['network_D']['netD'] == 'VGGFeatureExtractor' or cfg['network_D']['netD'] == 'NLayerDiscriminator' or cfg['network_D']['netD'] == 'MultiscaleDiscriminator' or cfg['network_D']['netD'] == 'Discriminator_ResNet_128' or cfg['network_D']['netD'] == 'ResNet101FeatureExtractor' or  cfg['network_D']['netD'] == 'MINCNet' or cfg['network_D']['netD'] == 'PixelDiscriminator' or cfg['network_D']['netD'] == 'ResNeSt' or cfg['network_D']['netD'] == 'RepVGG' or cfg['network_D']['netD'] == 'squeezenet' or cfg['network_D']['netD'] == 'SwinTransformer':
@@ -918,42 +945,42 @@ class CustomTrainClass(pl.LightningModule):
         if cfg['train']['Huber_weight'] > 0:
           Huber_forward = cfg['train']['Huber_weight']*self.HuberLoss(out, train_batch[2])
           total_loss += Huber_forward
-          writer.add_scalar('loss/Huber', Huber_forward, self.trainer.global_step) 
+          writer.add_scalar('loss/Huber', Huber_forward, self.trainer.global_step)
 
         if cfg['train']['SmoothL1_weight'] > 0:
           SmoothL1_forward = cfg['train']['SmoothL1_weight']*self.SmoothL1Loss(out, train_batch[2])
           total_loss += SmoothL1_forward
-          writer.add_scalar('loss/SmoothL1', SmoothL1_forward, self.trainer.global_step) 
+          writer.add_scalar('loss/SmoothL1', SmoothL1_forward, self.trainer.global_step)
 
         if cfg['train']['Lap_weight'] > 0:
           Lap_forward = cfg['train']['Lap_weight']*(self.LapLoss(out, train_batch[2])).mean()
           total_loss += Lap_forward
-          writer.add_scalar('loss/Lap', Lap_forward, self.trainer.global_step) 
+          writer.add_scalar('loss/Lap', Lap_forward, self.trainer.global_step)
 
         if cfg['train']['ColorLoss_weight'] > 0:
           ColorLoss_forward = cfg['train']['ColorLoss_weight']*(self.ColorLoss(out, train_batch[2]))
           total_loss += ColorLoss_forward
-          writer.add_scalar('loss/ColorLoss', ColorLoss_forward, self.trainer.global_step) 
+          writer.add_scalar('loss/ColorLoss', ColorLoss_forward, self.trainer.global_step)
 
         if cfg['train']['FrobeniusNormLoss_weight'] > 0:
           FrobeniusNormLoss_forward = cfg['train']['FrobeniusNormLoss_weight']*(self.FrobeniusNormLoss(out, train_batch[2]))
           total_loss += FrobeniusNormLoss_forward
-          writer.add_scalar('loss/FrobeniusNormLoss', FrobeniusNormLoss_forward, self.trainer.global_step) 
+          writer.add_scalar('loss/FrobeniusNormLoss', FrobeniusNormLoss_forward, self.trainer.global_step)
 
         if cfg['train']['GradientLoss_weight'] > 0:
           GradientLoss_forward = cfg['train']['GradientLoss_weight']*(self.GradientLoss(out, train_batch[2]))
           total_loss += GradientLoss_forward
-          writer.add_scalar('loss/GradientLoss', GradientLoss_forward, self.trainer.global_step) 
+          writer.add_scalar('loss/GradientLoss', GradientLoss_forward, self.trainer.global_step)
 
         if cfg['train']['MultiscalePixelLoss_weight'] > 0:
           MultiscalePixelLoss_forward = cfg['train']['MultiscalePixelLoss_weight']*(self.MultiscalePixelLoss(out, train_batch[2]))
           total_loss += MultiscalePixelLoss_forward
-          writer.add_scalar('loss/MultiscalePixelLoss', MultiscalePixelLoss_forward, self.trainer.global_step) 
+          writer.add_scalar('loss/MultiscalePixelLoss', MultiscalePixelLoss_forward, self.trainer.global_step)
 
         if cfg['train']['SPLoss_weight'] > 0:
           SPLoss_forward = cfg['train']['SPLoss_weight']*(self.SPLoss(out, train_batch[2]))
           total_loss += SPLoss_forward
-          writer.add_scalar('loss/SPLoss', SPLoss_forward, self.trainer.global_step) 
+          writer.add_scalar('loss/SPLoss', SPLoss_forward, self.trainer.global_step)
 
 
         #########################
@@ -1163,7 +1190,7 @@ class CustomTrainClass(pl.LightningModule):
     # train_batch[1] = img2
     # train_batch[2] = imgpath
 
-    
+
     if cfg['network_G']['netG'] == 'CTSDG':
       out, _, _ = self.netG(train_batch[0], train_batch[3], train_batch[1])
       out = train_batch[0]*(train_batch[1])+out*(1-train_batch[1])
