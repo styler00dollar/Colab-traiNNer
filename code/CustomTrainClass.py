@@ -631,6 +631,17 @@ class CustomTrainClass(pl.LightningModule):
           )
       )
 
+    elif cfg['network_D']['netD'] == 'mobilevit':
+      if cfg['network_D']['size'] == "xxs":
+        from arch.mobilevit_arch import mobilevit_xxs
+        self.netD = mobilevit_xxs()
+      elif cfg['network_D']['size'] == "xs":
+        from arch.mobilevit_arch import mobilevit_xs
+        self.netD = mobilevit_xs()
+      elif cfg['network_D']['size'] == "x":
+        from arch.mobilevit_arch import mobilevit_s
+        self.netD = mobilevit_s()
+
     # only doing init, if not 'TranformerDiscriminator', 'EfficientNet', 'ResNeSt', 'resnet', 'ViT', 'DeepViT', 'mobilenetV3'
     # should probably be rewritten
     if cfg['network_D']['netD'] == 'resnet3d' or cfg['network_D']['netD'] == 'NFNet' or cfg['network_D']['netD'] == 'context_encoder' or cfg['network_D']['netD'] == 'VGG' or cfg['network_D']['netD'] == 'VGG_fea' or cfg['network_D']['netD'] == 'Discriminator_VGG_128_SN' or cfg['network_D']['netD'] == 'VGGFeatureExtractor' or cfg['network_D']['netD'] == 'NLayerDiscriminator' or cfg['network_D']['netD'] == 'MultiscaleDiscriminator' or cfg['network_D']['netD'] == 'Discriminator_ResNet_128' or cfg['network_D']['netD'] == 'ResNet101FeatureExtractor' or  cfg['network_D']['netD'] == 'MINCNet' or cfg['network_D']['netD'] == 'PixelDiscriminator' or cfg['network_D']['netD'] == 'ResNeSt' or cfg['network_D']['netD'] == 'RepVGG' or cfg['network_D']['netD'] == 'squeezenet' or cfg['network_D']['netD'] == 'SwinTransformer':

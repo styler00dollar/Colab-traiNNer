@@ -650,12 +650,15 @@ network_D:
 
     # x-transformers
     # pip install x-transformers
-    netD: x_transformers
-    image_size: 512
-    patch_size: 32
-    dim: 512
-    depth: 6
-    heads: 8
+    #netD: x_transformers
+    #image_size: 512
+    #patch_size: 32
+    #dim: 512
+    #depth: 6
+    #heads: 8
+
+    netD: mobilevit
+    size: xxs # xxs | xs | s
 
 train: 
     scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
