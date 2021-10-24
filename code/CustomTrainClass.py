@@ -1086,7 +1086,7 @@ class CustomTrainClass(pl.LightningModule):
           writer.add_scalar('loss/d_loss_fool', d_loss_fool, self.trainer.global_step)
 
         if cfg['network_D']['netD'] == 'FFCNLayerDiscriminator' and cfg['network_D']['FFCN_feature_weight'] > 0:
-          FFCN_class_orig, FFCN_feature_orig = self.netD(out)
+          FFCN_class_orig, FFCN_feature_orig = self.netD(train_batch[2])
           feature_matching_loss_forward = cfg['network_D']['FFCN_feature_weight'] * feature_matching_loss(FFCN_feature, FFCN_feature_orig, train_batch[1])
           total_loss += feature_matching_loss_forward
           writer.add_scalar('loss/feature_matching_loss', feature_matching_loss_forward, self.trainer.global_step)
