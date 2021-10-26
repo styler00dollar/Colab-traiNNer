@@ -18,16 +18,16 @@ datasets:
     # DS_lrhr: loads lr from dataroot_LR and hr from dataroot_HR
     # DS_lrhr_batch_oft: loads grayscale-hr (3x3 400px) from dataroot_LR and generates lr by downscaling otf randomly
 
-    mode: DS_inpaint # DS_video | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
+    mode: DS_inpaint_tiled_batch # DS_video | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
     grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
-    dataroot_HR: '/content/val_hr' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/val_hr' # Original, with a single directory
-    loading_backend: 'PIL' # PIL, OpenCV (currently only in DS_inpaint_tiled_batch)
+    dataroot_HR: '/content/hr' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/content/hr' # Original, with a single directory
+    loading_backend: 'OpenCV' # PIL, OpenCV (currently only in DS_inpaint_tiled_batch)
 
     n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     batch_size: 1
-    batch_size_DL: 1
-    HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
+    batch_size_DL: 8
+    HR_size: 256 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
     masks: '/content/masks/'
@@ -36,7 +36,7 @@ datasets:
 
     # batch
     # If a tiled dataloader is used, specify image charactaristics. Random crop will not be applied. Maybe in the future.
-    image_size: 512 # Size of one tile
+    image_size: 256 # Size of one tile
     amount_tiles: 8 # Amount of tiles inside the merged grid image
 
     # if edge data is required
@@ -432,7 +432,7 @@ network_D:
     d_loss_fool_weight: 1 # inside the generator loop, trying to fool the disciminator
     d_loss_weight: 1 # inside own discriminator update
     
-    netD: # in case there is no discriminator, leave it empty
+    #netD: # in case there is no discriminator, leave it empty
 
     # VGG
     #netD: VGG
@@ -657,11 +657,14 @@ network_D:
     #depth: 6
     #heads: 8
 
-    netD: mobilevit
-    size: xxs # xxs | xs | s
+    #netD: mobilevit
+    #size: xxs # xxs | xs | s
+
+    # because of too many parameters, a seperate config file named "hrt_config.py" is available
+    netD: hrt
 
 train: 
-    scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
+    scheduler: MADGRAD # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
     lr_g: 0.0001
     lr_d: 0.0001
     
@@ -680,6 +683,8 @@ train:
 
     # MADGRAD, cosangulargrad, tanangulargrad
     eps: 1e-6
+
+    ############################
 
     # Losses:
     L1Loss_weight: 0
@@ -776,7 +781,7 @@ train:
     GradientLoss_weight: 0
     MultiscalePixelLoss_weight: 0
     SPLoss_weight: 0
-    FFLoss_weight: 0
+    FFLoss_weight: 1
 
     # only if the network outputs 2 images, will use l1
     stage1_weight: 0 
