@@ -17,8 +17,10 @@ datasets:
     # DS_inpaint_tiled_batch: hr is from dataroot_HR, but images are grids (16x16 256px currently) and processed as a batch (batch_size_DL), loads masks
     # DS_lrhr: loads lr from dataroot_LR and hr from dataroot_HR
     # DS_lrhr_batch_oft: loads grayscale-hr (3x3 400px) from dataroot_LR and generates lr by downscaling otf randomly
+    # DS_video: video dataloader which has 3 frames as input (look into data/data_video.py for more details)
+    # DS_inpaint_TF: takes one tfrecord file as dataset input, but the validation is still just green masked images like in DS_inpaint
 
-    mode: DS_inpaint_TF # DS_video | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
+    mode: DS_inpaint_TF # DS_video | DS_inpaint_TF | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
