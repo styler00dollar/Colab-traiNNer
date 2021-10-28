@@ -79,6 +79,12 @@ class DFNetDataModule(pl.LightningDataModule):
           self.DFNetdataset_train = VimeoTriplet(self.dir_hr)
           self.DFNetdataset_validation = VimeoTriplet_val(self.val_hr)
           self.DFNetdataset_test = VimeoTriplet_val(self.val_hr)
+
+        elif cfg['datasets']['train']['mode'] == 'DS_inpaint_TF':
+          from .data import DS_inpaint_TF, DS_inpaint_val
+          self.DFNetdataset_train = DS_inpaint_TF()
+          self.DFNetdataset_validation = DS_inpaint_val(self.val_hr)
+          self.DFNetdataset_test = DS_inpaint_val(self.val_lr)
         else:
           print("Mode not found.")
 

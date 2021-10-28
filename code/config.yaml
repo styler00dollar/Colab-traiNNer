@@ -18,16 +18,19 @@ datasets:
     # DS_lrhr: loads lr from dataroot_LR and hr from dataroot_HR
     # DS_lrhr_batch_oft: loads grayscale-hr (3x3 400px) from dataroot_LR and generates lr by downscaling otf randomly
 
-    mode: DS_inpaint_tiled_batch # DS_video | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
+    mode: DS_inpaint_TF # DS_video | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
+    amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
+
     grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
+    tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
     dataroot_HR: '/content/hr' # Original, with a single directory. Inpainting will use this directory as source image.
     dataroot_LR: '/content/hr' # Original, with a single directory
-    loading_backend: 'OpenCV' # PIL, OpenCV (currently only in DS_inpaint_tiled_batch)
+    loading_backend: 'PIL' # PIL, OpenCV (currently only in DS_inpaint_tiled_batch)
 
     n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     batch_size: 1
-    batch_size_DL: 8
-    HR_size: 256 # The resolution the network will get. Random crop gets applied if that resolution does not match.
+    batch_size_DL: 1
+    HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
     masks: '/content/masks/'
@@ -432,7 +435,7 @@ network_D:
     d_loss_fool_weight: 1 # inside the generator loop, trying to fool the disciminator
     d_loss_weight: 1 # inside own discriminator update
     
-    #netD: # in case there is no discriminator, leave it empty
+    netD: # in case there is no discriminator, leave it empty
 
     # VGG
     #netD: VGG

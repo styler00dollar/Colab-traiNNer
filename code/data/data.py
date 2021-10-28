@@ -16,6 +16,10 @@ import random
 import glob
 import torchvision.transforms as transforms
 
+if cfg['datasets']['train']['mode'] == "DS_inpaint_TF":
+  from tfrecord.torch.dataset import TFRecordDataset
+  import io
+
 if cfg['datasets']['train']['loading_backend'] == "PIL":
   import pillow_avif
 
@@ -97,6 +101,9 @@ class DS_inpaint(Dataset):
           mask = cv2.imread(random.choice([x for x in self.files]), cv2.IMREAD_UNCHANGED)
           mask = cv2.resize(mask, (self.HR_size,self.HR_size), interpolation=cv2.INTER_NEAREST)
 
+          # since white = masked area, invert mask
+          mask = 255 - mask
+
           # flip mask randomly
           if 0.3 < random.uniform(0, 1) <= 0.66:
             mask = np.flip(mask, axis=0)
@@ -107,9 +114,12 @@ class DS_inpaint(Dataset):
 
         sample = torch.from_numpy(sample).permute(2, 0, 1)/255
 
+        # 35% chance of the mask being inverted
+        if random.uniform(0, 1) < 0.35:
+          mask = 1 - mask
+
         # apply mask
         masked = sample * mask
-
 
         # EdgeConnect
         if cfg['network_G']['netG'] == 'EdgeConnect':
@@ -229,6 +239,9 @@ class DS_inpaint_tiled(Dataset):
           mask = cv2.imread(random.choice([x for x in self.files]), cv2.IMREAD_UNCHANGED)
           mask = cv2.resize(mask, (self.image_size,self.image_size), interpolation=cv2.INTER_NEAREST)
 
+          # since white = masked area, invert mask
+          mask = 255 - mask
+
           # flip mask randomly
           if 0.3 < random.uniform(0, 1) <= 0.66:
             mask = np.flip(mask, axis=0)
@@ -238,6 +251,10 @@ class DS_inpaint_tiled(Dataset):
           mask = torch.from_numpy(mask.astype(np.float32)).unsqueeze(0)/255
 
         sample = torch.from_numpy(sample).permute(2, 0, 1)/255
+
+        # 35% chance of the mask being inverted
+        if random.uniform(0, 1) < 0.35:
+          mask = 1 - mask
 
         # apply mask
         masked = sample * mask
@@ -419,6 +436,9 @@ class DS_inpaint_tiled_batch(Dataset):
             # load random mask from folder
             mask = cv2.imread(random.choice([x for x in self.files]), cv2.IMREAD_UNCHANGED)
             mask = cv2.resize(mask, (self.image_size,self.image_size), interpolation=cv2.INTER_NEAREST)
+
+            # since white = masked area, invert mask
+            mask = 255 - mask
 
             # flip mask randomly
             if 0.3 < random.uniform(0, 1) <= 0.66:
@@ -977,3 +997,78 @@ class DS_fontgen_tiled(Dataset):
           lr_image = torch.from_numpy(lr_image).permute(2, 0, 1).unsqueeze(0)/255
 
         return 0, lr_image, hr_image
+
+
+
+class DS_inpaint_TF(Dataset):
+    def __init__(self):
+      tfrecord_path = cfg['datasets']['train']['tfrecord_path']
+      self.mask_dir = cfg['datasets']['train']['masks']
+      self.mask_files = glob.glob(self.mask_dir + '/**/*.png', recursive=True)
+
+      self.HR_size = cfg['datasets']['train']['HR_size']
+      #self.batch_size = cfg['datasets']['train']['batch_size']
+
+      self.dataset = TFRecordDataset(tfrecord_path, None)
+      self.loader = iter(torch.utils.data.DataLoader(self.dataset, batch_size=1))
+
+    def __len__(self):
+        # iterator is infinite and does not have a length, hotfix
+        return cfg['datasets']['train']['amount_files']
+
+    def __getitem__(self, index):
+        data = next(self.loader)
+
+        if cfg['datasets']['train']['loading_backend'] == "OpenCV":
+          nparr = np.fromstring(np.array(data['data']), np.uint8)
+          sample = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        elif cfg['datasets']['train']['loading_backend'] == "PIL":
+          sample = Image.open(io.BytesIO(np.array(data['data'])))
+          sample = np.array(sample)
+
+        # if edges are required
+        if cfg['network_G']['netG'] == 'EdgeConnect' or cfg['network_G']['netG'] == 'PRVS' or cfg['network_G']['netG'] == 'CTSDG':
+          grayscale = cv2.cvtColor(np.array(sample), cv2.COLOR_RGB2GRAY)
+          edges = cv2.Canny(grayscale,100,150)
+          grayscale = torch.from_numpy(grayscale).unsqueeze(0)/255
+          edges = torch.from_numpy(edges).unsqueeze(0).type(torch.float)
+
+        if random.uniform(0, 1) < 0.5:
+          # generating mask automatically with 50% chance
+          mask = random_mask(height=self.HR_size, width=self.HR_size)
+          mask = torch.from_numpy(mask)
+
+        else:
+          # load random mask from folder
+          mask = cv2.imread(random.choice([x for x in self.mask_files]), cv2.IMREAD_UNCHANGED)
+          mask = cv2.resize(mask, (self.HR_size,self.HR_size), interpolation=cv2.INTER_NEAREST)
+          # since white = masked area, invert mask
+          mask = 255 - mask
+
+          # flip mask randomly
+          if 0.3 < random.uniform(0, 1) <= 0.66:
+            mask = np.flip(mask, axis=0)
+          elif 0.66 < random.uniform(0, 1) <= 1:
+            mask = np.flip(mask, axis=1)
+
+          mask = torch.from_numpy(mask.astype(np.float32)).unsqueeze(0)/255
+
+        sample = torch.from_numpy(sample).permute(2, 0, 1)/255
+
+        # 35% chance of the mask being inverted
+        if random.uniform(0, 1) < 0.35:
+          mask = 1 - mask
+
+        # apply mask
+        masked = sample * mask
+
+        # EdgeConnect
+        if cfg['network_G']['netG'] == 'EdgeConnect':
+          return masked, mask, sample, edges, grayscale
+
+        # PRVS
+        elif cfg['network_G']['netG'] == 'PRVS' or cfg['network_G']['netG'] == 'CTSDG':
+          return masked, mask, sample, edges
+
+        else:
+          return masked, mask, sample
