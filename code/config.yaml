@@ -13,8 +13,8 @@ default_root_dir: '/content'
 datasets:
   train:
     # DS_inpaint: hr is from dataroot_HR, loads masks
-    # DS_inpaint_tiled: hr is from dataroot_HR, but images are grids (16x16 256px currently), loads masks
-    # DS_inpaint_tiled_batch: hr is from dataroot_HR, but images are grids (16x16 256px currently) and processed as a batch (batch_size_DL), loads masks
+    # DS_inpaint_tiled: hr is from dataroot_HR, but images are grids, loads masks
+    # DS_inpaint_tiled_batch: hr is from dataroot_HR, but images are grids and processed as a batch (batch_size_DL), loads masks
     # DS_lrhr: loads lr from dataroot_LR and hr from dataroot_HR
     # DS_lrhr_batch_oft: loads grayscale-hr (3x3 400px) from dataroot_LR and generates lr by downscaling otf randomly
     # DS_video: video dataloader which has 3 frames as input (look into data/data_video.py for more details)
@@ -31,7 +31,11 @@ datasets:
 
     n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     batch_size: 1
-    batch_size_DL: 1
+    
+    # the inpainting dataloaders "DS_inpaint_tiled | DS_inpaint_tiled_batch" randomly crop images out of a grid x-amount of times and return a 
+    # batch created from one image (dataloader assume grid images and you must have batch_size: 1, the batch size during training will be determined 
+    # by the amount of random crops of one image)
+    batch_size_DL: 1 
     HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
@@ -783,7 +787,7 @@ train:
     lpips: True
 
     # high receptive field (HRF) perceptual loss
-    # you need to download the pretrain with
+    # you can download it manually with this command, but the code will downloaded it automatically if you don't have it
     # wget -P /content/ http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50dilated-ppm_deepsup/encoder_epoch_20.pth
     hrf_perceptual_weight: 1
 
