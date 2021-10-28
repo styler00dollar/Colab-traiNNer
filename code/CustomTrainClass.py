@@ -700,6 +700,11 @@ class CustomTrainClass(pl.LightningModule):
     for param in self.perceptual_loss.parameters():
       param.requires_grad = False
 
+    from arch.hrf_perceptual import ResNetPL
+    self.hrf_perceptual_loss = ResNetPL()
+    for param in self.hrf_perceptual_loss.parameters():
+      param.requires_grad = False
+
     self.ColorLoss = ColorLoss()
     self.FrobeniusNormLoss = FrobeniusNormLoss()
     self.GradientLoss = GradientLoss()
@@ -945,13 +950,15 @@ class CustomTrainClass(pl.LightningModule):
 
         if cfg['train']['perceptual_weight'] > 0:
           self.perceptual_loss.to(self.device)
-          if cfg['train']['diffaug'] == True:
-            tmp = self.perceptual_loss(in0=DiffAugment(out, cfg['train']['policy']), in1=DiffAugment(train_batch[2], cfg['train']['policy']))
-          else:
-            tmp = self.perceptual_loss(in0=out, in1=train_batch[2])
-          perceptual_loss = cfg['train']['perceptual_weight'] * tmp
-          writer.add_scalar('loss/perceptual', perceptual_loss, self.trainer.global_step)
-          total_loss +=perceptual_loss
+          perceptual_loss_forward = cfg['train']['perceptual_weight'] * self.perceptual_loss(in0=out, in1=train_batch[2])
+          writer.add_scalar('loss/perceptual', perceptual_loss_forward, self.trainer.global_step)
+          total_loss += perceptual_loss_forward
+
+        if cfg['train']['hrf_perceptual_weight'] > 0:
+          self.hrf_perceptual_loss.to(self.device)
+          hrf_perceptual_loss_forward = cfg['train']['hrf_perceptual_weight'] * self.hrf_perceptual_loss(out, train_batch[2])
+          writer.add_scalar('loss/hrf_perceptual', hrf_perceptual_loss_forward, self.trainer.global_step)
+          total_loss += hrf_perceptual_loss_forward
 
         if cfg['train']['MSE_weight'] > 0:
           MSE_forward = cfg['train']['MSE_weight']*self.MSELoss(out, train_batch[2])

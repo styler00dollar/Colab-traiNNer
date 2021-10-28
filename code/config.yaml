@@ -782,6 +782,11 @@ train:
     version: '0.1' # only version
     lpips: True
 
+    # high receptive field (HRF) perceptual loss
+    # you need to download the pretrain with
+    # wget -P /content/ http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50dilated-ppm_deepsup/encoder_epoch_20.pth
+    hrf_perceptual_weight: 1
+
     ColorLoss_weight: 0 # converts rgb to yuv and calculates l1, expected input is rgb
     FrobeniusNormLoss_weight: 0
     GradientLoss_weight: 0
