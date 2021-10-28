@@ -114,8 +114,8 @@ class DS_inpaint(Dataset):
 
         sample = torch.from_numpy(sample).permute(2, 0, 1)/255
 
-        # 35% chance of the mask being inverted
-        if random.uniform(0, 1) < 0.35:
+        # chance of the mask being inverted
+        if random.uniform(0, 1) < cfg['datasets']['train']['mask_invert_ratio']:
           mask = 1 - mask
 
         # apply mask
@@ -252,8 +252,8 @@ class DS_inpaint_tiled(Dataset):
 
         sample = torch.from_numpy(sample).permute(2, 0, 1)/255
 
-        # 35% chance of the mask being inverted
-        if random.uniform(0, 1) < 0.35:
+        # chance of the mask being inverted
+        if random.uniform(0, 1) < cfg['datasets']['train']['mask_invert_ratio']:
           mask = 1 - mask
 
         # apply mask
@@ -1055,8 +1055,8 @@ class DS_inpaint_TF(Dataset):
 
         sample = torch.from_numpy(sample).permute(2, 0, 1)/255
 
-        # 35% chance of the mask being inverted
-        if random.uniform(0, 1) < 0.35:
+        # chance of the mask being inverted
+        if random.uniform(0, 1) < cfg['datasets']['train']['mask_invert_ratio']:
           mask = 1 - mask
 
         # apply mask
