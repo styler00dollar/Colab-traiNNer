@@ -37,9 +37,9 @@ class VimeoTriplet(Dataset):
         img1 = cv2.imread(imgpaths[0])
         img2 = cv2.imread(imgpaths[1])
         img3 = cv2.imread(imgpaths[2])
-        img1 = cv2.cvtColor(img1, cv2.COLOR_RGB2YUV)
-        img2 = cv2.cvtColor(img2, cv2.COLOR_RGB2YUV)
-        img3 = cv2.cvtColor(img3, cv2.COLOR_RGB2YUV)
+        img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+        img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
+        img3 = cv2.cvtColor(img3, cv2.COLOR_BGR2RGB)
         """
         if random.random() >= 0.5:
             img1 = Image.fromarray(img1[0:0+256, 0:0+256])
@@ -94,9 +94,9 @@ class VimeoTriplet_val(Dataset):
         img1 = cv2.imread(imgpaths[0])
         img2 = cv2.imread(imgpaths[1])
         img3 = cv2.imread(imgpaths[2])
-        img1 = cv2.cvtColor(img1, cv2.COLOR_RGB2YUV)
-        img2 = cv2.cvtColor(img2, cv2.COLOR_RGB2YUV)
-        img3 = cv2.cvtColor(img3, cv2.COLOR_RGB2YUV)
+        img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+        img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
+        img3 = cv2.cvtColor(img3, cv2.COLOR_BGR2RGB)
         """
         if random.random() >= 0.5:
             img1 = Image.fromarray(img1[0:0+256, 0:0+256])
