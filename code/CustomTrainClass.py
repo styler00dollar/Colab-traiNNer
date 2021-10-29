@@ -3,7 +3,7 @@ import cv2
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
-from loss.loss import FocalFrequencyLoss, feature_matching_loss, FrobeniusNormLoss, LapLoss, CharbonnierLoss, GANLoss, GradientPenaltyLoss, HFENLoss, TVLoss, GradientLoss, ElasticLoss, RelativeL1, L1CosineSim, ClipL1, MaskedL1Loss, MultiscalePixelLoss, FFTloss, OFLoss, L1_regularization, ColorLoss, AverageLoss, GPLoss, CPLoss, SPL_ComputeWithTrace, SPLoss, Contextual_Loss, StyleLoss
+from loss.loss import OmniLoss, FocalFrequencyLoss, feature_matching_loss, FrobeniusNormLoss, LapLoss, CharbonnierLoss, GANLoss, GradientPenaltyLoss, HFENLoss, TVLoss, GradientLoss, ElasticLoss, RelativeL1, L1CosineSim, ClipL1, MaskedL1Loss, MultiscalePixelLoss, FFTloss, OFLoss, L1_regularization, ColorLoss, AverageLoss, GPLoss, CPLoss, SPL_ComputeWithTrace, SPLoss, Contextual_Loss, StyleLoss
 from loss.metrics import *
 from torchvision.utils import save_image
 from torch.autograd import Variable
@@ -718,6 +718,13 @@ class CustomTrainClass(pl.LightningModule):
 
     self.LapLoss = LapLoss()
 
+
+    # discriminator loss
+    if cfg['network_D']['discriminator_criterion'] == "omni":
+      self.discriminator_criterion = OmniLoss(margin=0.0, gamma=1.0)
+    elif cfg['network_D']['discriminator_criterion'] == "MSE":
+      self.discriminator_criterion = torch.nn.MSELoss()
+
     # metrics
     self.psnr_metric = PSNR()
     self.ssim_metric = SSIM()
@@ -1090,20 +1097,20 @@ class CustomTrainClass(pl.LightningModule):
           if cfg['network_D']['netD'] == 'resnet3d':
             # 3d
             if cfg['train']['diffaug'] == True:
-              d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(DiffAugment(torch.stack([train_batch[0], out, train_batch[1]], dim=1), cfg['train']['policy'])), fake)
+              d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.discriminator_criterion(self.netD(DiffAugment(torch.stack([train_batch[0], out, train_batch[1]], dim=1), cfg['train']['policy'])), fake)
             else:
-              d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(torch.stack([train_batch[0], out, train_batch[1]], dim=1)), fake)
+              d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.discriminator_criterion(self.netD(torch.stack([train_batch[0], out, train_batch[1]], dim=1)), fake)
 
           else:
             # 2d
             if cfg['train']['diffaug'] == True:
-              d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(DiffAugment(out, cfg['train']['policy'])), fake)
+              d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.discriminator_criterion(self.netD(DiffAugment(out, cfg['train']['policy'])), fake)
             else:
               if cfg['network_D']['netD'] == 'FFCNLayerDiscriminator':
                 FFCN_class, FFCN_feature = self.netD(out)
-                d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(FFCN_class, fake)
+                d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.discriminator_criterion(FFCN_class, fake)
               else:
-                d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.MSELoss(self.netD(out), fake)
+                d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.discriminator_criterion(self.netD(out), fake)
 
           writer.add_scalar('loss/d_loss_fool', d_loss_fool, self.trainer.global_step)
 
@@ -1125,11 +1132,11 @@ class CustomTrainClass(pl.LightningModule):
         if cfg['network_D']['netD'] == 'resnet3d':
           # 3d
           if cfg['train']['diffaug'] == True:
-            dis_real_loss = self.MSELoss(self.netD(DiffAugment(torch.stack([train_batch[0], train_batch[2], train_batch[1]], dim=1), cfg['train']['policy'])), valid)
-            dis_fake_loss = self.MSELoss(self.netD(torch.stack([train_batch[0], out, train_batch[1]], dim=1)), fake)
+            dis_real_loss = self.discriminator_criterion(self.netD(DiffAugment(torch.stack([train_batch[0], train_batch[2], train_batch[1]], dim=1), cfg['train']['policy'])), valid)
+            dis_fake_loss = self.discriminator_criterion(self.netD(torch.stack([train_batch[0], out, train_batch[1]], dim=1)), fake)
           else:
-            dis_real_loss = self.MSELoss(self.netD(torch.stack([train_batch[0], train_batch[2], train_batch[1]], dim=1)), valid)
-            dis_fake_loss = self.MSELoss(self.netD(torch.stack([train_batch[0], out, train_batch[1]], dim=1)), fake)
+            dis_real_loss = self.discriminator_criterion(self.netD(torch.stack([train_batch[0], train_batch[2], train_batch[1]], dim=1)), valid)
+            dis_fake_loss = self.discriminator_criterion(self.netD(torch.stack([train_batch[0], out, train_batch[1]], dim=1)), fake)
         else:
           # 2d
           if cfg['train']['diffaug'] == True:
@@ -1142,8 +1149,8 @@ class CustomTrainClass(pl.LightningModule):
               discr_out_fake = self.netD(out)
               discr_out_real = self.netD(train_batch[2])
 
-          dis_fake_loss = self.MSELoss(discr_out_fake, fake)
-          dis_real_loss = self.MSELoss(discr_out_real, fake)
+          dis_fake_loss = self.discriminator_criterion(discr_out_fake, fake)
+          dis_real_loss = self.discriminator_criterion(discr_out_real, fake)
 
         # Total loss
         d_loss = cfg["network_D"]["d_loss_weight"] * ((dis_real_loss + dis_fake_loss) / 2)

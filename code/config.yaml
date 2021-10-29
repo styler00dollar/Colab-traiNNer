@@ -20,7 +20,7 @@ datasets:
     # DS_video: video dataloader which has 3 frames as input (look into data/data_video.py for more details)
     # DS_inpaint_TF: takes one tfrecord file as dataset input, but the validation is still just green masked images like in DS_inpaint
 
-    mode: DS_inpaint_TF # DS_video | DS_inpaint_TF | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
+    mode: DS_inpaint # DS_video | DS_inpaint_TF | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
@@ -439,10 +439,12 @@ network_G:
 
 # Discriminator options:
 network_D:
+    discriminator_criterion: omni # omni | | MSE
+
     d_loss_fool_weight: 1 # inside the generator loop, trying to fool the disciminator
     d_loss_weight: 1 # inside own discriminator update
     
-    netD: # in case there is no discriminator, leave it empty
+    #netD: # in case there is no discriminator, leave it empty
 
     # VGG
     #netD: VGG
@@ -644,8 +646,8 @@ network_D:
     # timm
     # pip install timm
     # you can loop up models here: https://rwightman.github.io/pytorch-image-models/
-    #netD: timm
-    #timm_model: "tf_efficientnetv2_b0"
+    netD: timm
+    timm_model: "tf_efficientnetv2_b0"
 
     #netD: resnet3d
     #model_depth: 50 # [10, 18, 34, 50, 101, 152, 200]
@@ -671,10 +673,10 @@ network_D:
     #size: xxs # xxs | xs | s
 
     # because of too many parameters, a seperate config file named "hrt_config.yaml" is available
-    netD: hrt
+    #netD: hrt
 
 train: 
-    scheduler: MADGRAD # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
+    scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
     lr_g: 0.0001
     lr_d: 0.0001
     
