@@ -3,7 +3,7 @@ import cv2
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
-from loss.loss import OmniLoss, FocalFrequencyLoss, feature_matching_loss, FrobeniusNormLoss, LapLoss, CharbonnierLoss, GANLoss, GradientPenaltyLoss, HFENLoss, TVLoss, GradientLoss, ElasticLoss, RelativeL1, L1CosineSim, ClipL1, MaskedL1Loss, MultiscalePixelLoss, FFTloss, OFLoss, L1_regularization, ColorLoss, AverageLoss, GPLoss, CPLoss, SPL_ComputeWithTrace, SPLoss, Contextual_Loss, StyleLoss
+from loss.loss import FocalFrequencyLoss, feature_matching_loss, FrobeniusNormLoss, LapLoss, CharbonnierLoss, GANLoss, GradientPenaltyLoss, HFENLoss, TVLoss, GradientLoss, ElasticLoss, RelativeL1, L1CosineSim, ClipL1, MaskedL1Loss, MultiscalePixelLoss, FFTloss, OFLoss, L1_regularization, ColorLoss, AverageLoss, GPLoss, CPLoss, SPL_ComputeWithTrace, SPLoss, Contextual_Loss, StyleLoss
 from loss.metrics import *
 from torchvision.utils import save_image
 from torch.autograd import Variable
@@ -720,9 +720,7 @@ class CustomTrainClass(pl.LightningModule):
 
 
     # discriminator loss
-    if cfg['network_D']['discriminator_criterion'] == "omni":
-      self.discriminator_criterion = OmniLoss(margin=0.0, gamma=1.0)
-    elif cfg['network_D']['discriminator_criterion'] == "MSE":
+    if cfg['network_D']['discriminator_criterion'] == "MSE":
       self.discriminator_criterion = torch.nn.MSELoss()
 
     # metrics
