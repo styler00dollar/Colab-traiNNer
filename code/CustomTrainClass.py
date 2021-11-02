@@ -2,7 +2,6 @@ import yaml
 import cv2
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
-
 from loss.loss import FocalFrequencyLoss, feature_matching_loss, FrobeniusNormLoss, LapLoss, CharbonnierLoss, GANLoss, GradientPenaltyLoss, HFENLoss, TVLoss, GradientLoss, ElasticLoss, RelativeL1, L1CosineSim, ClipL1, MaskedL1Loss, MultiscalePixelLoss, FFTloss, OFLoss, L1_regularization, ColorLoss, AverageLoss, GPLoss, CPLoss, SPL_ComputeWithTrace, SPLoss, Contextual_Loss, StyleLoss
 from loss.metrics import *
 from torchvision.utils import save_image
@@ -115,6 +114,12 @@ class CustomTrainClass(pl.LightningModule):
       from arch.comodgan_arch import Generator
       self.netG = Generator(dlatent_size = cfg['network_G']['dlatent_size'], num_channels =  cfg['network_G']['num_channels'], resolution =  cfg['network_G']['resolution'], fmap_base  =  cfg['network_G']['fmap_base'], fmap_decay =  cfg['network_G']['fmap_decay'], fmap_min =  cfg['network_G']['fmap_min'], fmap_max =  cfg['network_G']['fmap_max'], randomize_noise =  cfg['network_G']['randomize_noise'], architecture =  cfg['network_G']['architecture'], nonlinearity =  cfg['network_G']['nonlinearity'], resample_kernel =  cfg['network_G']['resample_kernel'], fused_modconv =  cfg['network_G']['fused_modconv'], pix2pix =  cfg['network_G']['pix2pix'], dropout_rate =  cfg['network_G']['dropout_rate'], cond_mod =  cfg['network_G']['cond_mod'], style_mod =  cfg['network_G']['style_mod'], noise_injection =  cfg['network_G']['noise_injection'])
 
+    elif cfg['network_G']['netG'] == 'swinir':
+      from arch.swinir_arch import SwinIR
+      self.netG = SwinIR(upscale=cfg['network_G']['upscale'], in_chans=cfg['network_G']['in_chans'], img_size=cfg['network_G']['img_size'], window_size=cfg['network_G']['window_size'],
+        img_range=cfg['network_G']['img_range'], depths=cfg['network_G']['depths'], embed_dim=cfg['network_G']['embed_dim'], num_heads=cfg['network_G']['num_heads'],
+        mlp_ratio=cfg['network_G']['mlp_ratio'], upsampler=cfg['network_G']['upsampler'], resi_connection=cfg['network_G']['resi_connection'])
+      
     # Experimental
 
     #DSNetRRDB
@@ -841,7 +846,7 @@ class CustomTrainClass(pl.LightningModule):
         out = self.netG(train_batch[0], train_batch[1])
 
       # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan / SimpleFontGenerator256 / SimpleFontGenerator512
-      if cfg['network_G']['netG'] == "SimpleFontGenerator512" or cfg['network_G']['netG'] == "SimpleFontGenerator256" or cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
+      if cfg['network_G']['netG'] == "swinir" or cfg['network_G']['netG'] == "SimpleFontGenerator512" or cfg['network_G']['netG'] == "SimpleFontGenerator256" or cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
         if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
             # masked test with inpaint dataloader
             tmp = torch.cat([train_batch[0], train_batch[1]],1)
@@ -1273,7 +1278,7 @@ class CustomTrainClass(pl.LightningModule):
 
     ############################
     # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan / SimpleFontGenerator256 / SimpleFontGenerator512
-    if cfg['network_G']['netG'] == "SimpleFontGenerator512" or cfg['network_G']['netG'] == "SimpleFontGenerator256" or cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
+    if cfg['network_G']['netG'] == "swinir" or cfg['network_G']['netG'] == "SimpleFontGenerator512" or cfg['network_G']['netG'] == "SimpleFontGenerator256" or cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
       if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
           # masked test with inpaint dataloader
           tmp = torch.cat([train_batch[0], train_batch[1]],1)
