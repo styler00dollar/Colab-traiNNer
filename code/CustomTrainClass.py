@@ -7,6 +7,7 @@ from loss.metrics import *
 from torchvision.utils import save_image
 from torch.autograd import Variable
 import pytorch_lightning as pl
+from piq import SSIMLoss, MultiScaleSSIMLoss, VIFLoss, FSIMLoss, GMSDLoss, MultiScaleGMSDLoss, VSILoss, HaarPSILoss, MDSILoss, BRISQUELoss, PieAPP, DISTS, IS, FID, GS, KID, MSID, PR
 
 from tensorboardX import SummaryWriter
 writer = SummaryWriter(logdir=cfg['path']['log_path'])
@@ -723,6 +724,25 @@ class CustomTrainClass(pl.LightningModule):
 
     self.LapLoss = LapLoss()
 
+    # piq loss
+    self.SSIMLoss = SSIMLoss()
+    self.MultiScaleSSIMLoss = MultiScaleSSIMLoss()
+    self.VIFLoss = VIFLoss()
+    self.FSIMLoss = FSIMLoss()
+    self.GMSDLoss = GMSDLoss()
+    self.MultiScaleGMSDLoss = MultiScaleGMSDLoss()
+    self.VSILoss = VSILoss()
+    self.HaarPSILoss = HaarPSILoss()
+    self.MDSILoss = MDSILoss()
+    self.BRISQUELoss = BRISQUELoss()
+    self.PieAPP = PieAPP(enable_grad=True)
+    self.DISTS = DISTS()
+    self.IS = IS()
+    self.FID = FID()
+    self.GS = GS()
+    self.KID = KID()
+    self.MSID = MSID()
+    self.PR = PR()
 
     # discriminator loss
     if cfg['network_D']['discriminator_criterion'] == "MSE":
@@ -1024,6 +1044,96 @@ class CustomTrainClass(pl.LightningModule):
           FFLoss_forward = cfg['train']['FFLoss_weight']*(self.FFLoss(out, train_batch[2]))
           total_loss += FFLoss_forward
           writer.add_scalar('loss/FFLoss', FFLoss_forward, self.trainer.global_step)
+
+        if cfg['train']['SSIMLoss_weight'] > 0:
+          SSIMLoss_forward = cfg['train']['SSIMLoss_weight']*(self.SSIMLoss(out, train_batch[2]))
+          total_loss += SSIMLoss_forward
+          writer.add_scalar('loss/SSIM', SSIMLoss_forward, self.trainer.global_step)
+
+        if cfg['train']['MultiScaleSSIMLoss_weight'] > 0:
+          MultiScaleSSIMLoss_forward = cfg['train']['MultiScaleSSIMLoss_weight']*(self.MultiScaleSSIMLoss(out, train_batch[2]))
+          total_loss += MultiScaleSSIMLoss_forward
+          writer.add_scalar('loss/MultiScaleSSIM', MultiScaleSSIMLoss_forward, self.trainer.global_step)
+
+        if cfg['train']['VIFLoss_weight'] > 0:
+          VIFLoss_forward = cfg['train']['VIFLoss_weight']*(self.VIFLoss(out, train_batch[2]))
+          total_loss += VIFLoss_forward
+          writer.add_scalar('loss/VIF', VIFLoss_forward, self.trainer.global_step)
+
+        if cfg['train']['FSIMLoss_weight'] > 0:
+          FSIMLoss_forward = cfg['train']['FSIMLoss_weight']*(self.FSIMLoss(out, train_batch[2]))
+          total_loss += FSIMLoss_forward
+          writer.add_scalar('loss/FSIM', FSIMLoss_forward, self.trainer.global_step)
+
+        if cfg['train']['GMSDLoss_weight'] > 0:
+          GMSDLoss_forward = cfg['train']['GMSDLoss_weight']*(self.GMSDLoss(out, train_batch[2]))
+          total_loss += GMSDLoss_forward
+          writer.add_scalar('loss/GMSD', GMSDLoss_forward, self.trainer.global_step)
+
+        if cfg['train']['MultiScaleGMSDLoss_weight'] > 0:
+          MultiScaleGMSDLoss_forward = cfg['train']['MultiScaleGMSDLoss_weight']*(self.MultiScaleGMSDLoss(out, train_batch[2]))
+          total_loss += MultiScaleGMSDLoss_forward
+          writer.add_scalar('loss/MultiScaleGMSD', MultiScaleGMSDLoss_forward, self.trainer.global_step)
+
+        if cfg['train']['VSILoss_weight'] > 0:
+          VSILoss_forward = cfg['train']['VSILoss_weight']*(self.VSILoss(out, train_batch[2]))
+          total_loss += VSILoss_forward
+          writer.add_scalar('loss/VSI', VSILoss_forward, self.trainer.global_step)
+
+        if cfg['train']['HaarPSILoss_weight'] > 0:
+          HaarPSILoss_forward = cfg['train']['HaarPSILoss_weight']*(self.HaarPSILoss(out, train_batch[2]))
+          total_loss += HaarPSILoss_forward
+          writer.add_scalar('loss/HaarPSI', HaarPSILoss_forward, self.trainer.global_step)
+        
+        if cfg['train']['MDSILoss_weight'] > 0:
+          MDSILoss_forward = cfg['train']['MDSILoss_weight']*(self.MDSILoss(out, train_batch[2]))
+          total_loss += MDSILoss_forward
+          writer.add_scalar('loss/DSI', MDSILoss_forward, self.trainer.global_step)
+
+        if cfg['train']['BRISQUELoss_weight'] > 0:
+          BRISQUELoss_forward = cfg['train']['BRISQUELoss_weight']*(self.BRISQUELoss(out))
+          total_loss += BRISQUELoss_forward
+          writer.add_scalar('loss/BRISQUE', BRISQUELoss_forward, self.trainer.global_step)
+
+        if cfg['train']['PieAPP_weight'] > 0:
+          PieAPP_forward = cfg['train']['PieAPP_weight']*(self.PieAPP(out, train_batch[2]))
+          total_loss += PieAPP_forward
+          writer.add_scalar('loss/PieAPP', PieAPP_forward, self.trainer.global_step)
+
+        if cfg['train']['DISTS_weight'] > 0:
+          DISTS_forward = cfg['train']['DISTS_weight']*(self.DISTS(out, train_batch[2]))
+          total_loss += DISTS_forward
+          writer.add_scalar('loss/DISTS', DISTS_forward, self.trainer.global_step)
+
+        if cfg['train']['IS_weight'] > 0:
+          IS_forward = cfg['train']['IS_weight']*self.IS(self.IS.compute_feats(out), self.IS.compute_feats(train_batch[2]))
+          total_loss += IS_forward
+          writer.add_scalar('loss/IS', IS_forward, self.trainer.global_step)
+
+        if cfg['train']['FID_weight'] > 0:
+          FID_forward = cfg['train']['FID_weight']*self.FID(self.FID.compute_feats(out), self.FID.compute_feats(train_batch[2]))
+          total_loss += FID_forward
+          writer.add_scalar('loss/FID', FID_forward, self.trainer.global_step)
+
+        if cfg['train']['GS_weight'] > 0:
+          GS_forward = cfg['train']['GS_weight']*self.GS(self.GS.compute_feats(out), self.GS.compute_feats(train_batch[2]))
+          total_loss += GS_forward
+          writer.add_scalar('loss/GS', GS_forward, self.trainer.global_step)
+
+        if cfg['train']['KID_weight'] > 0:
+          KID_forward = cfg['train']['KID_weight']*self.KID(self.KID.compute_feats(out), self.KID.compute_feats(train_batch[2]))
+          total_loss += KID_forward
+          writer.add_scalar('loss/KID', KID_forward, self.trainer.global_step)
+
+        if cfg['train']['MSID_weight'] > 0:
+          MSID_forward = cfg['train']['MSID_weight']*self.MSID(self.MSID.compute_feats(out), self.MSID.compute_feats(train_batch[2]))
+          total_loss += MSID_forward
+          writer.add_scalar('loss/MSID', MSID_forward, self.trainer.global_step)
+
+        if cfg['train']['PR_weight'] > 0:
+          PR_forward = cfg['train']['PR_weight']*self.PR(self.PR.compute_feats(out), self.PR.compute_feats(train_batch[2]))
+          total_loss += PR_forward
+          writer.add_scalar('loss/PR', PR_forward, self.trainer.global_step)
 
         #########################
         # exotic loss
