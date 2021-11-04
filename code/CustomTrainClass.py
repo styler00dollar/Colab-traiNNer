@@ -7,7 +7,7 @@ from loss.metrics import *
 from torchvision.utils import save_image
 from torch.autograd import Variable
 import pytorch_lightning as pl
-from piq import SSIMLoss, MultiScaleSSIMLoss, VIFLoss, FSIMLoss, GMSDLoss, MultiScaleGMSDLoss, VSILoss, HaarPSILoss, MDSILoss, BRISQUELoss, PieAPP, DISTS, IS, FID, GS, KID, MSID, PR
+from piq import SSIMLoss, MultiScaleSSIMLoss, VIFLoss, FSIMLoss, GMSDLoss, MultiScaleGMSDLoss, VSILoss, HaarPSILoss, MDSILoss, BRISQUELoss, PieAPP, DISTS, IS, FID, KID, MSID, PR
 
 from tensorboardX import SummaryWriter
 writer = SummaryWriter(logdir=cfg['path']['log_path'])
@@ -739,7 +739,6 @@ class CustomTrainClass(pl.LightningModule):
     self.DISTS = DISTS()
     self.IS = IS()
     self.FID = FID()
-    self.GS = GS()
     self.KID = KID()
     self.MSID = MSID()
     self.PR = PR()
@@ -1115,11 +1114,6 @@ class CustomTrainClass(pl.LightningModule):
           total_loss += FID_forward
           writer.add_scalar('loss/FID', FID_forward, self.trainer.global_step)
 
-        if cfg['train']['GS_weight'] > 0:
-          GS_forward = cfg['train']['GS_weight']*self.GS(self.GS.compute_feats(out), self.GS.compute_feats(train_batch[2]))
-          total_loss += GS_forward
-          writer.add_scalar('loss/GS', GS_forward, self.trainer.global_step)
-
         if cfg['train']['KID_weight'] > 0:
           KID_forward = cfg['train']['KID_weight']*self.KID(self.KID.compute_feats(out), self.KID.compute_feats(train_batch[2]))
           total_loss += KID_forward
@@ -1131,7 +1125,7 @@ class CustomTrainClass(pl.LightningModule):
           writer.add_scalar('loss/MSID', MSID_forward, self.trainer.global_step)
 
         if cfg['train']['PR_weight'] > 0:
-          PR_forward = cfg['train']['PR_weight']*self.PR(self.PR.compute_feats(out), self.PR.compute_feats(train_batch[2]))
+          PR_forward = cfg['train']['PR_weight']*(self.PR(self.PR.compute_feats(out), self.PR.compute_feats(train_batch[2]))**-1)
           total_loss += PR_forward
           writer.add_scalar('loss/PR', PR_forward, self.trainer.global_step)
 

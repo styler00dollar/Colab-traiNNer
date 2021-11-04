@@ -844,7 +844,6 @@ train:
     # may be changed in the future, to have custom feature extractors
     IS_weight: 0 
     FID_weight: 1 
-    GS_weight: 0 
     KID_weight: 0 
     MSID_weight: 0 
     PR_weight: 0
