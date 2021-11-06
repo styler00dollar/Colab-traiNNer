@@ -794,7 +794,7 @@ train:
     StyleLoss_weight: 0
 
     # PerceptualLoss
-    perceptual_weight: 0
+    perceptual_weight: 1
     net: PNetLin # PNetLin, DSSIM (?)
     pnet_type: 'vgg' # alex, squeeze, vgg
     pnet_rand: False
@@ -803,11 +803,13 @@ train:
     spatial: False
     version: '0.1' # only version
     lpips: True
+    force_fp16_perceptual: True # not supported for cpu
 
     # high receptive field (HRF) perceptual loss
     # you can download it manually with this command, but the code will download it automatically if you don't have it
     # wget -P /content/ http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50dilated-ppm_deepsup/encoder_epoch_20.pth
-    hrf_perceptual_weight: 0
+    hrf_perceptual_weight: 1
+    force_fp16_hrf: True # not supported for cpu
 
     ColorLoss_weight: 0 # converts rgb to yuv and calculates l1, expected input is rgb
     FrobeniusNormLoss_weight: 0

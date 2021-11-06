@@ -706,10 +706,16 @@ class CustomTrainClass(pl.LightningModule):
     for param in self.perceptual_loss.parameters():
       param.requires_grad = False
 
+    if cfg['train']['force_fp16_perceptual'] == True:
+      self.perceptual_loss = self.perceptual_loss.half()
+
     from arch.hrf_perceptual import ResNetPL
     self.hrf_perceptual_loss = ResNetPL()
     for param in self.hrf_perceptual_loss.parameters():
       param.requires_grad = False
+
+    if cfg['train']['force_fp16_hrf'] == True:
+      self.hrf_perceptual_loss = self.hrf_perceptual_loss.half()
 
     self.ColorLoss = ColorLoss()
     self.FrobeniusNormLoss = FrobeniusNormLoss()
@@ -979,13 +985,19 @@ class CustomTrainClass(pl.LightningModule):
 
         if cfg['train']['perceptual_weight'] > 0:
           self.perceptual_loss.to(self.device)
-          perceptual_loss_forward = cfg['train']['perceptual_weight'] * self.perceptual_loss(in0=out, in1=train_batch[2])
+          if cfg['train']['force_fp16_perceptual'] == True:
+            perceptual_loss_forward = cfg['train']['perceptual_weight'] * self.perceptual_loss(in0=out.half(), in1=train_batch[2].half())
+          else:
+            perceptual_loss_forward = cfg['train']['perceptual_weight'] * self.perceptual_loss(in0=out, in1=train_batch[2])
           writer.add_scalar('loss/perceptual', perceptual_loss_forward, self.trainer.global_step)
           total_loss += perceptual_loss_forward
 
         if cfg['train']['hrf_perceptual_weight'] > 0:
           self.hrf_perceptual_loss.to(self.device)
-          hrf_perceptual_loss_forward = cfg['train']['hrf_perceptual_weight'] * self.hrf_perceptual_loss(out, train_batch[2])
+          if cfg['train']['force_fp16_hrf'] == True:
+            hrf_perceptual_loss_forward = cfg['train']['hrf_perceptual_weight'] * self.hrf_perceptual_loss(out.half(), train_batch[2].half())
+          else:
+            hrf_perceptual_loss_forward = cfg['train']['hrf_perceptual_weight'] * self.hrf_perceptual_loss(out, train_batch[2])
           writer.add_scalar('loss/hrf_perceptual', hrf_perceptual_loss_forward, self.trainer.global_step)
           total_loss += hrf_perceptual_loss_forward
 
