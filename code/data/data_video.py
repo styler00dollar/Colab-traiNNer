@@ -9,6 +9,21 @@ import random
 import cv2
 import torchvision.transforms.functional as TF
 import glob
+import yaml
+
+with open("config.yaml", "r") as ymlfile:
+    cfg = yaml.safe_load(ymlfile)
+
+if cfg['datasets']['train']['mode'] == "DS_video_direct":
+  from nvidia.dali import pipeline_def, fn
+  from nvidia.dali.plugin.pytorch import feed_ndarray
+  from nvidia.dali.plugin.pytorch import DALIGenericIterator
+
+  @pipeline_def(batch_size=1, num_threads=cfg['datasets']['train']['pipeline_threads'], device_id=0)
+  def pipe_gds():
+    data = fn.readers.numpy(device='gpu', file_root=cfg['datasets']['train']['dataroot_HR'])
+    return data
+
 
 class VimeoTriplet(Dataset):
     def __init__(self, data_root):
@@ -22,7 +37,7 @@ class VimeoTriplet(Dataset):
 
         # for subfolders
         self.samples = [item for sublist in self.samples for item in sublist]
-        #self.samples = upper_folders
+        self.samples = upper_folders
 
         self.transforms = transforms.Compose([
             transforms.ToTensor()
@@ -32,7 +47,7 @@ class VimeoTriplet(Dataset):
         return len(self.samples)
 
     def __getitem__(self, index):
-        imgpaths = [self.samples[index] + '/im1.png', self.samples[index] + '/im2.png', self.samples[index] + '/im3.png']
+        imgpaths = [self.samples[index] + '/frame1.jpg', self.samples[index] + '/frame2.jpg', self.samples[index] + '/frame3.jpg']
         # Load images
         img1 = cv2.imread(imgpaths[0])
         img2 = cv2.imread(imgpaths[1])
@@ -50,9 +65,9 @@ class VimeoTriplet(Dataset):
             img2 = Image.fromarray(img2[0:0+256, 192:256+256])
             img3 = Image.fromarray(img3[0:0+256, 192:256+256])
         """
-        img1 = cv2.resize(img1, (256, 256))
-        img2 = cv2.resize(img2, (256, 256))
-        img3 = cv2.resize(img3, (256, 256))
+        img1 = cv2.resize(img1, (1280, 720))
+        img2 = cv2.resize(img2, (1280, 720))
+        img3 = cv2.resize(img3, (1280, 720))
 
         # Data augmentation COLOR_YUV_I4202RGB
         img1 = self.transforms(img1)
@@ -64,6 +79,21 @@ class VimeoTriplet(Dataset):
         #imgs = [img1, img2, img3]
 
         return img1, img3, img2
+
+
+class VimeoTripletDirect(Dataset):
+    def __init__(self, data_root):
+        self.p = pipe_gds()
+        print(self.p)
+        self.p.build()
+        self.dali_iter = DALIGenericIterator(self.p, ['data']) #, reader_name='Reader')
+
+    def __len__(self):
+        return len(glob.glob(cfg['datasets']['train']['dataroot_HR'] + '/**/*.npy', recursive=True))
+
+    def __getitem__(self, index):
+        pipe_out = next(self.dali_iter)
+        return pipe_out[0]['data'].squeeze(0)[0], pipe_out[0]['data'].squeeze(0)[1], pipe_out[0]['data'].squeeze(0)[2]
 
 
 class VimeoTriplet_val(Dataset):
@@ -89,7 +119,7 @@ class VimeoTriplet_val(Dataset):
         return len(self.samples)
 
     def __getitem__(self, index):
-        imgpaths = [self.samples[index] + '/im1.jpg', self.samples[index] + '/im2.jpg', self.samples[index] + '/im3.jpg']
+        imgpaths = [self.samples[index] + '/frame1.jpg', self.samples[index] + '/frame2.jpg', self.samples[index] + '/frame3.jpg']
         # Load images
         img1 = cv2.imread(imgpaths[0])
         img2 = cv2.imread(imgpaths[1])

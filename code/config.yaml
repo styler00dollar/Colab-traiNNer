@@ -1,48 +1,46 @@
 name: template
 scale: 1
-gpus: 0 # amount of gpus, 0 = cpu
+gpus: 1 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
 use_amp: False
 use_swa: False
 progress_bar_refresh_rate: 20
-default_root_dir: '/content'
+default_root_dir: '/home/Desktop/test'
 
 # Dataset options:
 datasets:
   train:
     # DS_inpaint: hr is from dataroot_HR, loads masks
-    # DS_inpaint_tiled: hr is from dataroot_HR, but images are grids, loads masks
-    # DS_inpaint_tiled_batch: hr is from dataroot_HR, but images are grids and processed as a batch (batch_size_DL), loads masks
     # DS_lrhr: loads lr from dataroot_LR and hr from dataroot_HR
-    # DS_lrhr_batch_oft: loads grayscale-hr (3x3 400px) from dataroot_LR and generates lr by downscaling otf randomly
     # DS_video: video dataloader which has 3 frames as input (look into data/data_video.py for more details)
     # DS_inpaint_TF: takes one tfrecord file as dataset input, but the validation is still just green masked images like in DS_inpaint
+    # DS_video_direct: direcly copy .npy files into GPU and avoiding CPU processing (upgrade to newest nvidia drivers and cuda, linux only)
+    # only works with n_workers = 0, use pipeline_threads instead
+    # pip install --extra-index-url https://developer.download.nvidia.com/compute/redist --upgrade nvidia-dali-cuda110
 
-    mode: DS_inpaint # DS_video | DS_inpaint_TF | DS_inpaint | DS_inpaint_tiled | DS_inpaint_tiled_batch | DS_lrhr | DS_lrhr_batch_oft
+    mode: DS_video_direct # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
-    dataroot_HR: '/content/hr' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_HR: '/home/Desktop/npy' # Original, with a single directory. Inpainting will use this directory as source image.
     dataroot_LR: '/content/hr' # Original, with a single directory
     loading_backend: 'PIL' # PIL, OpenCV (currently only in DS_inpaint_tiled_batch)
 
-    n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
-    batch_size: 1
+    n_workers: 0 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
+    pipeline_threads: 16 # only for DS_video_direct
+    batch_size: 3
     
-    # the inpainting dataloaders "DS_inpaint_tiled | DS_inpaint_tiled_batch" randomly crop images out of a grid x-amount of times and return a 
-    # batch created from one image (dataloader assume grid images and you must have batch_size: 1, the batch size during training will be determined 
-    # by the amount of random crops of one image)
-    batch_size_DL: 1 
+    # does not apply to video dataloaders, look into python file instead
     HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
     masks: '/content/masks/'
     mask_invert_ratio: 0.3 # 0.3 = 30% of masks will be inverted
     max_epochs: 2000
-    save_step_frequency: 50 # also validation frequency
+    save_step_frequency: 5000 # also validation frequency
 
     # batch
     # If a tiled dataloader is used, specify image charactaristics. Random crop will not be applied. Maybe in the future.
@@ -54,16 +52,16 @@ datasets:
     canny_max: 150
 
   val:
-    dataroot_HR: '/content/val_hr/'
-    dataroot_LR: '/content/val_hr/' # Inpainting will use this directory as input
+    dataroot_HR: '/home/Desktop/test_input'
+    dataroot_LR: '/home/Desktop/test_input' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: 
+    pretrain_model_G: "/home/Downloads/rvpV1_105661_G.pth"
     pretrain_model_D: 
     checkpoint_path:
-    checkpoint_save_path: '/content/'
-    validation_output_path: '/content/val/'
-    log_path: '/content/logs'
+    checkpoint_save_path: '/home/Desktop/test'
+    validation_output_path: '/home/Desktop/test/val'
+    log_path: '/home/Desktop/test/logs'
 
 # Generator options:
 network_G:
@@ -277,18 +275,18 @@ network_G:
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
-    netG: DFNet
-    c_img: 3
-    c_mask: 1
-    c_alpha: 3
-    mode: nearest
-    norm: batch
-    act_en: relu
-    act_de: leaky_relu
-    en_ksize: [7, 5, 5, 3, 3, 3, 3, 3]
-    de_ksize: [3, 3, 3, 3, 3, 3, 3, 3]
-    blend_layers: [0, 1, 2, 3, 4, 5]
-    conv_type: normal # partial | normal | deform
+    #netG: DFNet
+    #c_img: 3
+    #c_mask: 1
+    #c_alpha: 3
+    #mode: nearest
+    #norm: batch
+    #act_en: relu
+    #act_de: leaky_relu
+    #en_ksize: [7, 5, 5, 3, 3, 3, 3, 3]
+    #de_ksize: [3, 3, 3, 3, 3, 3, 3, 3]
+    #blend_layers: [0, 1, 2, 3, 4, 5]
+    #conv_type: normal # partial | normal | deform
     
 
     # EdgeConnect (2019)
@@ -432,13 +430,13 @@ network_G:
 
     # ----Interpolation Generators----
     # cain (2020)
-    #netG: CAIN
-    #depth: 3
-    #conv: MBConv # doconv | conv2d | gated | TBC | dynamic | MBConv
-    #RG: 2 # ResidualGroup amount
+    netG: CAIN
+    depth: 3
+    conv: conv2d # doconv | conv2d | gated | TBC | dynamic | MBConv
+    RG: 2 # ResidualGroup amount
     # for dynamic
-    #nof_kernels: 4
-    #reduce: 4
+    nof_kernels: 4
+    reduce: 4
 
     # rife 3.8
     #netG: rife
@@ -715,7 +713,7 @@ train:
     ############################
 
     # Losses:
-    L1Loss_weight: 0
+    L1Loss_weight: 1
 
     # HFENLoss
     HFEN_weight: 0
@@ -794,7 +792,7 @@ train:
     StyleLoss_weight: 0
 
     # PerceptualLoss
-    perceptual_weight: 1
+    perceptual_weight: 0
     net: PNetLin # PNetLin, DSSIM (?)
     pnet_type: 'vgg' # alex, squeeze, vgg
     pnet_rand: False
@@ -808,7 +806,7 @@ train:
     # high receptive field (HRF) perceptual loss
     # you can download it manually with this command, but the code will download it automatically if you don't have it
     # wget -P /content/ http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50dilated-ppm_deepsup/encoder_epoch_20.pth
-    hrf_perceptual_weight: 1
+    hrf_perceptual_weight: 0
     force_fp16_hrf: True # not supported for cpu
 
     ColorLoss_weight: 0 # converts rgb to yuv and calculates l1, expected input is rgb
@@ -845,7 +843,7 @@ train:
     # the losses below require a GPU
     # may be changed in the future, to have custom feature extractors
     IS_weight: 0 
-    FID_weight: 1 
+    FID_weight: 0
     KID_weight: 0 
     MSID_weight: 0 
     PR_weight: 0

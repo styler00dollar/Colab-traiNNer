@@ -802,14 +802,6 @@ class CustomTrainClass(pl.LightningModule):
       # train_batch[1] = 3st frame
       # train_batch[2] = 2st frame, gets generated
 
-      if cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch' or cfg['datasets']['train']['mode'] == 'DS_lrhr_batch_oft':
-        # reducing dimension
-        train_batch[0] = torch.squeeze(train_batch[0], 0)
-        train_batch[1] = torch.squeeze(train_batch[1], 0)
-        train_batch[2] = torch.squeeze(train_batch[2], 0)
-        if cfg['network_G']['netG'] == 'CTSDG':
-          train_batch[3] = torch.squeeze(train_batch[3], 0)
-
       # train generator
       ############################
       if cfg['network_G']['netG'] == 'CTSDG':
