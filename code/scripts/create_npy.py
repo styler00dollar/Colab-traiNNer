@@ -2,6 +2,7 @@ import cv2
 import glob
 import numpy as np
 import os
+from tqdm import tqdm
 data_root = "/home/bro/Desktop/input/"
 dest_dir = "/home/bro/Desktop/npy/"
 
@@ -10,7 +11,7 @@ upper_folders = glob.glob(data_root + "/*/")
 samples = upper_folders
 
 count = 0
-for f in samples:
+for f in tqdm(samples):
   imgpaths = [f + '/frame1.jpg', f + '/frame2.jpg', f + '/frame3.jpg']
 
   img1 = cv2.imread(imgpaths[0])

@@ -93,7 +93,10 @@ class VimeoTripletDirect(Dataset):
 
     def __getitem__(self, index):
         pipe_out = next(self.dali_iter)
-        return pipe_out[0]['data'].squeeze(0)[0], pipe_out[0]['data'].squeeze(0)[1], pipe_out[0]['data'].squeeze(0)[2]
+        if random.random() >= 0.5:
+            return pipe_out[0]['data'].squeeze(0)[2], pipe_out[0]['data'].squeeze(0)[1], pipe_out[0]['data'].squeeze(0)[0]
+        else:
+            return pipe_out[0]['data'].squeeze(0)[0], pipe_out[0]['data'].squeeze(0)[1], pipe_out[0]['data'].squeeze(0)[2]
 
 
 class VimeoTriplet_val(Dataset):
