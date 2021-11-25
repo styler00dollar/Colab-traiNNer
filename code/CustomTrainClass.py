@@ -296,6 +296,14 @@ class CustomTrainClass(pl.LightningModule):
       from arch.lama_arch import FFCResNetGenerator
       self.netG = FFCResNetGenerator(4, 3)
 
+    elif cfg['network_G']['netG'] ==  "ESRT":
+      from arch.ESRT_arch import ESRT
+      self.netG = ESRT(hiddenDim=cfg['network_G']['hiddenDim'], mlpDim=cfg['network_G']['mlpDim'], scaleFactor=cfg['scale'])
+
+    elif cfg['network_G']['netG'] == 'sepconv_enhanced':
+      from arch.sepconv_enhanced_arch import Network
+      self.netG = Network()
+
     if cfg['path']['checkpoint_path'] is None and cfg['network_G']['netG'] != 'GLEAN' and cfg['network_G']['netG'] != 'srflow' and cfg['network_G']['netG'] != 'GFPGAN':
       if self.global_step == 0:
       #if self.trainer.global_step == 0:
@@ -859,11 +867,11 @@ class CustomTrainClass(pl.LightningModule):
 
       ############################
       # if frame interpolation
-      if cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':
+      if cfg['network_G']['netG'] == "sepconv_enhanced" or cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':
         out = self.netG(train_batch[0], train_batch[1])
 
-      # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan / SimpleFontGenerator256 / SimpleFontGenerator512
-      if cfg['network_G']['netG'] == "swinir" or cfg['network_G']['netG'] == "SimpleFontGenerator512" or cfg['network_G']['netG'] == "SimpleFontGenerator256" or cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
+      # ESRT / swinir / lightweight_gan / RRDB_net / GLEAN / GPEN / comodgan
+      if cfg['network_G']['netG'] == "ESRT" or cfg['network_G']['netG'] == "swinir" or cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
         if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
             # masked test with inpaint dataloader
             tmp = torch.cat([train_batch[0], train_batch[1]],1)
@@ -1044,7 +1052,7 @@ class CustomTrainClass(pl.LightningModule):
           writer.add_scalar('loss/SPLoss', SPLoss_forward, self.trainer.global_step)
 
         if cfg['train']['FFLoss_weight'] > 0:
-          FFLoss_forward = cfg['train']['FFLoss_weight']*(self.FFLoss(out, train_batch[2]))
+          FFLoss_forward = cfg['train']['FFLoss_weight']*(self.FFLoss(out.type(torch.cuda.FloatTensor), train_batch[2].type(torch.cuda.FloatTensor)))
           total_loss += FFLoss_forward
           writer.add_scalar('loss/FFLoss', FFLoss_forward, self.trainer.global_step)
 
@@ -1227,7 +1235,11 @@ class CustomTrainClass(pl.LightningModule):
 
         if cfg['network_D']['netD'] == 'FFCNLayerDiscriminator' and cfg['network_D']['FFCN_feature_weight'] > 0:
           FFCN_class_orig, FFCN_feature_orig = self.netD(train_batch[2])
-          feature_matching_loss_forward = cfg['network_D']['FFCN_feature_weight'] * feature_matching_loss(FFCN_feature, FFCN_feature_orig, train_batch[1])
+          # dont give mask if it's not available
+          if cfg['network_G']['netG'] == "sepconv_enhanced" or cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':
+            feature_matching_loss_forward = cfg['network_D']['FFCN_feature_weight'] * feature_matching_loss(FFCN_feature, FFCN_feature_orig)
+          else:
+            feature_matching_loss_forward = cfg['network_D']['FFCN_feature_weight'] * feature_matching_loss(FFCN_feature, FFCN_feature_orig, train_batch[1])
           total_loss += feature_matching_loss_forward
           writer.add_scalar('loss/feature_matching_loss', feature_matching_loss_forward, self.trainer.global_step)
 
@@ -1344,7 +1356,7 @@ class CustomTrainClass(pl.LightningModule):
       out = train_batch[0]*(train_batch[1])+out*(1-train_batch[1])
 
     # if frame interpolation
-    if cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':
+    if cfg['network_G']['netG'] == "sepconv_enhanced" or cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':
       out = self.netG(train_batch[0][0], train_batch[0][1])
 
     #########################
@@ -1385,8 +1397,8 @@ class CustomTrainClass(pl.LightningModule):
       out = self.netG(train_batch[0])
 
     ############################
-    # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan / SimpleFontGenerator256 / SimpleFontGenerator512
-    if cfg['network_G']['netG'] == "swinir" or cfg['network_G']['netG'] == "SimpleFontGenerator512" or cfg['network_G']['netG'] == "SimpleFontGenerator256" or cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
+    # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan / ESRT
+    if cfg['network_G']['netG'] == "ESRT" or cfg['network_G']['netG'] == "swinir" or cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
       if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
           # masked test with inpaint dataloader
           tmp = torch.cat([train_batch[0], train_batch[1]],1)
@@ -1449,7 +1461,7 @@ class CustomTrainClass(pl.LightningModule):
       filename = os.path.splitext(filename_with_extention)[0]
 
       # if its yuv (cain), currently only supports batch_size 1
-      if cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife':
+      if cfg['network_G']['netG'] == "sepconv_enhanced" or cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife':
         out = out.data.mul(255).mul(255 / 255).clamp(0, 255).round()
         out = out.squeeze(0).permute(1, 2, 0).cpu().numpy() #*255
         out = out.astype(np.uint8)

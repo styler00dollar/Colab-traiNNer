@@ -4,10 +4,10 @@ gpus: 1 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
-use_amp: False
+use_amp: True
 use_swa: False
 progress_bar_refresh_rate: 20
-default_root_dir: '/home/Desktop/test'
+default_root_dir: '/content/'
 
 # Dataset options:
 datasets:
@@ -20,18 +20,18 @@ datasets:
     # only works with n_workers = 0, use pipeline_threads instead
     # pip install --extra-index-url https://developer.download.nvidia.com/compute/redist --upgrade nvidia-dali-cuda110
 
-    mode: DS_video_direct # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr
+    mode: DS_video # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
-    dataroot_HR: '/home/Desktop/npy' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/hr' # Original, with a single directory
+    dataroot_HR: '/content/cain_dataset/sequences/train/' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/content/cain_dataset/sequences/train/' # Original, with a single directory
     loading_backend: 'PIL' # PIL, OpenCV (currently only in DS_inpaint_tiled_batch)
 
-    n_workers: 0 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
+    n_workers: 2 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     pipeline_threads: 16 # only for DS_video_direct
-    batch_size: 3
+    batch_size: 35
     
     # does not apply to video dataloaders, look into python file instead
     HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
@@ -52,16 +52,16 @@ datasets:
     canny_max: 150
 
   val:
-    dataroot_HR: '/home/Desktop/test_input'
-    dataroot_LR: '/home/Desktop/test_input' # Inpainting will use this directory as input
+    dataroot_HR: '/content/'
+    dataroot_LR: '/content/' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: "/home/Downloads/rvpV1_105661_G.pth"
+    pretrain_model_G: "/content/model.pth"
     pretrain_model_D: 
     checkpoint_path:
-    checkpoint_save_path: '/home/Desktop/test'
-    validation_output_path: '/home/Desktop/test/val'
-    log_path: '/home/Desktop/test/logs'
+    checkpoint_save_path: '/content/'
+    validation_output_path: '/content/val'
+    log_path: '/content/logs'
 
 # Generator options:
 network_G:
@@ -273,6 +273,11 @@ network_G:
     #upsampler: 'pixelshuffle'
     #resi_connection: '1conv'
 
+    # ESRT (2021)
+    netG: ESRT
+    hiddenDim: 32
+    mlpDim: 128
+    
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
     #netG: DFNet
@@ -430,13 +435,13 @@ network_G:
 
     # ----Interpolation Generators----
     # cain (2020)
-    netG: CAIN
-    depth: 3
-    conv: conv2d # doconv | conv2d | gated | TBC | dynamic | MBConv
-    RG: 2 # ResidualGroup amount
+    #netG: CAIN
+    #depth: 3
+    #conv: conv2d # doconv | conv2d | gated | TBC | dynamic | MBConv
+    #RG: 2 # ResidualGroup amount
     # for dynamic
-    nof_kernels: 4
-    reduce: 4
+    #nof_kernels: 4
+    #reduce: 4
 
     # rife 3.8
     #netG: rife
@@ -450,6 +455,9 @@ network_G:
     # EDSC (2021) (2^x image size)
     # pip install cupy
     #netG: EDSC
+
+    # sepconv enhanced (2021) (needs cupy)
+    #netG: sepconv_enhanced
 
 # Discriminator options:
 network_D:
@@ -691,7 +699,7 @@ network_D:
 
 train: 
     scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
-    lr_g: 0.000001
+    lr_g: 0.00001 # 0.00005
     lr_d: 0.0001
     
     # AdamP, AGDP, MADGRAD, cosangulargrad, tanangulargrad

@@ -65,9 +65,10 @@ class VimeoTriplet(Dataset):
             img2 = Image.fromarray(img2[0:0+256, 192:256+256])
             img3 = Image.fromarray(img3[0:0+256, 192:256+256])
         """
-        img1 = cv2.resize(img1, (1280, 720))
-        img2 = cv2.resize(img2, (1280, 720))
-        img3 = cv2.resize(img3, (1280, 720))
+        factor = 1
+        img1 = cv2.resize(img1, (int(1280*factor-(1280*factor)%8), int(1280*factor-(1280*factor)%8)))
+        img2 = cv2.resize(img2, (int(1280*factor-(1280*factor)%8), int(1280*factor-(1280*factor)%8)))
+        img3 = cv2.resize(img3, (int(1280*factor-(1280*factor)%8), int(1280*factor-(1280*factor)%8)))
 
         # Data augmentation COLOR_YUV_I4202RGB
         img1 = self.transforms(img1)

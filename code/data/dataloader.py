@@ -67,6 +67,13 @@ class DFNetDataModule(pl.LightningDataModule):
           self.DFNetdataset_train = DS_inpaint_TF()
           self.DFNetdataset_validation = DS_inpaint_val(self.val_hr)
           self.DFNetdataset_test = DS_inpaint_val(self.val_lr)
+
+        elif cfg['datasets']['train']['mode'] == 'DS_svg_TF':
+          from .data import DS_svg_TF, DS_lrhr_val
+          self.DFNetdataset_train = DS_svg_TF()
+          self.DFNetdataset_validation = DS_lrhr_val(self.val_lr, self.val_hr)
+          self.DFNetdataset_test = DS_lrhr_val(self.val_lr, self.val_hr)
+
         else:
           print("Mode not found.")
 

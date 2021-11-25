@@ -16,9 +16,13 @@ import random
 import glob
 import torchvision.transforms as transforms
 
-if cfg['datasets']['train']['mode'] == "DS_inpaint_TF":
+if cfg['datasets']['train']['mode'] == "DS_inpaint_TF" or cfg['datasets']['train']['mode'] == "DS_svg_TF":
   from tfrecord.torch.dataset import TFRecordDataset
   import io
+
+if cfg['datasets']['train']['mode'] == "DS_svg_TF":
+  from cairosvg import svg2png
+  from io import BytesIO
 
 if cfg['datasets']['train']['loading_backend'] == "PIL":
   import pillow_avif
@@ -383,3 +387,47 @@ class DS_inpaint_TF(Dataset):
 
         else:
           return masked, mask, sample
+
+
+
+
+class DS_svg_TF(Dataset):
+    def __init__(self):
+      tfrecord_path = cfg['datasets']['train']['tfrecord_path']
+
+      self.HR_size = cfg['datasets']['train']['HR_size']
+      #self.batch_size = cfg['datasets']['train']['batch_size']
+
+      self.dataset = TFRecordDataset(tfrecord_path, None)
+      self.loader = iter(torch.utils.data.DataLoader(self.dataset, batch_size=1))
+
+    def __len__(self):
+        # iterator is infinite and does not have a length, hotfix
+        return cfg['datasets']['train']['amount_files']
+
+    def __getitem__(self, index):
+        data = next(self.loader)
+
+        dpi = 300
+        output_width = 256
+        output_height = 256
+
+        png = svg2png(bytestring=np.fromstring(np.array(data['data']), np.uint8).tobytes(), dpi = dpi, output_width=output_width, output_height=output_height)
+        
+        # background fix
+        hr_image = Image.open(BytesIO(png)).convert('RGBA')
+        background = Image.new('RGBA', hr_image.size, (255,255,255))
+        hr_image = Image.alpha_composite(background, hr_image)
+        hr_image = hr_image.convert('RGB')
+
+        # resize
+        lr_image = hr_image.resize((64,64), Image.ANTIALIAS)
+
+        # to tensor
+        lr_image = transforms.ToTensor()(lr_image) #.unsqueeze_(0)
+        hr_image = transforms.ToTensor()(hr_image) #.unsqueeze_(0)
+
+        #from torchvision.utils import save_image
+        #save_image(hr_image*255, 'hr_image.png')
+
+        return 0, lr_image, hr_image
