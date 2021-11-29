@@ -695,7 +695,8 @@ network_D:
     #netD: hrt
 
 train: 
-    scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
+    # Adam8bit needs "pip install bitsandbytes-cuda111"
+    scheduler: Adam8bit # Adam, AdamP, Adam, SGDP, MADGRAD, Adam8bit, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
     lr_g: 0.00001 # 0.00005
     lr_d: 0.0001
     

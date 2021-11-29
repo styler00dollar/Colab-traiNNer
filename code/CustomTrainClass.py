@@ -1328,6 +1328,11 @@ class CustomTrainClass(pl.LightningModule):
           opt_g = tanangulargrad(input_G, lr=cfg['train']['lr_g'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), eps=cfg['train']['eps'], weight_decay=cfg['train']['weight_decay'])
           if cfg['network_D']['netD'] != None:
             opt_d = tanangulargrad(input_D, lr=cfg['train']['lr_d'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])), eps=cfg['train']['eps'], weight_decay=cfg['train']['weight_decay'])
+        if cfg['train']['scheduler'] == 'Adam8bit':
+          import bitsandbytes as bnb
+          opt_g = bnb.optim.Adam8bit(input_G, lr=cfg['train']['lr_g'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])))
+          if cfg['network_D']['netD'] != None:
+            opt_d = bnb.optim.Adam8bit(input_D, lr=cfg['train']['lr_d'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])))
 
       if cfg['network_D']['netD'] != None:
         return [opt_g, opt_d], []
