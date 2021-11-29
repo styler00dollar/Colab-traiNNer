@@ -10,7 +10,7 @@ with open("config.yaml", "r") as ymlfile:
 if __name__ == '__main__':
   #############################################
   # Dataloader
-  dm = DFNetDataModule(batch_size=cfg['datasets']['train']['batch_size'], val_lr = cfg['datasets']['val']['dataroot_LR'], val_hr = cfg['datasets']['val']['dataroot_HR'], dir_lr = cfg['datasets']['train']['dataroot_LR'], dir_hr = cfg['datasets']['train']['dataroot_HR'], num_workers = cfg['datasets']['train']['n_workers'], HR_size = cfg['datasets']['train']['HR_size'], scale = cfg['scale'], mask_dir=cfg['datasets']['train']['masks'], image_size=cfg['datasets']['train']['image_size'], amount_tiles = cfg['datasets']['train']['amount_tiles'], canny_min = cfg['datasets']['train']['canny_min'], canny_max = cfg['datasets']['train']['canny_max'])
+  dm = DFNetDataModule(batch_size=cfg['datasets']['train']['batch_size'], val_lr = cfg['datasets']['val']['dataroot_LR'], val_hr = cfg['datasets']['val']['dataroot_HR'], dir_lr = cfg['datasets']['train']['dataroot_LR'], dir_hr = cfg['datasets']['train']['dataroot_HR'], num_workers = cfg['datasets']['train']['n_workers'], HR_size = cfg['datasets']['train']['HR_size'], scale = cfg['scale'], mask_dir=cfg['datasets']['train']['masks'], canny_min = cfg['datasets']['train']['canny_min'], canny_max = cfg['datasets']['train']['canny_max'])
   #############################################
   # Model
   from CustomTrainClass import CustomTrainClass

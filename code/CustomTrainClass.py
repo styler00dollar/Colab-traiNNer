@@ -304,6 +304,10 @@ class CustomTrainClass(pl.LightningModule):
       from arch.sepconv_enhanced_arch import Network
       self.netG = Network()
 
+    elif cfg['network_G']['netG'] == "CDFI":
+      from arch.CDFI_arch import AdaCoFNet
+      self.netG = AdaCoFNet()
+
     if cfg['path']['checkpoint_path'] is None and cfg['network_G']['netG'] != 'GLEAN' and cfg['network_G']['netG'] != 'srflow' and cfg['network_G']['netG'] != 'GFPGAN':
       if self.global_step == 0:
       #if self.trainer.global_step == 0:
@@ -867,7 +871,7 @@ class CustomTrainClass(pl.LightningModule):
 
       ############################
       # if frame interpolation
-      if cfg['network_G']['netG'] == "sepconv_enhanced" or cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':
+      if cfg['network_G']['netG'] == "CDFI" or cfg['network_G']['netG'] == "sepconv_enhanced" or cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':
         out = self.netG(train_batch[0], train_batch[1])
 
       # ESRT / swinir / lightweight_gan / RRDB_net / GLEAN / GPEN / comodgan
@@ -1236,7 +1240,7 @@ class CustomTrainClass(pl.LightningModule):
         if cfg['network_D']['netD'] == 'FFCNLayerDiscriminator' and cfg['network_D']['FFCN_feature_weight'] > 0:
           FFCN_class_orig, FFCN_feature_orig = self.netD(train_batch[2])
           # dont give mask if it's not available
-          if cfg['network_G']['netG'] == "sepconv_enhanced" or cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':
+          if cfg['network_G']['netG'] == "CDFI" or cfg['network_G']['netG'] == "sepconv_enhanced" or cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':
             feature_matching_loss_forward = cfg['network_D']['FFCN_feature_weight'] * feature_matching_loss(FFCN_feature, FFCN_feature_orig)
           else:
             feature_matching_loss_forward = cfg['network_D']['FFCN_feature_weight'] * feature_matching_loss(FFCN_feature, FFCN_feature_orig, train_batch[1])
@@ -1356,7 +1360,7 @@ class CustomTrainClass(pl.LightningModule):
       out = train_batch[0]*(train_batch[1])+out*(1-train_batch[1])
 
     # if frame interpolation
-    if cfg['network_G']['netG'] == "sepconv_enhanced" or cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':
+    if cfg['network_G']['netG'] == "CDFI" or cfg['network_G']['netG'] == "sepconv_enhanced" or cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':
       out = self.netG(train_batch[0][0], train_batch[0][1])
 
     #########################

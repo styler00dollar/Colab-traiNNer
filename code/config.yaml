@@ -4,7 +4,7 @@ gpus: 1 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
-use_amp: True
+use_amp: False
 use_swa: False
 progress_bar_refresh_rate: 20
 default_root_dir: '/content/'
@@ -23,15 +23,14 @@ datasets:
     mode: DS_video # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
-    grayscale: False # If true, reads as 1-Channel image. If false, reads as 3-channel image. Currently only implemented for DS_lrhr_batch_oft
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
-    dataroot_HR: '/content/cain_dataset/sequences/train/' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/cain_dataset/sequences/train/' # Original, with a single directory
+    dataroot_HR: '/content/cain_dataset/sequences/' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/content/cain_dataset/sequences/' # Original, with a single directory
     loading_backend: 'PIL' # PIL, OpenCV (currently only in DS_inpaint_tiled_batch)
 
-    n_workers: 2 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
+    n_workers: 0 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     pipeline_threads: 16 # only for DS_video_direct
-    batch_size: 35
+    batch_size: 5
     
     # does not apply to video dataloaders, look into python file instead
     HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
@@ -40,23 +39,18 @@ datasets:
     masks: '/content/masks/'
     mask_invert_ratio: 0.3 # 0.3 = 30% of masks will be inverted
     max_epochs: 2000
-    save_step_frequency: 5000 # also validation frequency
-
-    # batch
-    # If a tiled dataloader is used, specify image charactaristics. Random crop will not be applied. Maybe in the future.
-    image_size: 256 # Size of one tile
-    amount_tiles: 8 # Amount of tiles inside the merged grid image
+    save_step_frequency: 100 # also validation frequency
 
     # if edge data is required
     canny_min: 100
     canny_max: 150
 
   val:
-    dataroot_HR: '/content/'
-    dataroot_LR: '/content/' # Inpainting will use this directory as input
+    dataroot_HR: '/content/drive/MyDrive/val_input/'
+    dataroot_LR: '/content/drive/MyDrive/val_input/' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: "/content/model.pth"
+    pretrain_model_G: #"/content/model.pth"
     pretrain_model_D: 
     checkpoint_path:
     checkpoint_save_path: '/content/'
@@ -274,9 +268,9 @@ network_G:
     #resi_connection: '1conv'
 
     # ESRT (2021)
-    netG: ESRT
-    hiddenDim: 32
-    mlpDim: 128
+    #netG: ESRT
+    #hiddenDim: 32
+    #mlpDim: 128
     
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
@@ -458,6 +452,9 @@ network_G:
 
     # sepconv enhanced (2021) (needs cupy)
     #netG: sepconv_enhanced
+
+    # AdaCoFNet (compressed) / CDFI (2021) (needs cupy)
+    netG: CDFI
 
 # Discriminator options:
 network_D:
