@@ -18,6 +18,7 @@ import yaml
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
+# CONV
 if cfg['network_G']['conv'] == 'doconv':
   from .conv.doconv import *
 
@@ -43,6 +44,46 @@ if cfg['network_G']['conv'] == 'CondConv':
 
 if cfg['network_G']['conv'] == 'fft':
   from .lama_arch import FourierUnit
+
+# ATTENTION
+if cfg['network_G']['attention'] == 'OutlookAttention':
+  from .attention.OutlookAttention import OutlookAttention
+
+if cfg['network_G']['attention'] == 'A2Atttention':
+  from .attention.A2Atttention import DoubleAttention
+
+if cfg['network_G']['attention'] == 'CBAM':
+  from .attention.CBAM import CBAMBlock
+
+if cfg['network_G']['attention'] == 'CoTAttention':
+  from .attention.CoTAttention import CoTAttention
+
+if cfg['network_G']['attention'] == 'CoordAttention':
+  from .attention.CoordAttention import CoordAtt
+
+if cfg['network_G']['attention'] == 'ECAAttention':
+  from .attention.ECAAttention import ECAAttention
+
+if cfg['network_G']['attention'] == 'HaloAttention':
+  from .attention.HaloAttention import HaloAttention
+
+if cfg['network_G']['attention'] == 'ParNetAttention':
+  from .attention.ParNetAttention import ParNetAttention
+
+if cfg['network_G']['attention'] == 'TripletAttention':
+  from .attention.TripletAttention import TripletAttention
+
+if cfg['network_G']['attention'] == 'SKAttention':
+  from .attention.SKAttention import SKAttention
+
+if cfg['network_G']['attention'] == 'SGE':
+  from .attention.SGE import SpatialGroupEnhance
+
+if cfg['network_G']['attention'] == 'SEAttention':
+  from .attention.SEAttention import SEAttention
+
+if cfg['network_G']['attention'] == 'PolarizedSelfAttention':
+  from .attention.PolarizedSelfAttention import SequentialPolarizedSelfAttention
 
 # https://github.com/fangwei123456/PixelUnshuffle-pytorch/blob/master/PixelUnshuffle/__init__.py
 def pixel_unshuffle(input, downscale_factor):
@@ -288,12 +329,124 @@ class RCAB(nn.Module):
             norm=False, act=nn.ReLU(True), downscale=False, return_ca=False):
         super(RCAB, self).__init__()
 
-        self.body = nn.Sequential(
-            ConvNorm(in_feat, out_feat, kernel_size, stride=1, norm=norm),
-            act,
-            ConvNorm(out_feat, out_feat, kernel_size, stride=1, norm=norm),
-            CALayer(out_feat, reduction)
-        )
+        if cfg['network_G']['attention'] == 'CA':
+          self.body = nn.Sequential(
+              ConvNorm(in_feat, out_feat, kernel_size, stride=1, norm=norm),
+              act,
+              ConvNorm(out_feat, out_feat, kernel_size, stride=1, norm=norm),
+              CALayer(out_feat, reduction)
+          )
+        elif cfg['network_G']['attention'] == 'OutlookAttention':
+          self.body = nn.Sequential(
+              ConvNorm(in_feat, out_feat, kernel_size, stride=1, norm=norm),
+              act,
+              ConvNorm(out_feat, out_feat, kernel_size, stride=1, norm=norm),
+              OutlookAttention(160)
+          )
+
+        elif cfg['network_G']['attention'] == 'A2Atttention':
+          self.body = nn.Sequential(
+              ConvNorm(in_feat, out_feat, kernel_size, stride=1, norm=norm),
+              act,
+              ConvNorm(out_feat, out_feat, kernel_size, stride=1, norm=norm),
+              DoubleAttention(out_feat,128,128,True)
+          )
+
+        elif cfg['network_G']['attention'] == 'CBAM':
+          self.body = nn.Sequential(
+              ConvNorm(in_feat, out_feat, kernel_size, stride=1, norm=norm),
+              act,
+              ConvNorm(out_feat, out_feat, kernel_size, stride=1, norm=norm),
+              CBAMBlock(out_feat,reduction=16,kernel_size=3)
+          )
+
+        elif cfg['network_G']['attention'] == 'CoTAttention':
+          self.body = nn.Sequential(
+              ConvNorm(in_feat, out_feat, kernel_size, stride=1, norm=norm),
+              act,
+              ConvNorm(out_feat, out_feat, kernel_size, stride=1, norm=norm),
+              CoTAttention(out_feat,kernel_size=3)
+          )
+
+        elif cfg['network_G']['attention'] == 'CoordAttention':
+          self.body = nn.Sequential(
+              ConvNorm(in_feat, out_feat, kernel_size, stride=1, norm=norm),
+              act,
+              ConvNorm(out_feat, out_feat, kernel_size, stride=1, norm=norm),
+              CoordAtt(out_feat,out_feat)
+          )
+
+        elif cfg['network_G']['attention'] == 'ECAAttention':
+          self.body = nn.Sequential(
+              ConvNorm(in_feat, out_feat, kernel_size, stride=1, norm=norm),
+              act,
+              ConvNorm(out_feat, out_feat, kernel_size, stride=1, norm=norm),
+              ECAAttention(kernel_size=3)
+          )
+
+        elif cfg['network_G']['attention'] == 'HaloAttention':
+          self.body = nn.Sequential(
+              ConvNorm(in_feat, out_feat, kernel_size, stride=1, norm=norm),
+              act,
+              ConvNorm(out_feat, out_feat, kernel_size, stride=1, norm=norm),
+              HaloAttention(dim=out_feat,block_size=2,halo_size=1)
+          )
+
+        elif cfg['network_G']['attention'] == 'ParNetAttention':
+          self.body = nn.Sequential(
+              ConvNorm(in_feat, out_feat, kernel_size, stride=1, norm=norm),
+              act,
+              ConvNorm(out_feat, out_feat, kernel_size, stride=1, norm=norm),
+              ParNetAttention(channel=out_feat)
+          )
+
+        elif cfg['network_G']['attention'] == 'TripletAttention':
+          self.body = nn.Sequential(
+              ConvNorm(in_feat, out_feat, kernel_size, stride=1, norm=norm),
+              act,
+              ConvNorm(out_feat, out_feat, kernel_size, stride=1, norm=norm),
+              TripletAttention()
+          )
+
+        elif cfg['network_G']['attention'] == 'SKAttention':
+          self.body = nn.Sequential(
+              ConvNorm(in_feat, out_feat, kernel_size, stride=1, norm=norm),
+              act,
+              ConvNorm(out_feat, out_feat, kernel_size, stride=1, norm=norm),
+              SKAttention(channel=out_feat,reduction=8)
+          )
+
+        elif cfg['network_G']['attention'] == 'SGE':
+          self.body = nn.Sequential(
+              ConvNorm(in_feat, out_feat, kernel_size, stride=1, norm=norm),
+              act,
+              ConvNorm(out_feat, out_feat, kernel_size, stride=1, norm=norm),
+              SpatialGroupEnhance(groups=8)
+          )
+
+        elif cfg['network_G']['attention'] == 'SEAttention':
+          self.body = nn.Sequential(
+              ConvNorm(in_feat, out_feat, kernel_size, stride=1, norm=norm),
+              act,
+              ConvNorm(out_feat, out_feat, kernel_size, stride=1, norm=norm),
+              SEAttention(channel=out_feat,reduction=8)
+          )
+
+        elif cfg['network_G']['attention'] == 'PolarizedSelfAttention':
+          self.body = nn.Sequential(
+              ConvNorm(in_feat, out_feat, kernel_size, stride=1, norm=norm),
+              act,
+              ConvNorm(out_feat, out_feat, kernel_size, stride=1, norm=norm),
+              SequentialPolarizedSelfAttention(channel=out_feat)
+          )
+
+        elif cfg['network_G']['attention'] == 'S2Attention':
+          self.body = nn.Sequential(
+              ConvNorm(in_feat, out_feat, kernel_size, stride=1, norm=norm),
+              act,
+              ConvNorm(out_feat, out_feat, kernel_size, stride=1, norm=norm),
+              S2Attention(out_feat)
+          )
 
     def forward(self, x):
         res = x

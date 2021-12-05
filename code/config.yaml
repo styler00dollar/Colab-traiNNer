@@ -1,6 +1,6 @@
 name: template
 scale: 1
-gpus: 1 # amount of gpus, 0 = cpu
+gpus: 0 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
@@ -24,13 +24,13 @@ datasets:
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
-    dataroot_HR: '/content/cain_dataset/sequences/' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/cain_dataset/sequences/' # Original, with a single directory
+    dataroot_HR: '/content/cain_dataset/sequences/train/' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/content/cain_dataset/sequences/train/' # Original, with a single directory
     loading_backend: 'PIL' # PIL, OpenCV (currently only in DS_inpaint_tiled_batch)
 
     n_workers: 0 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     pipeline_threads: 16 # only for DS_video_direct
-    batch_size: 5
+    batch_size: 1
     
     # does not apply to video dataloaders, look into python file instead
     HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
@@ -46,8 +46,8 @@ datasets:
     canny_max: 150
 
   val:
-    dataroot_HR: '/content/drive/MyDrive/val_input/'
-    dataroot_LR: '/content/drive/MyDrive/val_input/' # Inpainting will use this directory as input
+    dataroot_HR: '/content/cain_dataset/sequences/test/'
+    dataroot_LR: '/content/cain_dataset/sequences/test/' # Inpainting will use this directory as input
 
 path:
     pretrain_model_G: #"/content/model.pth"
@@ -429,13 +429,15 @@ network_G:
 
     # ----Interpolation Generators----
     # cain (2020)
-    #netG: CAIN
-    #depth: 3
-    #conv: conv2d # doconv | conv2d | gated | TBC | dynamic | MBConv
-    #RG: 2 # ResidualGroup amount
+    netG: CAIN
+    depth: 3
+    conv: conv2d # doconv | conv2d | gated | TBC | dynamic | MBConv | Involution | CondConv | fft
+    # Warning: Configure OutlookAttention dimension according to resolution manually (160 for 720p)
+    attention: CA # CA | OutlookAttention | A2Atttention | CBAM | CoTAttention | CoordAttention | ECAAttention | HaloAttention | ParNetAttention | TripletAttention | SKAttention | SGE | SEAttention | PolarizedSelfAttention
+    RG: 2 # ResidualGroup amount
     # for dynamic
-    #nof_kernels: 4
-    #reduce: 4
+    nof_kernels: 4
+    reduce: 4
 
     # rife 3.8
     #netG: rife
@@ -454,7 +456,7 @@ network_G:
     #netG: sepconv_enhanced
 
     # AdaCoFNet (compressed) / CDFI (2021) (needs cupy)
-    netG: CDFI
+    #netG: CDFI
 
 # Discriminator options:
 network_D:
@@ -696,7 +698,7 @@ network_D:
 
 train: 
     # Adam8bit needs "pip install bitsandbytes-cuda111"
-    scheduler: Adam8bit # Adam, AdamP, Adam, SGDP, MADGRAD, Adam8bit, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
+    scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, Adam8bit, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
     lr_g: 0.00001 # 0.00005
     lr_d: 0.0001
     
