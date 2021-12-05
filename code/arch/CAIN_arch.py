@@ -35,6 +35,15 @@ if cfg['network_G']['conv'] == 'dynamic':
 if cfg['network_G']['conv'] == 'MBConv':
   from .conv.MBConv import MBConv
 
+if cfg['network_G']['conv'] == 'Involution':
+  from .conv.Involution import Involution
+
+if cfg['network_G']['conv'] == 'CondConv':
+  from .conv.CondConv import CondConv
+
+if cfg['network_G']['conv'] == 'fft':
+  from .lama_arch import FourierUnit
+
 # https://github.com/fangwei123456/PixelUnshuffle-pytorch/blob/master/PixelUnshuffle/__init__.py
 def pixel_unshuffle(input, downscale_factor):
     '''
@@ -85,14 +94,20 @@ class ConvNorm(nn.Module):
           self.conv = TiedBlockConv2d(in_feat, out_feat, stride=stride, kernel_size=kernel_size, bias=True)
         elif cfg['network_G']['conv'] == 'dynamic':
           self.conv = DynamicConvolution(nof_kernels_param, reduce_param, in_channels=in_feat, out_channels=out_feat, stride=stride, kernel_size=kernel_size, bias=True)
-        # shape error if MBConv is used here
-        elif cfg['network_G']['conv'] == 'conv2d' or cfg['network_G']['conv'] == 'MBConv':
+        elif cfg['network_G']['conv'] == 'CondConv':
+          self.conv = CondConv(in_planes=in_feat,out_planes=out_feat,kernel_size=kernel_size,stride=1,padding=1,bias=False)
+        elif cfg['network_G']['conv'] == 'MBConv':
+          self.conv =  MBConv(in_feat, out_feat, 1, 1, True)
+        elif cfg['network_G']['conv'] == 'fft':
+          self.conv = FourierUnit(in_feat, out_feat)
+        elif cfg['network_G']['conv'] == 'conv2d' or cfg['network_G']['conv'] == 'Involution':
           self.conv = nn.Conv2d(in_feat, out_feat, stride=stride, kernel_size=kernel_size, bias=True)
 
-
     def forward(self, x):
-        out = self.reflection_pad(x)
-        out = self.conv(out)
+        # do not pad if conv does not need it (because of shape errors)
+        if cfg['network_G']['conv'] != 'CondConv' and cfg['network_G']['conv'] != 'MBConv' and cfg['network_G']['conv'] != 'fft':
+          x = self.reflection_pad(x)
+        out = self.conv(x)
         return out
 
 
@@ -115,6 +130,13 @@ class meanShift(nn.Module):
               self.shifter =  DynamicConvolution(nof_kernels_param, reduce_param, in_channels=1, out_channels=1, kernel_size=1, stride=1, padding=0)   
             elif cfg['network_G']['conv'] == 'MBConv':
               self.shifter =  MBConv(1, 1, 1, 2, True)
+            elif cfg['network_G']['conv'] == 'Involution':
+              self.shifter =  Involution(in_channel=1, kernel_size=1, stride=1)
+            elif cfg['network_G']['conv'] == 'CondConv':
+              self.shifter = CondConv(in_planes=1,out_planes=1,kernel_size=1,stride=1,padding=0,bias=False)
+            elif cfg['network_G']['conv'] == 'fft':
+              self.shifter = FourierUnit(in_channels=1, out_channels=1, groups=1, spatial_scale_factor=None, spatial_scale_mode='bilinear',
+                spectral_pos_encoding=False, use_se=False, se_kwargs=None, ffc3d=False, fft_norm='ortho')
             elif cfg['network_G']['conv'] == 'conv2d':
               self.shifter =  nn.Conv2d(1, 1, kernel_size=1, stride=1, padding=0)
 
@@ -126,17 +148,24 @@ class meanShift(nn.Module):
             b = rgbMean[2] * rgbRange * float(sign)
 
             if cfg['network_G']['conv'] == 'doconv':
-              self.shifter =  DOConv2d(3, 3, kernel_size=1, stride=1, padding=0)
+              self.shifter = DOConv2d(3, 3, kernel_size=1, stride=1, padding=0)
             elif cfg['network_G']['conv'] == 'gated':
-              self.shifter =  GatedConv2dWithActivation(3, 3, kernel_size=1, stride=1, padding=0)
+              self.shifter = GatedConv2dWithActivation(3, 3, kernel_size=1, stride=1, padding=0)
             elif cfg['network_G']['conv'] == 'TBC':   
-              self.shifter =  TiedBlockConv2d(3, 3, kernel_size=1, stride=1, padding=0)
+              self.shifter = TiedBlockConv2d(3, 3, kernel_size=1, stride=1, padding=0)
             elif cfg['network_G']['conv'] == 'dynamic':
-              self.shifter =  DynamicConvolution(nof_kernels_param, reduce_param, in_channels=3, out_channels=3, kernel_size=1, stride=1, padding=0)
+              self.shifter = DynamicConvolution(nof_kernels_param, reduce_param, in_channels=3, out_channels=3, kernel_size=1, stride=1, padding=0)
             elif cfg['network_G']['conv'] == 'MBConv':
-              self.shifter =  MBConv(3, 3, 1, 2, True)
+              self.shifter = MBConv(3, 3, 1, 2, True)
+            elif cfg['network_G']['conv'] == 'Involution':
+              self.shifter = Involution(in_channel=3, kernel_size=1, stride=1)
+            elif cfg['network_G']['conv'] == 'CondConv':
+              self.shifter = CondConv(in_planes=3,out_planes=3,kernel_size=1,stride=1,padding=0,bias=False)
+            elif cfg['network_G']['conv'] == 'fft':
+              self.shifter = FourierUnit(in_channels=3, out_channels=3, groups=1, spatial_scale_factor=None, spatial_scale_mode='bilinear',
+                spectral_pos_encoding=False, use_se=False, se_kwargs=None, ffc3d=False, fft_norm='ortho')
             elif cfg['network_G']['conv'] == 'conv2d':
-              self.shifter =  nn.Conv2d(3, 3, kernel_size=1, stride=1, padding=0)
+              self.shifter = nn.Conv2d(3, 3, kernel_size=1, stride=1, padding=0)
 
             self.shifter.weight.data = torch.eye(3).view(3, 3, 1, 1)
             self.shifter.bias.data = torch.Tensor([r, g, b])
@@ -146,17 +175,24 @@ class meanShift(nn.Module):
             b = rgbMean[2] * rgbRange * float(sign)
 
             if cfg['network_G']['conv'] == 'doconv':
-              self.shifter =  DOConv2d(6, 6, kernel_size=1, stride=1, padding=0)
+              self.shifter = DOConv2d(6, 6, kernel_size=1, stride=1, padding=0)
             elif cfg['network_G']['conv'] == 'gated':
-              self.shifter =  GatedConv2dWithActivation(6, 6, kernel_size=1, stride=1, padding=0)
+              self.shifter = GatedConv2dWithActivation(6, 6, kernel_size=1, stride=1, padding=0)
             elif cfg['network_G']['conv'] == 'TBC':  
-              self.shifter =  TiedBlockConv2d(6, 6, kernel_size=1, stride=1, padding=0)
+              self.shifter = TiedBlockConv2d(6, 6, kernel_size=1, stride=1, padding=0)
             elif cfg['network_G']['conv'] == 'dynamic':
-              self.shifter =  DynamicConvolution(nof_kernels_param, reduce_param, in_channels=6, out_channels=6, kernel_size=1, stride=1, padding=0)  
+              self.shifter = DynamicConvolution(nof_kernels_param, reduce_param, in_channels=6, out_channels=6, kernel_size=1, stride=1, padding=0)  
             elif cfg['network_G']['conv'] == 'MBConv':
-              self.shifter =  MBConv(6, 6, 1, 2, True)
+              self.shifter = MBConv(6, 6, 1, 2, True)
+            elif cfg['network_G']['conv'] == 'Involution':
+              self.shifter = Involution(in_channel=6, kernel_size=1, stride=1)
+            elif cfg['network_G']['conv'] == 'CondConv':
+              self.shifter = CondConv(in_planes=6,out_planes=6,kernel_size=1,stride=1,padding=0,bias=False)
+            elif cfg['network_G']['conv'] == 'fft':
+              self.shifter = FourierUnit(in_channels=6, out_channels=6, groups=1, spatial_scale_factor=None, spatial_scale_mode='bilinear',
+                spectral_pos_encoding=False, use_se=False, se_kwargs=None, ffc3d=False, fft_norm='ortho')
             elif cfg['network_G']['conv'] == 'conv2d':
-              self.shifter =  nn.Conv2d(6, 6, kernel_size=1, stride=1, padding=0)
+              self.shifter = nn.Conv2d(6, 6, kernel_size=1, stride=1, padding=0)
 
             self.shifter.weight.data = torch.eye(6).view(6, 6, 1, 1)
             self.shifter.bias.data = torch.Tensor([r, g, b, r, g, b])
@@ -183,12 +219,10 @@ class ResBlock(nn.Module):
             ConvNorm(out_feat, out_feat, kernel_size=kernel_size, stride=1)
         )
         
-
     def forward(self, x):
         res = x
         out = self.body(x)
         out += res
-
         return out 
 
 
@@ -199,7 +233,6 @@ class CALayer(nn.Module):
         # global average pooling: feature --> point
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         # feature channel downscale and upscale --> channel weight
-
 
         if cfg['network_G']['conv'] == 'doconv':
           self.conv_du = nn.Sequential(
@@ -225,8 +258,16 @@ class CALayer(nn.Module):
               nn.Sigmoid()
           )
 
-        # shape error if gated or MBConv is used here
-        elif cfg['network_G']['conv'] == 'conv2d' or cfg['network_G']['conv'] == 'gated' or cfg['network_G']['conv'] == 'MBConv':
+        elif cfg['network_G']['conv'] == 'CondConv':
+          self.conv_du = nn.Sequential(
+              CondConv(in_planes=channel,out_planes=channel // reduction,kernel_size=1,stride=1,padding=0,bias=False),
+              nn.ReLU(inplace=True),
+              CondConv(in_planes=channel // reduction,out_planes=channel,kernel_size=1,stride=1,padding=0,bias=False),
+              nn.Sigmoid()
+          )
+
+        # shape error if gated, MBConv, Involution or fft is used here
+        elif cfg['network_G']['conv'] == 'conv2d' or cfg['network_G']['conv'] == 'gated' or cfg['network_G']['conv'] == 'MBConv' or cfg['network_G']['conv'] == 'Involution' or cfg['network_G']['conv'] == 'fft':
           self.conv_du = nn.Sequential(
               nn.Conv2d(channel, channel // reduction, 1, padding=0, bias=False),
               nn.ReLU(inplace=True),
@@ -290,7 +331,11 @@ class Interpolation(nn.Module):
           self.headConv = DynamicConvolution(nof_kernels_param, reduce_param, in_channels=n_feats*2, out_channels=n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
         elif cfg['network_G']['conv'] == 'MBConv':
           self.headConv = MBConv(n_feats*2, n_feats,1,1,True)
-        elif cfg['network_G']['conv'] == 'conv2d':
+        elif cfg['network_G']['conv'] == 'fft':
+          self.headConv = FourierUnit(in_channels=n_feats*2, out_channels=n_feats, groups=1, spatial_scale_factor=None, spatial_scale_mode='bilinear',
+            spectral_pos_encoding=False, use_se=False, se_kwargs=None, ffc3d=False, fft_norm='ortho')
+        # Involution does have fixed in/output dimension, CondConv results in shape error
+        elif cfg['network_G']['conv'] == 'conv2d' or cfg['network_G']['conv'] == 'Involution' or cfg['network_G']['conv'] == 'CondConv':
           self.headConv = nn.Conv2d(n_feats*2, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
 
         modules_body = [
@@ -315,6 +360,13 @@ class Interpolation(nn.Module):
           self.tailConv = DynamicConvolution(nof_kernels_param, reduce_param, in_channels=n_feats, out_channels=n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3) 
         elif cfg['network_G']['conv'] == 'MBConv':
           self.tailConv = MBConv(n_feats, n_feats,1,1,True)
+        elif cfg['network_G']['conv'] == 'Involution':
+          self.tailConv =  Involution(in_channel=n_feats, kernel_size=3, stride=1)
+        elif cfg['network_G']['conv'] == 'CondConv':
+          self.tailConv = CondConv(in_planes=n_feats,out_planes=n_feats,kernel_size=1,stride=1,padding=0,bias=False)
+        elif cfg['network_G']['conv'] == 'fft':
+          self.tailConv = FourierUnit(in_channels=n_feats, out_channels=n_feats, groups=1, spatial_scale_factor=None, spatial_scale_mode='bilinear',
+            spectral_pos_encoding=False, use_se=False, se_kwargs=None, ffc3d=False, fft_norm='ortho')
         elif cfg['network_G']['conv'] == 'conv2d':
           self.tailConv = nn.Conv2d(n_feats, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
 
@@ -322,10 +374,8 @@ class Interpolation(nn.Module):
         # Build input tensor
         x = torch.cat([x0, x1], dim=1)
         x = self.headConv(x)
-
         res = self.body(x)
         res += x
-
         out = self.tailConv(res)
         return out
 
