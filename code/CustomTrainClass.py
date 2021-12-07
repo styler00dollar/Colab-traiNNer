@@ -7,7 +7,7 @@ from loss.metrics import *
 from torchvision.utils import save_image
 from torch.autograd import Variable
 import pytorch_lightning as pl
-from piq import SSIMLoss, MultiScaleSSIMLoss, VIFLoss, FSIMLoss, GMSDLoss, MultiScaleGMSDLoss, VSILoss, HaarPSILoss, MDSILoss, BRISQUELoss, PieAPP, DISTS, IS, FID, KID, MSID, PR
+from piq import SSIMLoss, MultiScaleSSIMLoss, VIFLoss, FSIMLoss, GMSDLoss, MultiScaleGMSDLoss, VSILoss, HaarPSILoss, MDSILoss, BRISQUELoss, PieAPP, DISTS, IS, FID, KID, PR
 
 from tensorboardX import SummaryWriter
 writer = SummaryWriter(logdir=cfg['path']['log_path'])
@@ -762,7 +762,6 @@ class CustomTrainClass(pl.LightningModule):
     self.IS = IS()
     self.FID = FID()
     self.KID = KID()
-    self.MSID = MSID()
     self.PR = PR()
 
     # discriminator loss
@@ -793,6 +792,13 @@ class CustomTrainClass(pl.LightningModule):
       from loss.MuarAugment import BatchRandAugment, MuAugment
       rand_augment = BatchRandAugment(N_TFMS=3, MAGN=3, mean=[0.7032, 0.6346, 0.6234], std=[0.2520, 0.2507, 0.2417])
       self.mu_transform = MuAugment(rand_augment, N_COMPS=4, N_SELECTED=2)
+
+    if cfg['train']['KID_weight'] > 0 or cfg['train']['IS_weight'] > 0 or cfg['train']['FID_weight'] > 0 or cfg['train']['PR_weight'] > 0:
+      from loss.inceptionV3 import fid_inception_v3
+      self.piq_model = fid_inception_v3()
+      self.piq_model = self.piq_model.cuda().eval()
+      if cfg['train']['force_piq_fp16'] == True:
+        self.piq_model = self.piq_model.half()
 
   def forward(self, image, masks):
       return self.netG(image, masks)
@@ -1132,27 +1138,41 @@ class CustomTrainClass(pl.LightningModule):
           writer.add_scalar('loss/DISTS', DISTS_forward, self.trainer.global_step)
 
         if cfg['train']['IS_weight'] > 0:
-          IS_forward = cfg['train']['IS_weight']*self.IS(self.IS.compute_feats(out), self.IS.compute_feats(train_batch[2]))
+          if cfg['train']['force_piq_fp16'] == True:
+            i1 = self.piq_model(out.half())
+            i2 = self.piq_model(train_batch[2].half())    
+          else:
+            i1 = self.piq_model(out)
+            i2 = self.piq_model(train_batch[2])
+          IS_forward = cfg['train']['IS_weight']*self.IS(i1, i2)
           total_loss += IS_forward
           writer.add_scalar('loss/IS', IS_forward, self.trainer.global_step)
 
         if cfg['train']['FID_weight'] > 0:
-          FID_forward = cfg['train']['FID_weight']*self.FID(self.FID.compute_feats(out), self.FID.compute_feats(train_batch[2]))
+          if cfg['train']['force_piq_fp16'] == True:
+            i1 = self.piq_model(out.half())
+            i2 = self.piq_model(train_batch[2].half())    
+          else:
+            i1 = self.piq_model(out)
+            i2 = self.piq_model(train_batch[2])
+          FID_forward = cfg['train']['FID_weight']*self.FID(i1, i2)
           total_loss += FID_forward
           writer.add_scalar('loss/FID', FID_forward, self.trainer.global_step)
 
         if cfg['train']['KID_weight'] > 0:
-          KID_forward = cfg['train']['KID_weight']*self.KID(self.KID.compute_feats(out), self.KID.compute_feats(train_batch[2]))
+          if cfg['train']['force_piq_fp16'] == True:
+            i1 = self.piq_model(out.half())
+            i2 = self.piq_model(train_batch[2].half())    
+          else:
+            i1 = self.piq_model(out)
+            i2 = self.piq_model(train_batch[2])
+          KID_forward = cfg['train']['KID_weight']*self.KID(i1, i2)
           total_loss += KID_forward
           writer.add_scalar('loss/KID', KID_forward, self.trainer.global_step)
 
-        if cfg['train']['MSID_weight'] > 0:
-          MSID_forward = cfg['train']['MSID_weight']*self.MSID(self.MSID.compute_feats(out), self.MSID.compute_feats(train_batch[2]))
-          total_loss += MSID_forward
-          writer.add_scalar('loss/MSID', MSID_forward, self.trainer.global_step)
-
         if cfg['train']['PR_weight'] > 0:
-          PR_forward = cfg['train']['PR_weight']*(self.PR(self.PR.compute_feats(out), self.PR.compute_feats(train_batch[2]))**-1)
+          precision, recall = self.PR(self.piq_model(out), self.piq_model(train_batch[2]))
+          PR_forward = cfg['train']['PR_weight']*(precision**-1)
           total_loss += PR_forward
           writer.add_scalar('loss/PR', PR_forward, self.trainer.global_step)
 
