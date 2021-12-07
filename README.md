@@ -62,7 +62,7 @@ The same applies to the discriminator, but the discriminator is optional. Uncomm
     num_classes: 1
     pretrain: True
 ```
-Losses do have the exention `_weight`. If that is set to a value that is bigger than zero, then that loss will be active. Example:
+Losses do have the extension `_weight`. If that is set to a value that is bigger than zero, then that loss will be active. Example:
 ```yaml
     L1Loss_weight: 1
 ```
