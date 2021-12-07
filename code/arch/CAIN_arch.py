@@ -45,6 +45,9 @@ if cfg['network_G']['conv'] == 'CondConv':
 if cfg['network_G']['conv'] == 'fft':
   from .lama_arch import FourierUnit
 
+if cfg['network_G']['conv'] == 'WSConv':
+  from nfnets import WSConv2d, WSConvTranspose2d, ScaledStdConv2d
+
 # ATTENTION
 if cfg['network_G']['attention'] == 'OutlookAttention':
   from .attention.OutlookAttention import OutlookAttention
@@ -141,6 +144,8 @@ class ConvNorm(nn.Module):
           self.conv =  MBConv(in_feat, out_feat, 1, 1, True)
         elif cfg['network_G']['conv'] == 'fft':
           self.conv = FourierUnit(in_feat, out_feat)
+        elif cfg['network_G']['conv'] == 'WSConv':
+          self.conv = WSConv2d(in_feat, out_feat, stride=stride, kernel_size=kernel_size, bias=True)
         elif cfg['network_G']['conv'] == 'conv2d' or cfg['network_G']['conv'] == 'Involution':
           self.conv = nn.Conv2d(in_feat, out_feat, stride=stride, kernel_size=kernel_size, bias=True)
 
@@ -178,6 +183,8 @@ class meanShift(nn.Module):
             elif cfg['network_G']['conv'] == 'fft':
               self.shifter = FourierUnit(in_channels=1, out_channels=1, groups=1, spatial_scale_factor=None, spatial_scale_mode='bilinear',
                 spectral_pos_encoding=False, use_se=False, se_kwargs=None, ffc3d=False, fft_norm='ortho')
+            elif cfg['network_G']['conv'] == 'WSConv':
+              self.conv = WSConv2d(1, 1, kernel_size=1, stride=1, padding=0)
             elif cfg['network_G']['conv'] == 'conv2d':
               self.shifter =  nn.Conv2d(1, 1, kernel_size=1, stride=1, padding=0)
 
@@ -205,6 +212,8 @@ class meanShift(nn.Module):
             elif cfg['network_G']['conv'] == 'fft':
               self.shifter = FourierUnit(in_channels=3, out_channels=3, groups=1, spatial_scale_factor=None, spatial_scale_mode='bilinear',
                 spectral_pos_encoding=False, use_se=False, se_kwargs=None, ffc3d=False, fft_norm='ortho')
+            elif cfg['network_G']['conv'] == 'WSConv':
+              self.conv = WSConv2d(3, 3, kernel_size=1, stride=1, padding=0)
             elif cfg['network_G']['conv'] == 'conv2d':
               self.shifter = nn.Conv2d(3, 3, kernel_size=1, stride=1, padding=0)
 
@@ -232,6 +241,8 @@ class meanShift(nn.Module):
             elif cfg['network_G']['conv'] == 'fft':
               self.shifter = FourierUnit(in_channels=6, out_channels=6, groups=1, spatial_scale_factor=None, spatial_scale_mode='bilinear',
                 spectral_pos_encoding=False, use_se=False, se_kwargs=None, ffc3d=False, fft_norm='ortho')
+            elif cfg['network_G']['conv'] == 'WSConv':
+              self.conv = WSConv2d(6, 6, kernel_size=1, stride=1, padding=0)
             elif cfg['network_G']['conv'] == 'conv2d':
               self.shifter = nn.Conv2d(6, 6, kernel_size=1, stride=1, padding=0)
 
@@ -307,6 +318,14 @@ class CALayer(nn.Module):
               nn.Sigmoid()
           )
 
+        elif cfg['network_G']['conv'] == 'WSConv':
+          self.conv_du = nn.Sequential(
+              WSConv2d(channel, channel // reduction, 1, padding=0, bias=False),
+              nn.ReLU(inplace=True),
+              WSConv2d(channel // reduction, channel, 1, padding=0, bias=False),
+              nn.Sigmoid()
+          )
+                        
         # shape error if gated, MBConv, Involution or fft is used here
         elif cfg['network_G']['conv'] == 'conv2d' or cfg['network_G']['conv'] == 'gated' or cfg['network_G']['conv'] == 'MBConv' or cfg['network_G']['conv'] == 'Involution' or cfg['network_G']['conv'] == 'fft':
           self.conv_du = nn.Sequential(
@@ -487,6 +506,8 @@ class Interpolation(nn.Module):
         elif cfg['network_G']['conv'] == 'fft':
           self.headConv = FourierUnit(in_channels=n_feats*2, out_channels=n_feats, groups=1, spatial_scale_factor=None, spatial_scale_mode='bilinear',
             spectral_pos_encoding=False, use_se=False, se_kwargs=None, ffc3d=False, fft_norm='ortho')
+        elif cfg['network_G']['conv'] == 'WSConv':
+          self.headConv = WSConv2d(n_feats*2, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
         # Involution does have fixed in/output dimension, CondConv results in shape error
         elif cfg['network_G']['conv'] == 'conv2d' or cfg['network_G']['conv'] == 'Involution' or cfg['network_G']['conv'] == 'CondConv':
           self.headConv = nn.Conv2d(n_feats*2, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
@@ -520,6 +541,8 @@ class Interpolation(nn.Module):
         elif cfg['network_G']['conv'] == 'fft':
           self.tailConv = FourierUnit(in_channels=n_feats, out_channels=n_feats, groups=1, spatial_scale_factor=None, spatial_scale_mode='bilinear',
             spectral_pos_encoding=False, use_se=False, se_kwargs=None, ffc3d=False, fft_norm='ortho')
+        elif cfg['network_G']['conv'] == 'WSConv':
+          self.tailConv = WSConv2d(n_feats, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
         elif cfg['network_G']['conv'] == 'conv2d':
           self.tailConv = nn.Conv2d(n_feats, n_feats,stride=1,padding=1,bias=False,groups=1,kernel_size=3)
 

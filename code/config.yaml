@@ -30,7 +30,7 @@ datasets:
 
     n_workers: 0 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     pipeline_threads: 16 # only for DS_video_direct
-    batch_size: 1
+    batch_size: 2
     
     # does not apply to video dataloaders, look into python file instead
     HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
@@ -431,7 +431,7 @@ network_G:
     # cain (2020)
     netG: CAIN
     depth: 3
-    conv: conv2d # doconv | conv2d | gated | TBC | dynamic | MBConv | Involution | CondConv | fft
+    conv: WSConv # doconv | conv2d | gated | TBC | dynamic | MBConv | Involution | CondConv | fft | WSConv
     # Warning: Configure OutlookAttention dimension according to resolution manually (160 for 720p)
     attention: CA # CA | OutlookAttention | A2Atttention | CBAM | CoTAttention | CoordAttention | ECAAttention | HaloAttention | ParNetAttention | TripletAttention | SKAttention | SGE | SEAttention | PolarizedSelfAttention
     RG: 2 # ResidualGroup amount
@@ -460,11 +460,14 @@ network_G:
 
 # Discriminator options:
 network_D:
-    discriminator_criterion: MSE # MSE
+    discriminator_criterion: BCE # MSE | BCE
 
     d_loss_fool_weight: 1 # inside the generator loop, trying to fool the disciminator
     d_loss_weight: 1 # inside own discriminator update
     
+    # needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
+    WSConv_replace: True
+
     netD: # in case there is no discriminator, leave it empty
 
     # VGG
@@ -698,11 +701,14 @@ network_D:
 
 train: 
     # Adam8bit needs "pip install bitsandbytes-cuda111"
-    scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, Adam8bit, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
+    # SGD_AGC needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
+    scheduler: Adam # Adam, AdamP, Adam, SGDP, MADGRAD, Adam8bit, SGD_AGC, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
+    # ACG needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
+    AGC: False # currently only for generator
     lr_g: 0.00001 # 0.00005
     lr_d: 0.0001
     
-    # AdamP, AGDP, MADGRAD, cosangulargrad, tanangulargrad
+    # AdamP, AGDP, MADGRAD, SGD_AGC, cosangulargrad, tanangulargrad
     weight_decay: 0.01
 
     # SGDP, MAGDRAD
@@ -715,7 +721,7 @@ train:
     # SGDP
     nesterov: True
 
-    # MADGRAD, cosangulargrad, tanangulargrad
+    # MADGRAD, SGD_AGC, cosangulargrad, tanangulargrad
     eps: 1e-6
 
     ############################
@@ -864,6 +870,8 @@ train:
     # Differentiable Augmentation for Data-Efficient GAN Training
     diffaug: False
     policy: 'color,translation,cutout'
+    # either MuarAugment OR diffaug
+    MuarAugment: False
 
     # Metrics
     metrics: [] # PSNR | SSIM | AE | MSE

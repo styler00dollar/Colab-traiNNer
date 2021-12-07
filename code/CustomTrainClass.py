@@ -664,6 +664,10 @@ class CustomTrainClass(pl.LightningModule):
       from arch.hrt_arch import HighResolutionTransformer
       self.netD = HighResolutionTransformer()
 
+    if cfg['network_D']['WSConv_replace'] == 'True':
+      from nfnets import replace_conv, WSConv2d, ScaledStdConv2d
+      replace_conv(self.netD, ScaledStdConv2d)
+
     # only doing init, if not 'TranformerDiscriminator', 'EfficientNet', 'ResNeSt', 'resnet', 'ViT', 'DeepViT', 'mobilenetV3'
     # should probably be rewritten
     if cfg['network_D']['netD'] == 'resnet3d' or cfg['network_D']['netD'] == 'NFNet' or cfg['network_D']['netD'] == 'context_encoder' or cfg['network_D']['netD'] == 'VGG' or cfg['network_D']['netD'] == 'VGG_fea' or cfg['network_D']['netD'] == 'Discriminator_VGG_128_SN' or cfg['network_D']['netD'] == 'VGGFeatureExtractor' or cfg['network_D']['netD'] == 'NLayerDiscriminator' or cfg['network_D']['netD'] == 'MultiscaleDiscriminator' or cfg['network_D']['netD'] == 'Discriminator_ResNet_128' or cfg['network_D']['netD'] == 'ResNet101FeatureExtractor' or  cfg['network_D']['netD'] == 'MINCNet' or cfg['network_D']['netD'] == 'PixelDiscriminator' or cfg['network_D']['netD'] == 'ResNeSt' or cfg['network_D']['netD'] == 'RepVGG' or cfg['network_D']['netD'] == 'squeezenet' or cfg['network_D']['netD'] == 'SwinTransformer':
@@ -764,6 +768,8 @@ class CustomTrainClass(pl.LightningModule):
     # discriminator loss
     if cfg['network_D']['discriminator_criterion'] == "MSE":
       self.discriminator_criterion = torch.nn.MSELoss()
+    elif cfg['network_D']['discriminator_criterion'] == "BCE":
+      self.discriminator_criterion = torch.nn.BCEWithLogitsLoss()
 
     # metrics
     self.psnr_metric = PSNR()
@@ -782,6 +788,11 @@ class CustomTrainClass(pl.LightningModule):
       self.val_lpips = []
 
     self.iter_check = 0
+
+    if cfg['train']['MuarAugment'] == True:
+      from loss.MuarAugment import BatchRandAugment, MuAugment
+      rand_augment = BatchRandAugment(N_TFMS=3, MAGN=3, mean=[0.7032, 0.6346, 0.6234], std=[0.2520, 0.2507, 0.2417])
+      self.mu_transform = MuAugment(rand_augment, N_COMPS=4, N_SELECTED=2)
 
   def forward(self, image, masks):
       return self.netG(image, masks)
@@ -1228,6 +1239,10 @@ class CustomTrainClass(pl.LightningModule):
             # 2d
             if cfg['train']['diffaug'] == True:
               d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.discriminator_criterion(self.netD(DiffAugment(out, cfg['train']['policy'])), fake)
+            elif cfg['train']['MuarAugment'] == True:
+              self.mu_transform.setup(self)
+              mu_augment, fake = self.mu_transform((out, fake))
+              d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.discriminator_criterion(self.netD(mu_augment).squeeze().float(), fake.float())
             else:
               if cfg['network_D']['netD'] == 'FFCNLayerDiscriminator':
                 FFCN_class, FFCN_feature = self.netD(out)
@@ -1267,7 +1282,16 @@ class CustomTrainClass(pl.LightningModule):
         else:
           # 2d
           if cfg['train']['diffaug'] == True:
-            discr_out = self.netD(DiffAugment(train_batch[2], cfg['train']['policy']))
+            discr_out_fake = self.netD(DiffAugment(out, cfg['train']['policy']))
+            discr_out_real = self.netD(DiffAugment(train_batch[2], cfg['train']['policy']))
+          elif cfg['train']['MuarAugment'] == True:
+            self.mu_transform.setup(self)
+            # fake
+            mu_augment, fake = self.mu_transform((out, fake))
+            discr_out_fake = self.netD(mu_augment).squeeze()
+            # real
+            mu_augment, valid = self.mu_transform((train_batch[2], valid))
+            discr_out_real = self.netD(mu_augment).squeeze()
           else:
             if cfg['network_D']['netD'] == 'FFCNLayerDiscriminator':
               discr_out_fake, _ = self.netD(out)
@@ -1276,8 +1300,8 @@ class CustomTrainClass(pl.LightningModule):
               discr_out_fake = self.netD(out)
               discr_out_real = self.netD(train_batch[2])
 
-          dis_fake_loss = self.discriminator_criterion(discr_out_fake, fake)
-          dis_real_loss = self.discriminator_criterion(discr_out_real, fake)
+          dis_fake_loss = self.discriminator_criterion(discr_out_fake.float(), fake.float())
+          dis_real_loss = self.discriminator_criterion(discr_out_real.float(), fake.float())
 
         # Total loss
         d_loss = cfg["network_D"]["d_loss_weight"] * ((dis_real_loss + dis_fake_loss) / 2)
@@ -1333,6 +1357,15 @@ class CustomTrainClass(pl.LightningModule):
           opt_g = bnb.optim.Adam8bit(input_G, lr=cfg['train']['lr_g'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])))
           if cfg['network_D']['netD'] != None:
             opt_d = bnb.optim.Adam8bit(input_D, lr=cfg['train']['lr_d'], betas=(float(cfg['train']['betas0']), float(cfg['train']['betas1'])))
+        if cfg['train']['scheduler'] == 'SGD_AGC':
+          from nfnets import SGD_AGC
+          opt_g = SGD_AGC(input_G, lr=cfg['train']['lr_g'], weight_decay=cfg['train']['weight_decay'], eps=cfg['train']['eps'])
+          if cfg['network_D']['netD'] != None:
+            opt_d = SGD_AGC(input_D, lr=cfg['train']['lr_d'], weight_decay=cfg['train']['weight_decay'], eps=cfg['train']['eps'])
+
+      if cfg['train']['AGC'] == True:
+        from nfnets.agc import AGC
+        opt_g = AGC(input_G, opt_g)
 
       if cfg['network_D']['netD'] != None:
         return [opt_g, opt_d], []

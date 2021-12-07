@@ -317,6 +317,10 @@ class FourierUnit(nn.Module):
         self.fft_norm = fft_norm
 
     def forward(self, x):
+        half_check = False
+        if x.type() == "torch.cuda.HalfTensor":
+          half_check = True
+
         batch = x.shape[0]
 
         if self.spatial_scale_factor is not None:
@@ -326,7 +330,11 @@ class FourierUnit(nn.Module):
         r_size = x.size()
         # (batch, c, h, w/2+1, 2)
         fft_dim = (-3, -2, -1) if self.ffc3d else (-2, -1)
-        ffted = torch.fft.rfftn(x, dim=fft_dim, norm=self.fft_norm)
+        if half_check == True:
+          ffted = torch.fft.rfftn(x.float(), dim=fft_dim, norm=self.fft_norm) #.type(torch.cuda.HalfTensor)
+        else:
+          ffted = torch.fft.rfftn(x, dim=fft_dim, norm=self.fft_norm)
+
         ffted = torch.stack((ffted.real, ffted.imag), dim=-1)
         ffted = ffted.permute(0, 1, 4, 2, 3).contiguous()  # (batch, c, 2, h, w/2+1)
         ffted = ffted.view((batch, -1,) + ffted.size()[3:])
@@ -340,8 +348,14 @@ class FourierUnit(nn.Module):
         if self.use_se:
             ffted = self.se(ffted)
 
-        ffted = self.conv_layer(ffted)  # (batch, c*2, h, w/2+1)
+        if half_check == True:
+          ffted = self.conv_layer(ffted.half())  # (batch, c*2, h, w/2+1)
+        else:
+          ffted = self.conv_layer(ffted)  # (batch, c*2, h, w/2+1)
+        
         ffted = self.relu(self.bn(ffted))
+        if half_check == True:
+          ffted = ffted.float()
 
         ffted = ffted.view((batch, -1, 2,) + ffted.size()[2:]).permute(
             0, 1, 3, 4, 2).contiguous()  # (batch,c, t, h, w/2+1, 2)
@@ -350,61 +364,13 @@ class FourierUnit(nn.Module):
         ifft_shape_slice = x.shape[-3:] if self.ffc3d else x.shape[-2:]
         output = torch.fft.irfftn(ffted, s=ifft_shape_slice, dim=fft_dim, norm=self.fft_norm)
 
+        if half_check == True:
+          output = output.half()
+
         if self.spatial_scale_factor is not None:
-            output = F.interpolate(output, size=orig_size, mode=self.spatial_scale_mode, align_corners=False)
+          output = F.interpolate(output, size=orig_size, mode=self.spatial_scale_mode, align_corners=False)
 
         return output
-
-
-class SeparableFourierUnit(nn.Module):
-
-    def __init__(self, in_channels, out_channels, groups=1, kernel_size=3):
-        # bn_layer not used
-        super(SeparableFourierUnit, self).__init__()
-        self.groups = groups
-        row_out_channels = out_channels // 2
-        col_out_channels = out_channels - row_out_channels
-        self.row_conv = torch.nn.Conv2d(in_channels=in_channels * 2,
-                                        out_channels=row_out_channels * 2,
-                                        kernel_size=(kernel_size, 1),  # kernel size is always like this, but the data will be transposed
-                                        stride=1, padding=(kernel_size // 2, 0),
-                                        padding_mode='reflect',
-                                        groups=self.groups, bias=False)
-        self.col_conv = torch.nn.Conv2d(in_channels=in_channels * 2,
-                                        out_channels=col_out_channels * 2,
-                                        kernel_size=(kernel_size, 1),  # kernel size is always like this, but the data will be transposed
-                                        stride=1, padding=(kernel_size // 2, 0),
-                                        padding_mode='reflect',
-                                        groups=self.groups, bias=False)
-        self.row_bn = torch.nn.BatchNorm2d(row_out_channels * 2)
-        self.col_bn = torch.nn.BatchNorm2d(col_out_channels * 2)
-        self.relu = torch.nn.ReLU(inplace=True)
-
-    def process_branch(self, x, conv, bn):
-        batch = x.shape[0]
-
-        r_size = x.size()
-        # (batch, c, h, w/2+1, 2)
-        ffted = torch.fft.rfft(x, norm="ortho")
-        ffted = torch.stack((ffted.real, ffted.imag), dim=-1)
-        ffted = ffted.permute(0, 1, 4, 2, 3).contiguous()  # (batch, c, 2, h, w/2+1)
-        ffted = ffted.view((batch, -1,) + ffted.size()[3:])
-
-        ffted = self.relu(bn(conv(ffted)))
-
-        ffted = ffted.view((batch, -1, 2,) + ffted.size()[2:]).permute(
-            0, 1, 3, 4, 2).contiguous()  # (batch,c, t, h, w/2+1, 2)
-        ffted = torch.complex(ffted[..., 0], ffted[..., 1])
-
-        output = torch.fft.irfft(ffted, s=x.shape[-1:], norm="ortho")
-        return output
-
-
-    def forward(self, x):
-        rowwise = self.process_branch(x, self.row_conv, self.row_bn)
-        colwise = self.process_branch(x.permute(0, 1, 3, 2), self.col_conv, self.col_bn).permute(0, 1, 3, 2)
-        out = torch.cat((rowwise, colwise), dim=1)
-        return out
 
 
 class SpectralTransform(nn.Module):
