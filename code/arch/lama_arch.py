@@ -288,7 +288,6 @@ class FFCSE_block(nn.Module):
             self.sigmoid(self.conv_a2g(x))
         return x_l, x_g
 
-
 class FourierUnit(nn.Module):
 
     def __init__(self, in_channels, out_channels, groups=1, spatial_scale_factor=None, spatial_scale_mode='bilinear',
@@ -319,6 +318,7 @@ class FourierUnit(nn.Module):
     def forward(self, x):
         half_check = False
         if x.type() == "torch.cuda.HalfTensor":
+          # half only works on gpu anyway
           half_check = True
 
         batch = x.shape[0]
@@ -331,7 +331,7 @@ class FourierUnit(nn.Module):
         # (batch, c, h, w/2+1, 2)
         fft_dim = (-3, -2, -1) if self.ffc3d else (-2, -1)
         if half_check == True:
-          ffted = torch.fft.rfftn(x.float(), dim=fft_dim, norm=self.fft_norm) #.type(torch.cuda.HalfTensor)
+          ffted = torch.fft.rfftn(x.type(torch.cuda.FloatTensor), dim=fft_dim, norm=self.fft_norm) #.type(torch.cuda.HalfTensor)
         else:
           ffted = torch.fft.rfftn(x, dim=fft_dim, norm=self.fft_norm)
 
@@ -349,28 +349,30 @@ class FourierUnit(nn.Module):
             ffted = self.se(ffted)
 
         if half_check == True:
-          ffted = self.conv_layer(ffted.half())  # (batch, c*2, h, w/2+1)
+          ffted = self.conv_layer(ffted.type(torch.cuda.HalfTensor))  # (batch, c*2, h, w/2+1)
         else:
-          ffted = self.conv_layer(ffted)  # (batch, c*2, h, w/2+1)
-        
+          ffted = self.conv_layer(ffted) #.type(torch.cuda.FloatTensor)  # (batch, c*2, h, w/2+1)
+
         ffted = self.relu(self.bn(ffted))
-        if half_check == True:
-          ffted = ffted.float()
+        # forcing to be always float
+        ffted = ffted.type(torch.cuda.FloatTensor)
 
         ffted = ffted.view((batch, -1, 2,) + ffted.size()[2:]).permute(
             0, 1, 3, 4, 2).contiguous()  # (batch,c, t, h, w/2+1, 2)
+
         ffted = torch.complex(ffted[..., 0], ffted[..., 1])
 
         ifft_shape_slice = x.shape[-3:] if self.ffc3d else x.shape[-2:]
         output = torch.fft.irfftn(ffted, s=ifft_shape_slice, dim=fft_dim, norm=self.fft_norm)
 
         if half_check == True:
-          output = output.half()
+          output = output.type(torch.cuda.HalfTensor)
 
         if self.spatial_scale_factor is not None:
           output = F.interpolate(output, size=orig_size, mode=self.spatial_scale_mode, align_corners=False)
 
         return output
+
 
 
 class SpectralTransform(nn.Module):
