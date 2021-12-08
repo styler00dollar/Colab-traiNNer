@@ -559,9 +559,9 @@ class Interpolation(nn.Module):
 class Encoder(nn.Module):
     def __init__(self, in_channels=3, depth=3):
         super(Encoder, self).__init__()
-        #self.shuffler = torch.nn.PixelUnshuffle(2**depth)
+        self.shuffler = torch.nn.PixelUnshuffle(2**depth)
         # custom unshuffle
-        self.shuffler = PixelUnshuffle(2**depth)
+        #self.shuffler = PixelUnshuffle(2**depth)
         relu = nn.LeakyReLU(0.2, True)
         self.interpolate = Interpolation(5, 12, in_channels * (4**depth), act=relu)
 
