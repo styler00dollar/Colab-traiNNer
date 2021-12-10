@@ -24,6 +24,9 @@ if cfg['datasets']['train']['mode'] == "DS_video_direct":
     data = fn.readers.numpy(device='gpu', file_root=cfg['datasets']['train']['dataroot_HR'])
     return data
 
+if cfg['datasets']['train']['loading_backend'] == "turboJPEG" or cfg['datasets']['val']['loading_backend'] == "turboJPEG":
+  from turbojpeg import TurboJPEG
+  jpeg_reader = TurboJPEG()  
 
 class VimeoTriplet(Dataset):
     def __init__(self, data_root):
@@ -49,12 +52,18 @@ class VimeoTriplet(Dataset):
     def __getitem__(self, index):
         imgpaths = [self.samples[index] + '/frame1.jpg', self.samples[index] + '/frame2.jpg', self.samples[index] + '/frame3.jpg']
         # Load images
-        img1 = cv2.imread(imgpaths[0])
-        img2 = cv2.imread(imgpaths[1])
-        img3 = cv2.imread(imgpaths[2])
-        img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
-        img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
-        img3 = cv2.cvtColor(img3, cv2.COLOR_BGR2RGB)
+        if cfg['datasets']['train']['loading_backend'] == "OpenCV":
+          img1 = cv2.imread(imgpaths[0])
+          img2 = cv2.imread(imgpaths[1])
+          img3 = cv2.imread(imgpaths[2])
+          img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+          img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
+          img3 = cv2.cvtColor(img3, cv2.COLOR_BGR2RGB)
+        elif cfg['datasets']['train']['loading_backend'] == "turboJPEG":
+          img1 = jpeg_reader.decode(open(imgpaths[0], "rb").read(), 0) # 0 = rgb, 1 = bgr
+          img2 = jpeg_reader.decode(open(imgpaths[1], "rb").read(), 0)
+          img3 = jpeg_reader.decode(open(imgpaths[2], "rb").read(), 0)
+
         """
         if random.random() >= 0.5:
             img1 = Image.fromarray(img1[0:0+256, 0:0+256])
@@ -70,7 +79,12 @@ class VimeoTriplet(Dataset):
         img2 = cv2.resize(img2, (int(1280*factor-(1280*factor)%8), int(720*factor-(720*factor)%8)))
         img3 = cv2.resize(img3, (int(1280*factor-(1280*factor)%8), int(720*factor-(720*factor)%8)))
 
-        # Data augmentation COLOR_YUV_I4202RGB
+        """
+        img1 = cv2.resize(img1, (448, 256), interpolation=cv2.INTER_AREA)
+        img2 = cv2.resize(img2, (448, 256), interpolation=cv2.INTER_AREA)
+        img3 = cv2.resize(img3, (448, 256), interpolation=cv2.INTER_AREA)
+        """
+
         img1 = self.transforms(img1)
         img2 = self.transforms(img2)
         img3 = self.transforms(img3)
@@ -125,27 +139,22 @@ class VimeoTriplet_val(Dataset):
     def __getitem__(self, index):
         imgpaths = [self.samples[index] + '/frame1.jpg', self.samples[index] + '/frame2.jpg', self.samples[index] + '/frame3.jpg']
         # Load images
-        img1 = cv2.imread(imgpaths[0])
-        img2 = cv2.imread(imgpaths[1])
-        img3 = cv2.imread(imgpaths[2])
-        img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
-        img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
-        img3 = cv2.cvtColor(img3, cv2.COLOR_BGR2RGB)
-        """
-        if random.random() >= 0.5:
-            img1 = Image.fromarray(img1[0:0+256, 0:0+256])
-            img2 = Image.fromarray(img2[0:0+256, 0:0+256])
-            img3 = Image.fromarray(img3[0:0+256, 0:0+256])
-        else:
-            img1 = Image.fromarray(img1[0:0+256, 192:256+256])
-            img2 = Image.fromarray(img2[0:0+256, 192:256+256])
-            img3 = Image.fromarray(img3[0:0+256, 192:256+256])
-        """
+        if cfg['datasets']['val']['loading_backend'] == "OpenCV":
+          img1 = cv2.imread(imgpaths[0])
+          img2 = cv2.imread(imgpaths[1])
+          img3 = cv2.imread(imgpaths[2])
+          img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+          img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
+          img3 = cv2.cvtColor(img3, cv2.COLOR_BGR2RGB)
+        elif cfg['datasets']['val']['loading_backend'] == "turboJPEG":
+          img1 = jpeg_reader.decode(open(imgpaths[0], "rb").read(), 0) # 0 = rgb, 1 = bgr
+          img2 = jpeg_reader.decode(open(imgpaths[1], "rb").read(), 0)
+          img3 = jpeg_reader.decode(open(imgpaths[2], "rb").read(), 0)
+
         img1 = cv2.resize(img1, (1280, 720))
         img2 = cv2.resize(img2, (1280, 720))
         img3 = cv2.resize(img3, (1280, 720))
 
-        # Data augmentation COLOR_YUV_I4202RGB
         img1 = self.transforms(img1)
         img2 = self.transforms(img2)
         img3 = self.transforms(img3)
