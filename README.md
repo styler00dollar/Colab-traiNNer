@@ -16,7 +16,7 @@ pip install opencv-python pillow piq wget tfrecord x-transformers adamp efficien
 Lots of stuff (`mmcv`, `ninja`, `correlation-package`, `cupy`, `Adam8Bit`) is optional and the requirements will depend on what you train how. Look into the Colab file for more details. For basic usage, the above commands should be sufficient.
 
 ## Brief guide:
-Configure paths in `config.yaml`. `/content/drive/MyDrive/` is the path to your personal Google Drive folder. Be aware that everything inside `/content/` and stuff that is not in Google Drive will be deleted once Colab closes. Be also aware, that indent (the amount of spaces) is very important in the config file. Don't try to change that, or it will result in errors. Example config:
+Configure paths in `config.yaml`. `/content/drive/MyDrive/` is the path to your personal Google Drive folder. Be aware that all files inside Colab will be deleted once the Colab session closes and you should backup everything in your Google Drive. Do not store data in Colab if you want to have that later. Be also aware, that indent (the amount of spaces) is very important in the config file. Don't try to change that, or it will result in errors. Example config:
 ```yaml
 path:
     pretrain_model_G: "/content/drive/MyDrive/model.pth"
