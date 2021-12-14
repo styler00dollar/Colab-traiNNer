@@ -69,3 +69,19 @@ Losses do have the extension `_weight`. If that is set to a value that is bigger
 If you do not want to use specific losses, just leave the number 0. Finally, adjust `lr`, `batch_size`, `HR_size`, `n_workers`, `gpus`, `scale` and `use_amp` to desired values.
 
 If you want to start training locally, just do `python train.py`. If you want to visualize the training loss with graphs, go into the log folder and use `tensorboard --logdir .`. It will create an URL that you can open in your browser. (Only works locally, download logs to do this if you use Colab.)
+
+I also created a dockerfile, which can be used to train with. Warning: This dockerfile will compile a lot of stuff from scratch to have every dependency properly working with CUDA 11.5. It does take around 1-2 hours to compile on my CPU. It should cover every single dependency that could be used.
+```
+# install docker, command for arch
+yay -S docker nvidia-docker nvidia-container-toolkit
+# Put the dockerfile in a directory and run that inside that directory
+docker build -t traiNNer:latest .
+# run with a mounted folder
+docker run --privileged --gpus all -it --rm -v /path_to_own_folder/:/workspace/tensorrt traiNNer:latest
+```
+If you have problems getting docker to start, try these commands and use the dockercommand again
+```
+# fixing docker errors
+systemctl start docker
+sudo chmod 666 /var/run/docker.sock
+```
