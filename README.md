@@ -77,7 +77,7 @@ yay -S docker nvidia-docker nvidia-container-toolkit
 # Put the dockerfile in a directory and run that inside that directory
 docker build -t traiNNer:latest .
 # run with a mounted folder
-docker run --privileged --gpus all -it --rm -v /path_to_own_folder/:/workspace/tensorrt traiNNer:latest
+docker run --privileged --gpus all -it --rm -v /path_to_own_folder/:/workspace/tensorrt trainner:latest
 ```
 If you have problems getting docker to start, try these commands and use the dockercommand again
 ```
