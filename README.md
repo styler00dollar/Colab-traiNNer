@@ -75,7 +75,7 @@ I also created a dockerfile, which can be used to train with. Warning: This dock
 # install docker, command for arch
 yay -S docker nvidia-docker nvidia-container-toolkit
 # Put the dockerfile in a directory and run that inside that directory
-docker build -t traiNNer:latest .
+docker build -t trainner:latest .
 # run with a mounted folder
 docker run --privileged --gpus all -it --rm -v /path_to_own_folder/:/workspace/tensorrt trainner:latest
 ```
