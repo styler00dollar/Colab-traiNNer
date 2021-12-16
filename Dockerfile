@@ -53,10 +53,17 @@ RUN pip install /workspace/audio/dist/*.whl
 # other dependencies
 RUN pip install git+https://github.com/styler00dollar/pytorch-lightning.git@fc86f4ca817d5ba1702a210a898ac2729c870112
 RUN pip install git+https://github.com/vballoli/nfnets-pytorch
-RUN pip install opencv-python pillow piq wget tfrecord x-transformers adamp efficientnet_pytorch tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf
+RUN pip install IPython scipy pandas opencv-python pillow piq wget tfrecord x-transformers adamp efficientnet_pytorch tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf
 
 # optional stuff, skip these for faster install if you dont need them
 RUN cd / && git clone https://github.com/facebookresearch/bitsandbytes && cd bitsandbytes && CUDA_VERSION=115 python setup.py install
 RUN pip install mmcv-full ninja cupy
 RUN apt-get install -y libturbojpeg && pip install PyTurboJPEG
 RUN cd / && git clone https://github.com/JunHeum/ABME && cd ABME/correlation_package && python setup.py build install
+
+# download models
+RUN wget https://download.pytorch.org/models/vgg16-397923af.pth -P /root/.cache/torch/hub/checkpoints/
+RUN wget https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-effv2-weights/tf_efficientnetv2_b0-c7cc451f.pth -P /root/.cache/torch/hub/checkpoints/
+RUN wget https://github.com/photosynthesis-team/piq/releases/download/v0.5.4/PieAPPv0.1.pth -P /root/.cache/torch/hub/checkpoints/
+RUN wget https://github.com/photosynthesis-team/piq/releases/download/v0.4.1/dists_weights.pt -P /root/.cache/torch/hub/checkpoints/
+RUN wget http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50dilated-ppm_deepsup/encoder_epoch_20.pth -P /workspace/tensorrt/Colab-traiNNer/code/

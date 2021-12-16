@@ -9,7 +9,7 @@ You can also use the code locally. Install commands for local usage:
 pip install torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio==0.10.0+cu113 torchtext -f https://download.pytorch.org/whl/cu113/torch_stable.html
 pip install git+https://github.com/styler00dollar/pytorch-lightning.git@fc86f4ca817d5ba1702a210a898ac2729c870112
 pip install git+https://github.com/vballoli/nfnets-pytorch
-pip install opencv-python pillow piq wget tfrecord x-transformers adamp efficientnet_pytorch tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf
+pip install IPython scipy pandas opencv-python pillow piq wget tfrecord x-transformers adamp efficientnet_pytorch tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf
 ```
 (You need this specific `pytorch-lightning` version, or it won't work.)
 
@@ -76,7 +76,8 @@ I also created a dockerfile, which can be used to train with. Warning: This dock
 yay -S docker nvidia-docker nvidia-container-toolkit
 # Put the dockerfile in a directory and run that inside that directory
 docker build -t trainner:latest .
-# run with a mounted folder
+# run with a mounted folder, inside that folder, the folder Colab-traiNNer should be
+# inside /workspace/tensorrt you can access all files then
 docker run --privileged --gpus all -it --rm -v /path_to_own_folder/:/workspace/tensorrt trainner:latest
 ```
 If you have problems getting docker to start, try these commands and use the dockercommand again
