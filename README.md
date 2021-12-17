@@ -70,7 +70,9 @@ If you do not want to use specific losses, just leave the number 0. Finally, adj
 
 If you want to start training locally, just do `python train.py`. If you want to visualize the training loss with graphs, go into the log folder and use `tensorboard --logdir .`. It will create an URL that you can open in your browser. (Only works locally, download logs to do this if you use Colab.)
 
-I also created a dockerfile, which can be used to train with. Warning: This dockerfile will compile a lot of stuff from scratch to have every dependency properly working with CUDA 11.5. It does take around 1-2 hours to compile on my CPU. It should cover every single dependency that could be used.
+I also created some dockerfiles, which can be used to train with. Currently there are 2 files and they are fundamentally different. Sadly it's very hard to make a perfect docker file, so there currently isn't a perfect one. They both cover nearly all dependencies.
+- Dockerfile_CUDA11.5: Compiles everything from scratch with newest CUDA, since Pytorch with CUDA11.5 does not exist, but this will take a while. TensorRT does not work with this docker. The precompiled whl can be installed and the package can be compiled manually, but it will result in an import error.
+- Dockerfile_CUDA11.3: Everything is precompiled and the install should be fast, but the `correlation_package` won't install due to CUDA discrepancies.
 ```
 # install docker, command for arch
 yay -S docker nvidia-docker nvidia-container-toolkit

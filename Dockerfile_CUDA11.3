@@ -1,0 +1,28 @@
+# https://ngc.nvidia.com/catalog/containers/nvidia:tensorrt
+FROM nvcr.io/nvidia/tensorrt:21.11-py3
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get -y update
+# get precompiled pytorch
+RUN pip install torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio==0.10.0+cu113 torchtext -f https://download.pytorch.org/whl/cu113/torch_stable.html
+# installing precompiled pytorch tensorrt
+RUN pip install https://github.com/NVIDIA/Torch-TensorRT/releases/download/v1.0.0/torch_tensorrt-1.0.0-cp38-cp38-linux_x86_64.whl
+
+# other dependencies
+RUN pip install git+https://github.com/styler00dollar/pytorch-lightning.git@fc86f4ca817d5ba1702a210a898ac2729c870112
+RUN pip install git+https://github.com/vballoli/nfnets-pytorch
+RUN pip install IPython scipy pandas opencv-python pillow piq wget tfrecord x-transformers adamp efficientnet_pytorch tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf
+
+# optional stuff, skip these for faster install if you dont need them
+RUN pip install mmcv-full==1.4.1 -f https://download.openmmlab.com/mmcv/dist/cu113/torch1.10.0/index.html
+RUN pip install ninja cupy-cuda113 bitsandbytes-cuda113
+RUN apt-get install -y libturbojpeg && pip install PyTurboJPEG
+# Does not like that system is CUDA11.5 but pytorch is compiled with CUDA11.3
+#RUN cd / && git clone https://github.com/JunHeum/ABME && cd ABME/correlation_package && python setup.py build install
+
+# download models
+RUN wget https://download.pytorch.org/models/vgg16-397923af.pth -P /root/.cache/torch/hub/checkpoints/
+RUN wget https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-effv2-weights/tf_efficientnetv2_b0-c7cc451f.pth -P /root/.cache/torch/hub/checkpoints/
+RUN wget https://github.com/photosynthesis-team/piq/releases/download/v0.5.4/PieAPPv0.1.pth -P /root/.cache/torch/hub/checkpoints/
+RUN wget https://github.com/photosynthesis-team/piq/releases/download/v0.4.1/dists_weights.pt -P /root/.cache/torch/hub/checkpoints/
+RUN wget http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50dilated-ppm_deepsup/encoder_epoch_20.pth -P /workspace/tensorrt/Colab-traiNNer/code/
+
