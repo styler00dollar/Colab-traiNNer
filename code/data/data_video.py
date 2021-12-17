@@ -74,16 +74,16 @@ class VimeoTriplet(Dataset):
             img2 = Image.fromarray(img2[0:0+256, 192:256+256])
             img3 = Image.fromarray(img3[0:0+256, 192:256+256])
         """
-        factor = 1
-        img1 = cv2.resize(img1, (int(1280*factor-(1280*factor)%8), int(720*factor-(720*factor)%8)))
-        img2 = cv2.resize(img2, (int(1280*factor-(1280*factor)%8), int(720*factor-(720*factor)%8)))
-        img3 = cv2.resize(img3, (int(1280*factor-(1280*factor)%8), int(720*factor-(720*factor)%8)))
+        #factor = 1
+        #img1 = cv2.resize(img1, (int(1280*factor-(1280*factor)%8), int(720*factor-(720*factor)%8)))
+        #img2 = cv2.resize(img2, (int(1280*factor-(1280*factor)%8), int(720*factor-(720*factor)%8)))
+        #img3 = cv2.resize(img3, (int(1280*factor-(1280*factor)%8), int(720*factor-(720*factor)%8)))
 
-        """
+        
         img1 = cv2.resize(img1, (448, 256), interpolation=cv2.INTER_AREA)
         img2 = cv2.resize(img2, (448, 256), interpolation=cv2.INTER_AREA)
         img3 = cv2.resize(img3, (448, 256), interpolation=cv2.INTER_AREA)
-        """
+        
 
         img1 = self.transforms(img1)
         img2 = self.transforms(img2)
@@ -151,9 +151,15 @@ class VimeoTriplet_val(Dataset):
           img2 = jpeg_reader.decode(open(imgpaths[1], "rb").read(), 0)
           img3 = jpeg_reader.decode(open(imgpaths[2], "rb").read(), 0)
 
+        """
         img1 = cv2.resize(img1, (1280, 720))
         img2 = cv2.resize(img2, (1280, 720))
         img3 = cv2.resize(img3, (1280, 720))
+        """
+        img1 = cv2.resize(img1, (448, 256), interpolation=cv2.INTER_AREA)
+        img2 = cv2.resize(img2, (448, 256), interpolation=cv2.INTER_AREA)
+        img3 = cv2.resize(img3, (448, 256), interpolation=cv2.INTER_AREA)
+
 
         img1 = self.transforms(img1)
         img2 = self.transforms(img2)

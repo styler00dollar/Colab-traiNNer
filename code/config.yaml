@@ -816,7 +816,12 @@ train:
     spatial: False
     version: '0.1' # only version
     lpips: True
-    force_fp16_perceptual: True # not supported for cpu
+    force_fp16_perceptual: False # not supported for cpu
+    # you need to have tensorrt and torch_tensorrt, use docker or install it manually
+    # adjust optimum model compile values in CustomTrainClass
+    # fp16 will only work on fp16 compatible hardware, convert will only work with a GPU, FP16 untested
+    perceptual_tensorrt: True 
+
 
     # high receptive field (HRF) perceptual loss
     # you can download it manually with this command, but the code will download it automatically if you don't have it

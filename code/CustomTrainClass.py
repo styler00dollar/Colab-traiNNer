@@ -722,8 +722,50 @@ class CustomTrainClass(pl.LightningModule):
     for param in self.perceptual_loss.parameters():
       param.requires_grad = False
 
-    if cfg['train']['force_fp16_perceptual'] == True:
+    if cfg['train']['force_fp16_perceptual'] == True and cfg['train']['perceptual_tensorrt'] == False:
+      print("Converting perceptual model to FP16")
       self.perceptual_loss = self.perceptual_loss.half()
+
+    if cfg['train']['force_fp16_perceptual'] == True and cfg['train']['perceptual_tensorrt'] == True:
+        print("Converting perceptual model to TensorRT (FP16)")
+        import torch_tensorrt
+        example_data = torch.rand(1,3,256,448).half().cuda()
+        self.perceptual_loss = self.perceptual_loss.half().cuda()
+        self.perceptual_loss = torch.jit.trace(self.perceptual_loss, [example_data, example_data])
+        self.perceptual_loss = torch_tensorrt.compile(self.perceptual_loss, inputs=[torch_tensorrt.Input( \
+                        min_shape=(1, 3, 64, 64), \
+                        opt_shape=(1, 3, 256, 448), \
+                        max_shape=(1, 3, 720, 1280), \
+                        dtype=torch.half), \
+                        
+                        torch_tensorrt.Input( \
+                        min_shape=(1, 3, 64, 64), \
+                        opt_shape=(1, 3, 256, 448), \
+                        max_shape=(1, 3, 720, 1280), \
+                        dtype=torch.half)
+                        ], \
+                        enabled_precisions={torch.half}, truncate_long_and_double=True)
+        del example_data
+
+    elif cfg['train']['force_fp16_perceptual'] == False and cfg['train']['perceptual_tensorrt'] == True:
+        print("Converting perceptual model to TensorRT")
+        import torch_tensorrt
+        example_data = torch.rand(1,3,256,448)
+        self.perceptual_loss = torch.jit.trace(self.perceptual_loss, [example_data, example_data])
+        self.perceptual_loss = torch_tensorrt.compile(self.perceptual_loss, inputs=[torch_tensorrt.Input( \
+                        min_shape=(1, 3, 64, 64), \
+                        opt_shape=(1, 3, 256, 448), \
+                        max_shape=(1, 3, 720, 1280), \
+                        dtype=torch.float32), \
+                        
+                        torch_tensorrt.Input( \
+                        min_shape=(1, 3, 64, 64), \
+                        opt_shape=(1, 3, 256, 448), \
+                        max_shape=(1, 3, 720, 1280), \
+                        dtype=torch.float32)
+                        ], \
+                        enabled_precisions={torch.float}, truncate_long_and_double=True)
+        del example_data
 
     from arch.hrf_perceptual import ResNetPL
     self.hrf_perceptual_loss = ResNetPL()
@@ -1006,10 +1048,14 @@ class CustomTrainClass(pl.LightningModule):
 
         if cfg['train']['perceptual_weight'] > 0:
           self.perceptual_loss.to(self.device)
-          if cfg['train']['force_fp16_perceptual'] == True:
+          if cfg['train']['force_fp16_perceptual'] == True and cfg['train']['perceptual_tensorrt'] == True:
+            perceptual_loss_forward = cfg['train']['perceptual_weight'] * self.perceptual_loss(out.half(), train_batch[2].half())[0]
+          elif cfg['train']['force_fp16_perceptual'] == True and cfg['train']['perceptual_tensorrt'] == False:
             perceptual_loss_forward = cfg['train']['perceptual_weight'] * self.perceptual_loss(in0=out.half(), in1=train_batch[2].half())
-          else:
-            perceptual_loss_forward = cfg['train']['perceptual_weight'] * self.perceptual_loss(in0=out, in1=train_batch[2])
+          elif cfg['train']['force_fp16_perceptual'] == False and cfg['train']['perceptual_tensorrt'] == True:
+            perceptual_loss_forward = cfg['train']['perceptual_weight'] * self.perceptual_loss(out, train_batch[2])[0]
+          elif cfg['train']['force_fp16_perceptual'] == False and cfg['train']['perceptual_tensorrt'] == False:
+              perceptual_loss_forward = cfg['train']['perceptual_weight'] * self.perceptual_loss(in0=out, in1=train_batch[2])
           writer.add_scalar('loss/perceptual', perceptual_loss_forward, self.trainer.global_step)
           total_loss += perceptual_loss_forward
 
