@@ -809,8 +809,6 @@ class CustomTrainClass(pl.LightningModule):
     # discriminator loss
     if cfg['network_D']['discriminator_criterion'] == "MSE":
       self.discriminator_criterion = torch.nn.MSELoss()
-    elif cfg['network_D']['discriminator_criterion'] == "BCE":
-      self.discriminator_criterion = torch.nn.BCEWithLogitsLoss()
 
     # metrics
     self.psnr_metric = PSNR()

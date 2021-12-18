@@ -461,7 +461,7 @@ network_G:
 
 # Discriminator options:
 network_D:
-    discriminator_criterion: BCE # MSE | BCE
+    discriminator_criterion: MSE # MSE
 
     d_loss_fool_weight: 1 # inside the generator loop, trying to fool the disciminator
     d_loss_weight: 1 # inside own discriminator update
