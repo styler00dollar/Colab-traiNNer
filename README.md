@@ -81,6 +81,8 @@ docker build -t trainner:latest .
 # run with a mounted folder, inside that folder, the folder Colab-traiNNer should be
 # inside /workspace/tensorrt you can access all files then
 docker run --privileged --gpus all -it --rm -v /path_to_own_folder/:/workspace/tensorrt trainner:latest
+# docker may or may not need an extra parameter for shared memory
+docker run --privileged --gpus all -it --rm -v /path_to_own_folder/:/workspace/tensorrt --shm-size 8G trainner:latest
 ```
 If you have problems getting docker to start, try these commands and use the dockercommand again
 ```
