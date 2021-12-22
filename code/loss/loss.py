@@ -1208,9 +1208,7 @@ def feature_matching_loss(fake_features: List[torch.Tensor], target_features: Li
 
 # https://github.com/EndlessSora/focal-frequency-loss/blob/master/focal_frequency_loss/focal_frequency_loss.py
 # version adaptation for PyTorch > 1.7.1
-IS_HIGH_VERSION = tuple(map(int, torch.__version__.split('+')[0].split('.'))) > (1, 7, 1)
-if IS_HIGH_VERSION:
-    import torch.fft
+import torch.fft
 class FocalFrequencyLoss(nn.Module):
     """The torch.nn.Module class that implements focal frequency loss - a
     frequency domain loss function for optimizing generative models.

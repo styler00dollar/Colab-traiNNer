@@ -9,9 +9,10 @@ You can also use the code locally. Install commands for local usage:
 pip install torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio==0.10.0+cu113 torchtext -f https://download.pytorch.org/whl/cu113/torch_stable.html
 pip install git+https://github.com/styler00dollar/pytorch-lightning.git@fc86f4ca817d5ba1702a210a898ac2729c870112
 pip install git+https://github.com/vballoli/nfnets-pytorch
-pip install IPython scipy pandas opencv-python pillow piq wget tfrecord x-transformers adamp efficientnet_pytorch tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf
+pip install git+https://github.com/styler00dollar/piq.git
+pip install IPython scipy pandas opencv-python pillow wget tfrecord x-transformers adamp efficientnet_pytorch tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf
 ```
-(You need this specific `pytorch-lightning` version, or it won't work.)
+(You need this specific `pytorch-lightning` and `piq` version, or it won't work properly.)
 
 Lots of stuff (`mmcv`, `ninja`, `correlation-package`, `cupy`, `Adam8Bit`) is optional and the requirements will depend on what you train how. Look into the Colab file for more details. For basic usage, the above commands should be sufficient.
 
