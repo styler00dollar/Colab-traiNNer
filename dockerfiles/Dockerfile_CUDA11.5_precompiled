@@ -28,7 +28,7 @@ RUN gdown --id 1JF8JBShRDIHHPD1A-8MisXjZpNzTn3Wm && pip install torchaudio-0.11.
 #RUN pip install git+https://github.com/styler00dollar/pytorch-lightning.git@fc86f4ca817d5ba1702a210a898ac2729c870112
 RUN gdown --id 1IjeYafokC-5TGdrjQfCF-V7tqMuEGRjR && pip install pytorch_lightning-1.4.9-py3-none-any.whl
 RUN pip install git+https://github.com/vballoli/nfnets-pytorch
-RUN pip install IPython scipy pandas opencv-python pillow wget tfrecord x-transformers adamp efficientnet_pytorch tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf
+RUN pip install albumentations IPython scipy pandas opencv-python pillow wget tfrecord x-transformers adamp efficientnet_pytorch tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf
 RUN pip install git+https://github.com/styler00dollar/piq.git
 
 # optional stuff, skip these for faster install if you dont need them
