@@ -70,9 +70,10 @@ If you do not want to use specific losses, just leave the number 0. Finally, adj
 
 If you want to start training locally, just do `python train.py`. If you want to visualize the training loss with graphs, go into the log folder and use `tensorboard --logdir .`. It will create an URL that you can open in your browser. (Only works locally, download logs to do this if you use Colab.)
 
-I also created some dockerfiles, which can be used to train with. Currently there are 2 files and they are fundamentally different. Sadly it's very hard to make a perfect docker file, so there currently isn't a perfect one. They both cover nearly all dependencies.
-- Dockerfile_CUDA11.5: Compiles everything from scratch with newest CUDA, since Pytorch with CUDA11.5 does not exist, but this will take a while. TensorRT does not work with this docker. The precompiled whl can be installed and the package can be compiled manually, but it will result in an import error.
-- Dockerfile_CUDA11.3: Everything is precompiled and the install should be fast, but the `correlation_package` won't install due to CUDA discrepancies.
+I also created some dockerfiles, which can be used to train with. Currently there are 3 files and they are all a bit different. Sadly it's very hard to make a perfect docker file, so there currently isn't a perfect one. They should cover nearly all dependencies.
+- `Dockerfile_CUDA11.5_compile`: Compiles everything from scratch with CUDA11.5, since Pytorch with CUDA11.5 does not exist, but this will take a while. TensorRT does not work with this docker. The precompiled Torch-TensorRT whl can be installed and the package can be compiled manually as well, but it will result in an import error. Be aware that bad commits can result in a failed compile process with this docker.
+- `Dockerfile_CUDA11.5_precompiled`: Same as above, but i compiled all packages myself to have a much faster building process. It will install much faster.
+- `Dockerfile_CUDA11.3`: Everything is precompiled, will use official sources, but the `correlation_package` won't install due to CUDA discrepancies.
 ```
 # install docker, command for arch
 yay -S docker nvidia-docker nvidia-container-toolkit

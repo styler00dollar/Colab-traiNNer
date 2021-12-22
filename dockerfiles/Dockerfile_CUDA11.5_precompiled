@@ -1,0 +1,56 @@
+# https://ngc.nvidia.com/catalog/containers/nvidia:tensorrt
+FROM nvcr.io/nvidia/tensorrt:21.11-py3
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get -y update
+
+RUN pip install opencv-python 
+RUN apt-get update && apt-get install -y \
+        automake autoconf libpng-dev nano wget npm \
+        curl zip unzip libtool swig zlib1g-dev pkg-config \
+        git wget xz-utils python3-mock libpython3-dev \
+        libpython3-all-dev python3-pip g++ gcc make \
+        pciutils cpio gosu git liblapack-dev liblapacke-dev
+        
+# some architectures need this to train
+RUN pip install ninja
+
+# installing own precompiled packages since official 11.5 packages do not exist
+RUN pip install gdown
+# torch-1.11.0a0+git6217fee-cp38-cp38-linux_x86_64.whl
+RUN gdown --id 1gtoNvQQh1wEcWPKpzncI18aOUEXFxm-8 && pip install torch-1.11.0a0+git6217fee-cp38-cp38-linux_x86_64.whl
+# torchvision-0.12.0a0+55f7faf-cp38-cp38-linux_x86_64.whl
+RUN gdown --id 1KiFOF4uOQ3EW0GgQsbRBxEoImBSZ_u5u && pip install torchvision-0.12.0a0+55f7faf-cp38-cp38-linux_x86_64.whl
+# torchaudio-0.11.0a0+4c2edd2-cp38-cp38-linux_x86_64.whl
+RUN gdown --id 1JF8JBShRDIHHPD1A-8MisXjZpNzTn3Wm && pip install torchaudio-0.11.0a0+4c2edd2-cp38-cp38-linux_x86_64.whl
+
+# other dependencies
+# pytorch_lightning-1.4.9-py3-none-any.whl (customized code)
+#RUN pip install git+https://github.com/styler00dollar/pytorch-lightning.git@fc86f4ca817d5ba1702a210a898ac2729c870112
+RUN gdown --id 1IjeYafokC-5TGdrjQfCF-V7tqMuEGRjR && pip install pytorch_lightning-1.4.9-py3-none-any.whl
+RUN pip install git+https://github.com/vballoli/nfnets-pytorch
+RUN pip install IPython scipy pandas opencv-python pillow piq wget tfrecord x-transformers adamp efficientnet_pytorch tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf
+
+# optional stuff, skip these for faster install if you dont need them
+# bitsandbytes_cuda115-0.26.0-py3-none-any.whl
+RUN gdown --id 1RVFGbtRI0PsFAStbQHqamqIfeXodR5Cp && pip install bitsandbytes_cuda115-0.26.0-py3-none-any.whl
+# mmcv_full-1.4.1-cp38-cp38-linux_x86_64.whl
+RUN gdown --id 1KoczONXuMzRmwykZYjtGWmAQbBp196bE && pip install mmcv_full-1.4.1-cp38-cp38-linux_x86_64.whl
+RUN apt-get install -y libturbojpeg && pip install PyTurboJPEG
+# correlation_cuda-0.0.0-cp38-cp38-linux_x86_64.whl
+RUN gdown --id 1Kz1C9S-kItZggfCYttWWoOxKY6fcIPvD && pip install correlation_cuda-0.0.0-cp38-cp38-linux_x86_64.whl
+
+# download models
+RUN wget https://download.pytorch.org/models/vgg16-397923af.pth -P /root/.cache/torch/hub/checkpoints/
+RUN wget https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-effv2-weights/tf_efficientnetv2_b0-c7cc451f.pth -P /root/.cache/torch/hub/checkpoints/
+RUN wget https://github.com/photosynthesis-team/piq/releases/download/v0.5.4/PieAPPv0.1.pth -P /root/.cache/torch/hub/checkpoints/
+RUN wget https://github.com/photosynthesis-team/piq/releases/download/v0.4.1/dists_weights.pt -P /root/.cache/torch/hub/checkpoints/
+RUN wget http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50dilated-ppm_deepsup/encoder_epoch_20.pth -P /workspace/tensorrt/Colab-traiNNer/code/
+
+# installing pytorch tensorrt (does not properly work for CUDA11.5)
+# precompiled
+#RUN pip install https://github.com/NVIDIA/Torch-TensorRT/releases/download/v1.0.0/torch_tensorrt-1.0.0-cp38-cp38-linux_x86_64.whl
+# compiling
+#RUN pip uninstall torch_tensorrt
+#RUN wget https://github.com/bazelbuild/bazel/releases/download/4.2.1/bazel-4.2.1-installer-linux-x86_64.sh && chmod +x bazel-4.2.1-installer-linux-x86_64.sh && ./bazel-4.2.1-installer-linux-x86_64.sh
+#RUN git clone https://github.com/NVIDIA/Torch-TensorRT && cd Torch-TensorRT && rm -rf WORKSPACE && wget https://cdn.discordapp.com/attachments/724353640521007145/921197884404285450/WORKSPACE && cd py && python setup.py install --use-cxx11-abi --release
+
