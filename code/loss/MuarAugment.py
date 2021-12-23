@@ -1,8 +1,8 @@
 """
-5-Dez-21
-https://github.com/adam-mehdi/MuarAugment/blob/master/muar/augmentations.py
-https://github.com/adam-mehdi/MuarAugment/blob/master/muar/loss.py
-https://github.com/adam-mehdi/MuarAugment/blob/master/muar/transform_lists.py
+22-Dez-21
+https://github.com/adam-mehdi/MuarAugment/blob/02fa7a98796fba801403bf8df28d64ffd399f8e6/muar/augmentations.py
+https://github.com/adam-mehdi/MuarAugment/blob/02fa7a98796fba801403bf8df28d64ffd399f8e6/muar/loss.py
+https://github.com/adam-mehdi/MuarAugment/blob/02fa7a98796fba801403bf8df28d64ffd399f8e6/muar/transform_lists.py
 """
 import albumentations as A
 import kornia.augmentation as K
@@ -67,43 +67,6 @@ def kornia_list(MAGN: int = 4):
     return transform_list
 
 
-
-import torch
-import torch.nn.functional as F
-
-####################################### MixUpCrossEntropy #############################
-
-class MixUpCrossEntropy:
-    "Cross entropy that works if there is a probability of MixUp being applied."
-    def __init__(self, reduction:bool=True):
-        """ 
-        Args: 
-            reduction (bool): True if mean is applied after loss.
-        """
-        self.reduction = 'mean' if reduction else 'none'
-        self.criterion = torch.nn.BCEWithLogitsLoss() # F.cross_entropy
-        
-    def __call__(self, logits:torch.Tensor, y:torch.LongTensor):
-        """
-        Args:
-            logits (torch.Tensor): Output of the model.
-            y (torch.LongTensor): Targets of shape (batch_size) or (batch_size, 3).
-        """
-        assert len(y.shape) == 1 or y.shape[1] == 3, 'Invalid targets.'
-
-        if len(y.shape) == 1:
-            #print(logits.shape, y.shape)
-            loss = self.criterion(logits.float(), y.unsqueeze(1).float()) #, reduction=self.reduction)
-        
-        elif y.shape[1] == 3:
-            loss_a = self.criterion(logits, y[:, 0].long(), reduction=self.reduction)
-            loss_b = self.criterion(logits, y[:, 1].long(), reduction=self.reduction)
-            loss = ((1 - y[:, 2]) * loss_a + y[:, 2] * loss_b)
-
-        if self.reduction == 'mean': return loss.mean()
-        return loss
-
-
 from typing import Union
 from random import random
 
@@ -113,8 +76,6 @@ from torch import nn
 import pytorch_lightning as pl
 
 import kornia.augmentation as K
-#from muar.loss import MixUpCrossEntropy
-#from muar.transform_lists import kornia_list, albumentations_list
 
 
 ###################################### BatchRandAugment ###########################################
@@ -309,10 +270,7 @@ class MuAugment():
         self.transform = self.rand_augment
         self.N, self.M = self.rand_augment.N_TFMS, self.rand_augment.MAGN
         self.image_size = self.rand_augment.image_size
-        
-        self.loss = MixUpCrossEntropy(reduction=False)
-
-        
+    
     @torch.no_grad()
     def __call__(self, batch):
         """
@@ -321,7 +279,6 @@ class MuAugment():
                 image batch: (batch_size, n_channels, height, width)
                 target batch: (batch_size, 1) or (batch_size)
         """
-
         xb,yb = batch
         if xb.device != self.device: xb = xb.to(self.device)
         if yb.device != self.device: yb = yb.to(self.device)
@@ -340,16 +297,13 @@ class MuAugment():
             xbt,ybt = self.transform(xb,yb)
             C_images[c],C_targets[c] = xbt,ybt
         
-        preds = [self.model.netD(images) for images in C_images]
-        
-        loss_tensor = torch.stack([self.loss(pred, C_targets[i]) for i,pred in enumerate(preds)])
-        
-        S_idxs = loss_tensor.topk(self.S, dim=0).indices
-                                   
+        # is only one class, it is not possible to calculate loss like muaraugment does, creating a list of zeros with batch size
+        S_idxs = [0] * yb.shape[0]
+
         S_images = C_images[S_idxs, range(BS)]
         S_images = S_images.view(-1, N_CHANNELS, HEIGHT, WIDTH)
 
         S_targets = C_targets[S_idxs, range(BS)]
         S_targets = S_targets.view(-1, 3) if self.transform.mix else S_targets.view(-1)
-            
+
         return S_images, S_targets
