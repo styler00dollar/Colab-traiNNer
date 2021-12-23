@@ -1,6 +1,6 @@
 name: template
-scale: 1
-gpus: 0 # amount of gpus, 0 = cpu
+scale: 4
+gpus: 1 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
@@ -20,20 +20,20 @@ datasets:
     # only works with n_workers = 0, use pipeline_threads instead
     # pip install --extra-index-url https://developer.download.nvidia.com/compute/redist --upgrade nvidia-dali-cuda110
 
-    mode: DS_video # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr
+    mode: DS_lrhr # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
-    dataroot_HR: '/content/data/' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/data/' # Original, with a single directory
-    loading_backend: 'turboJPEG' # 'PIL' | 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, turboJPEG only for DS_video, 'PIL' for DS_inpaint_TF
+    dataroot_HR: '/workspace/tensorrt/train_input/hr' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/workspace/tensorrt/train_input/lr' # Original, with a single directory
+    loading_backend: 'OpenCV' # 'PIL' | 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, turboJPEG only for DS_video, 'PIL' for DS_inpaint_TF
 
     n_workers: 0 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     pipeline_threads: 16 # only for DS_video_direct
     batch_size: 2
     
     # does not apply to video dataloaders, look into python file instead
-    HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
+    HR_size: 128 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
     masks: '/content/masks/'
@@ -46,17 +46,17 @@ datasets:
     canny_max: 150
 
   val:
-    loading_backend: 'turboJPEG' # 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, currently only for DS_video
-    dataroot_HR: '/content/data/'
-    dataroot_LR: '/content/data/' # Inpainting will use this directory as input
+    loading_backend: 'OpenCV' # 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, currently only for DS_video
+    dataroot_HR: '/workspace/tensorrt/val_input/hr'
+    dataroot_LR: '/workspace/tensorrt/val_input/lr' # Inpainting will use this directory as input
 
 path:
     pretrain_model_G: #"/content/model.pth"
     pretrain_model_D: 
     checkpoint_path:
-    checkpoint_save_path: '/content/'
-    validation_output_path: '/content/val'
-    log_path: '/content/logs'
+    checkpoint_save_path: '/workspace/tensorrt/training_temp'
+    validation_output_path: '/workspace/tensorrt/training_temp/val'
+    log_path: '/workspace/tensorrt/training_temp/logs'
 
 # Generator options:
 network_G:
@@ -67,22 +67,22 @@ network_G:
     finetune: False # Important for further rfr/dsnet training. Apply that after training for a while. https://github.com/jingyuanli001/RFR-Inpainting/issues/33
 
     # ESRGAN:
-    #netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch)
-    #norm_type: null
-    #mode: CNA
-    #nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
-    #nb: 23 # (default: 23, good: 8)
-    #in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
-    #out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
-    #gc: 32
-    #group: 1
-    #convtype: Conv2D # Conv2D | PartialConv2D
-    #net_act: leakyrelu # swish | leakyrelu
-    #gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
-    #plus: false # true | false
-    #finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
-    #upsample_mode: 'upconv'
-    #nr: 3
+    netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch)
+    norm_type: null
+    mode: CNA
+    nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
+    nb: 23 # (default: 23, good: 8)
+    in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
+    out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
+    gc: 32
+    group: 1
+    convtype: Conv2D # Conv2D | PartialConv2D
+    net_act: leakyrelu # swish | leakyrelu
+    gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
+    plus: false # true | false
+    finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
+    upsample_mode: 'upconv'
+    nr: 3
 
     # ASRGAN:
     #which_model_G: asr_resnet # asr_resnet | asr_cnn
@@ -430,15 +430,15 @@ network_G:
 
     # ----Interpolation Generators----
     # cain (2020)
-    netG: CAIN
-    depth: 3
-    conv: WSConv # doconv | conv2d | gated | TBC | dynamic | MBConv | Involution | CondConv | fft | WSConv
+    #netG: CAIN
+    #depth: 3
+    #conv: WSConv # doconv | conv2d | gated | TBC | dynamic | MBConv | Involution | CondConv | fft | WSConv
     # Warning: Configure OutlookAttention dimension according to resolution manually (160 for 720p)
-    attention: CA # CA | OutlookAttention | A2Atttention | CBAM | CoTAttention | CoordAttention | ECAAttention | HaloAttention | ParNetAttention | TripletAttention | SKAttention | SGE | SEAttention | PolarizedSelfAttention
-    RG: 2 # ResidualGroup amount
-    # for dynamic
-    nof_kernels: 4
-    reduce: 4
+    #attention: CA # CA | OutlookAttention | A2Atttention | CBAM | CoTAttention | CoordAttention | ECAAttention | HaloAttention | ParNetAttention | TripletAttention | SKAttention | SGE | SEAttention | PolarizedSelfAttention
+    #RG: 2 # ResidualGroup amount
+    ## for dynamic
+    #nof_kernels: 4
+    #reduce: 4
 
     # rife 3.8
     #netG: rife
@@ -469,7 +469,7 @@ network_D:
     # needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
     WSConv_replace: True
 
-    netD: # in case there is no discriminator, leave it empty
+    #netD: # in case there is no discriminator, leave it empty
 
     # VGG
     #netD: VGG
@@ -671,8 +671,8 @@ network_D:
     # timm
     # pip install timm
     # you can loop up models here: https://rwightman.github.io/pytorch-image-models/
-    #netD: timm
-    #timm_model: "tf_efficientnetv2_b0"
+    netD: timm
+    timm_model: "tf_efficientnetv2_b0"
 
     #netD: resnet3d
     #model_depth: 50 # [10, 18, 34, 50, 101, 152, 200]
@@ -703,10 +703,10 @@ network_D:
 train: 
     # Adam8bit needs "pip install bitsandbytes-cuda111"
     # SGD_AGC needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
-    scheduler: Adam # Adam, AdamP, Adam, SGDP, MADGRAD, Adam8bit, SGD_AGC, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
+    scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, Adam8bit, SGD_AGC, cosangulargrad [maybe broken], tanangulargrad [maybe broken]
     # ACG needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
     AGC: False # currently only for generator, only works with certain optimizers
-    lr_g: 0.00001 # 0.00005
+    lr_g: 0.0001 # 0.00005
     lr_d: 0.0001
     
     # AdamP, AGDP, MADGRAD, SGD_AGC, cosangulargrad, tanangulargrad
@@ -820,7 +820,7 @@ train:
     # you need to have tensorrt and torch_tensorrt, use docker or install it manually
     # adjust optimum model compile values in CustomTrainClass
     # fp16 will only work on fp16 compatible hardware, convert will only work with a GPU, FP16 untested
-    perceptual_tensorrt: True 
+    perceptual_tensorrt: False 
 
 
     # high receptive field (HRF) perceptual loss
@@ -864,7 +864,7 @@ train:
     # may be changed in the future, to have custom feature extractors
     IS_weight: 0 # unstable
     FID_weight: 0
-    KID_weight: 1
+    KID_weight: 0
     PR_weight: 0 # only fp32
     # todo(?): LPIPS
     force_piq_fp16: True
@@ -873,11 +873,22 @@ train:
     CTSDG_edge_weight: 0 #0.01
     CTSDG_projected_weight: 0 #0.1
 
-    # Differentiable Augmentation for Data-Efficient GAN Training
-    diffaug: False
+    # Three different augmentation options, diffaug and muaraugment apply to both training loops,
+    # while batch_aug only applies to the discriminator training loop
+    augmentation_method: "batch_aug" # diffaug, MuarAugment, batch_aug, None
+    # diffaug
     policy: 'color,translation,cutout'
-    # either MuarAugment OR diffaug
-    MuarAugment: False
+    # MuarAugment
+    N_TFMS: 3 # Number of transformations
+    MAGN: 3 # Magnitude of augmentation applied
+    N_COMPS: 4 # Number of compositions placed on each image
+    N_SELECTED: 2 # Number of selected compositions for each image
+    # batch_aug
+    mixopts: ["blend", "rgb", "mixup", "cutmix", "cutmixup", "cutout"]
+    mixprob: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]  # , 1.0]
+    mixalpha: [0.6, 1.0, 1.2, 0.7, 0.7, 0.001]  # , 0.7]
+    aux_mixprob: 1.0
+    aux_mixalpha: 1.2
 
     # Metrics
     metrics: [] # PSNR | SSIM | AE | MSE

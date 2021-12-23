@@ -17,12 +17,9 @@ from init import weights_init
 import os
 import numpy as np
 
-if cfg['train']['diffaug'] == True:
+# diffaug import is global since self cant be used
+if cfg['train']['augmentation_method'] == "diffaug":
   from loss.diffaug import DiffAugment
-
-if cfg['network_G']['CEM'] == True:
-  from arch.CEM import CEMnet
-
 
 class CustomTrainClass(pl.LightningModule):
   def __init__(self):
@@ -828,17 +825,24 @@ class CustomTrainClass(pl.LightningModule):
 
     self.iter_check = 0
 
-    if cfg['train']['MuarAugment'] == True:
-      from loss.MuarAugment import BatchRandAugment, MuAugment
-      rand_augment = BatchRandAugment(N_TFMS=3, MAGN=3, mean=[0.7032, 0.6346, 0.6234], std=[0.2520, 0.2507, 0.2417])
-      self.mu_transform = MuAugment(rand_augment, N_COMPS=4, N_SELECTED=2)
-
     if cfg['train']['KID_weight'] > 0 or cfg['train']['IS_weight'] > 0 or cfg['train']['FID_weight'] > 0 or cfg['train']['PR_weight'] > 0:
       from loss.inceptionV3 import fid_inception_v3
       self.piq_model = fid_inception_v3()
       self.piq_model = self.piq_model.cuda().eval()
       if cfg['train']['force_piq_fp16'] == True:
         self.piq_model = self.piq_model.half()
+
+    # augmentation
+    if cfg['train']['augmentation_method'] == "MuarAugment":
+      from loss.MuarAugment import BatchRandAugment, MuAugment
+      rand_augment = BatchRandAugment(N_TFMS=cfg['train']['N_TFMS'], MAGN=cfg['train']['MAGN'], mean=[0.7032, 0.6346, 0.6234], std=[0.2520, 0.2507, 0.2417])
+      self.mu_transform = MuAugment(rand_augment, N_COMPS=cfg['train']['N_COMPS'], N_SELECTED=cfg['train']['N_SELECTED'])
+    elif cfg['train']['augmentation_method'] == "batch_aug":
+      from loss.batchaug import BatchAugment
+      self.batch_aug = BatchAugment(mixopts = cfg['train']['mixopts'], mixprob = cfg['train']['mixprob'], mixalpha = cfg['train']['mixalpha'], aux_mixprob = cfg['train']['aux_mixprob'], aux_mixalpha = cfg['train']['aux_mixalpha'])
+
+    if cfg['network_G']['CEM'] == True:
+      from arch.CEM import CEMnet
 
   def forward(self, image, masks):
       return self.netG(image, masks)
@@ -1294,19 +1298,19 @@ class CustomTrainClass(pl.LightningModule):
           fake = Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False).unsqueeze(-1).to(self.device)
           if cfg['network_D']['netD'] == 'resnet3d':
             # 3d
-            if cfg['train']['diffaug'] == True:
+            if cfg['train']['augmentation_method'] == "diffaug":
               d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.discriminator_criterion(self.netD(DiffAugment(torch.stack([train_batch[0], out, train_batch[1]], dim=1), cfg['train']['policy'])), fake)
             else:
               d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.discriminator_criterion(self.netD(torch.stack([train_batch[0], out, train_batch[1]], dim=1)), fake)
 
           else:
             # 2d
-            if cfg['train']['diffaug'] == True:
+            if cfg['train']['augmentation_method'] == "diffaug":
               d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.discriminator_criterion(self.netD(DiffAugment(out, cfg['train']['policy'])), fake)
-            elif cfg['train']['MuarAugment'] == True:
+            elif cfg['train']['augmentation_method'] == "MuarAugment":
               self.mu_transform.setup(self)
-              mu_augment, fake = self.mu_transform((out, fake))
-              d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.discriminator_criterion(self.netD(mu_augment).squeeze().float(), fake.float())
+              mu_augment, _ = self.mu_transform((out, fake))
+              d_loss_fool = cfg["network_D"]["d_loss_fool_weight"] * self.discriminator_criterion(self.netD(mu_augment).float(), fake.float())
             else:
               if cfg['network_D']['netD'] == 'FFCNLayerDiscriminator':
                 FFCN_class, FFCN_feature = self.netD(out)
@@ -1337,7 +1341,7 @@ class CustomTrainClass(pl.LightningModule):
 
         if cfg['network_D']['netD'] == 'resnet3d':
           # 3d
-          if cfg['train']['diffaug'] == True:
+          if cfg['train']['augmentation_method'] == "diffaug":
             dis_real_loss = self.discriminator_criterion(self.netD(DiffAugment(torch.stack([train_batch[0], train_batch[2], train_batch[1]], dim=1), cfg['train']['policy'])), valid)
             dis_fake_loss = self.discriminator_criterion(self.netD(torch.stack([train_batch[0], out, train_batch[1]], dim=1)), fake)
           else:
@@ -1345,17 +1349,21 @@ class CustomTrainClass(pl.LightningModule):
             dis_fake_loss = self.discriminator_criterion(self.netD(torch.stack([train_batch[0], out, train_batch[1]], dim=1)), fake)
         else:
           # 2d
-          if cfg['train']['diffaug'] == True:
+          if cfg['train']['augmentation_method'] == "diffaug":
             discr_out_fake = self.netD(DiffAugment(out, cfg['train']['policy']))
             discr_out_real = self.netD(DiffAugment(train_batch[2], cfg['train']['policy']))
-          elif cfg['train']['MuarAugment'] == True:
+          elif cfg['train']['augmentation_method'] == "MuarAugment":
             self.mu_transform.setup(self)
             # fake
-            mu_augment, fake = self.mu_transform((out, fake))
-            discr_out_fake = self.netD(mu_augment).squeeze()
+            mu_augment, _ = self.mu_transform((out, fake))
+            discr_out_fake = self.netD(mu_augment) #.squeeze()
             # real
-            mu_augment, valid = self.mu_transform((train_batch[2], valid))
-            discr_out_real = self.netD(mu_augment).squeeze()
+            mu_augment, _ = self.mu_transform((train_batch[2], valid))
+            discr_out_real = self.netD(mu_augment) #.squeeze()
+          elif cfg['train']['augmentation_method'] == "batch_aug":
+            fake_out, real_out = self.batch_aug(out, train_batch[2])
+            discr_out_fake = self.netD(fake_out)
+            discr_out_real = self.netD(real_out)
           else:
             if cfg['network_D']['netD'] == 'FFCNLayerDiscriminator':
               discr_out_fake, _ = self.netD(out)
