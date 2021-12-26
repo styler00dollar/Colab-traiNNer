@@ -440,7 +440,7 @@ network_G:
     #nof_kernels: 4
     #reduce: 4
 
-    # rife 3.8
+    # rife 4.0
     #netG: rife
 
     # RRIN (2020)
