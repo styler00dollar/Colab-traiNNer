@@ -1487,7 +1487,7 @@ class CustomTrainClass(pl.LightningModule):
       out = self.netG(train_batch[0][0], train_batch[0][1])
 
     if cfg['network_G']['netG'] == 'rife':
-      out, _ = self.netG(train_batch[0][0], train_batch[0][1], training=False)
+      out, _ = self.netG(train_batch[0][0], train_batch[0][1], training=True)
 
     #########################
     if cfg['network_G']['netG'] == 'lama' or cfg['network_G']['netG'] == 'MST' or cfg['network_G']['netG'] == 'MANet' or cfg['network_G']['netG'] == 'context_encoder' or cfg['network_G']['netG'] == 'aotgan' or cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
