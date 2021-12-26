@@ -1311,3 +1311,29 @@ class FocalFrequencyLoss(nn.Module):
 
         # calculate focal frequency loss
         return self.loss_formulation(pred_freq, target_freq, matrix) * self.loss_weight
+
+# https://github.com/hzwer/Practical-RIFE/blob/main/model/loss.py
+class SOBEL(nn.Module):
+    def __init__(self):
+        super(SOBEL, self).__init__()
+        self.kernelX = torch.tensor([
+            [1, 0, -1],
+            [2, 0, -2],
+            [1, 0, -1],
+        ]).float()
+        self.kernelY = self.kernelX.clone().T
+        self.kernelX = self.kernelX.unsqueeze(0).unsqueeze(0).to(device)
+        self.kernelY = self.kernelY.unsqueeze(0).unsqueeze(0).to(device)
+
+    def forward(self, pred, gt):
+        N, C, H, W = pred.shape[0], pred.shape[1], pred.shape[2], pred.shape[3]
+        img_stack = torch.cat(
+            [pred.reshape(N*C, 1, H, W), gt.reshape(N*C, 1, H, W)], 0)
+        sobel_stack_x = F.conv2d(img_stack, self.kernelX, padding=1)
+        sobel_stack_y = F.conv2d(img_stack, self.kernelY, padding=1)
+        pred_X, gt_X = sobel_stack_x[:N*C], sobel_stack_x[N*C:]
+        pred_Y, gt_Y = sobel_stack_y[:N*C], sobel_stack_y[N*C:]
+
+        L1X, L1Y = torch.abs(pred_X-gt_X), torch.abs(pred_Y-gt_Y)
+        loss = (L1X+L1Y)
+        return loss

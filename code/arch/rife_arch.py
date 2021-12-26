@@ -152,7 +152,7 @@ class IFNet(nn.Module):
             tmp = self.unet(img0, img1, warped_img0, warped_img1, mask, flow, c0, c1)
             res = tmp[:, :3] * 2 - 1
             merged[3] = torch.clamp(merged[3] + res, 0, 1)
-        return merged[3][:, :, :h , :w]
+        return merged[3][:, :, :h , :w], flow_list
 
 def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
     return nn.Sequential(

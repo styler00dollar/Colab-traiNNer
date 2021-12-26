@@ -803,6 +803,10 @@ class CustomTrainClass(pl.LightningModule):
     self.KID = KID()
     self.PR = PR()
 
+    if cfg['network_G']['netG'] == 'rife':
+      from loss.loss import SOBEL
+      self.sobel = SOBEL()
+
     # discriminator loss
     if cfg['network_D']['discriminator_criterion'] == "MSE":
       self.discriminator_criterion = torch.nn.MSELoss()
@@ -932,8 +936,11 @@ class CustomTrainClass(pl.LightningModule):
 
       ############################
       # if frame interpolation
-      if cfg['network_G']['netG'] == "CDFI" or cfg['network_G']['netG'] == "sepconv_enhanced" or cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':
+      if cfg['network_G']['netG'] == "CDFI" or cfg['network_G']['netG'] == "sepconv_enhanced" or cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':
         out = self.netG(train_batch[0], train_batch[1])
+
+      if cfg['network_G']['netG'] == 'rife':
+        out, flow = self.netG(train_batch[0], train_batch[1], training=True)
 
       # ESRT / swinir / lightweight_gan / RRDB_net / GLEAN / GPEN / comodgan
       if cfg['network_G']['netG'] == "ESRT" or cfg['network_G']['netG'] == "swinir" or cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
@@ -1290,6 +1297,12 @@ class CustomTrainClass(pl.LightningModule):
           total_loss += projected_loss
           writer.add_scalar('loss/projected_loss', projected_loss, self.trainer.global_step)
 
+        # rife
+        if cfg['network_G']['netG'] == 'rife':
+          sobel_loss = self.sobel(flow[3], flow[3]*0).mean()
+          total_loss += sobel_loss
+          writer.add_scalar('loss/sobel_loss', sobel_loss, self.trainer.global_step)
+
         #return total_loss
         #########################
         if cfg['network_D']['netD'] != None:
@@ -1470,8 +1483,11 @@ class CustomTrainClass(pl.LightningModule):
       out = train_batch[0]*(train_batch[1])+out*(1-train_batch[1])
 
     # if frame interpolation
-    if cfg['network_G']['netG'] == "CDFI" or cfg['network_G']['netG'] == "sepconv_enhanced" or cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'rife' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':
+    if cfg['network_G']['netG'] == "CDFI" or cfg['network_G']['netG'] == "sepconv_enhanced" or cfg['network_G']['netG'] == 'CAIN' or cfg['network_G']['netG'] == 'RRIN' or cfg['network_G']['netG'] == 'ABME' or  cfg['network_G']['netG'] == 'EDSC':
       out = self.netG(train_batch[0][0], train_batch[0][1])
+
+    if cfg['network_G']['netG'] == 'rife':
+      out, _ = self.netG(train_batch[0][0], train_batch[0][1], training=False)
 
     #########################
     if cfg['network_G']['netG'] == 'lama' or cfg['network_G']['netG'] == 'MST' or cfg['network_G']['netG'] == 'MANet' or cfg['network_G']['netG'] == 'context_encoder' or cfg['network_G']['netG'] == 'aotgan' or cfg['network_G']['netG'] == 'DFNet' or cfg['network_G']['netG'] == 'AdaFill' or cfg['network_G']['netG'] == 'MEDFE' or cfg['network_G']['netG'] == 'RFR' or cfg['network_G']['netG'] == 'LBAM' or cfg['network_G']['netG'] == 'DMFN' or cfg['network_G']['netG'] == 'Partial' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'RN' or cfg['network_G']['netG'] == 'DSNet' or cfg['network_G']['netG'] == 'DSNetRRDB' or cfg['network_G']['netG'] == 'DSNetDeoldify':
