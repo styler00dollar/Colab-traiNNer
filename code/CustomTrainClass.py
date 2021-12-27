@@ -305,6 +305,10 @@ class CustomTrainClass(pl.LightningModule):
       from arch.CDFI_arch import AdaCoFNet
       self.netG = AdaCoFNet()
 
+    elif cfg['network_G']['netG'] == "SRVGGNetCompact":
+      from arch.SRVGGNetCompact_arch import SRVGGNetCompact
+      self.netG = SRVGGNetCompact(num_in_ch=cfg['network_G']['num_in_ch'], num_out_ch=cfg['network_G']['num_out_ch'], num_feat=cfg['network_G']['num_feat'], num_conv=cfg['network_G']['num_conv'], upscale=cfg['network_G']['upscale'], act_type=cfg['network_G']['act_type'])
+
     if cfg['path']['checkpoint_path'] is None and cfg['network_G']['netG'] != 'GLEAN' and cfg['network_G']['netG'] != 'srflow' and cfg['network_G']['netG'] != 'GFPGAN':
       if self.global_step == 0:
       #if self.trainer.global_step == 0:
@@ -943,7 +947,7 @@ class CustomTrainClass(pl.LightningModule):
         out, flow = self.netG(train_batch[0], train_batch[1], training=True)
 
       # ESRT / swinir / lightweight_gan / RRDB_net / GLEAN / GPEN / comodgan
-      if cfg['network_G']['netG'] == "ESRT" or cfg['network_G']['netG'] == "swinir" or cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
+      if cfg['network_G']['netG'] == "SRVGGNetCompact" or cfg['network_G']['netG'] == "ESRT" or cfg['network_G']['netG'] == "swinir" or cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
         if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
             # masked test with inpaint dataloader
             tmp = torch.cat([train_batch[0], train_batch[1]],1)
@@ -1527,8 +1531,8 @@ class CustomTrainClass(pl.LightningModule):
       out = self.netG(train_batch[0])
 
     ############################
-    # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan / ESRT
-    if cfg['network_G']['netG'] == "ESRT" or cfg['network_G']['netG'] == "swinir" or cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
+    # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan / ESRT / SRVGGNetCompact
+    if cfg['network_G']['netG'] == "SRVGGNetCompact" or cfg['network_G']['netG'] == "ESRT" or cfg['network_G']['netG'] == "swinir" or cfg['network_G']['netG'] == 'lightweight_gan' or cfg['network_G']['netG'] == 'RRDB_net' or cfg['network_G']['netG'] == 'GLEAN' or cfg['network_G']['netG'] == 'GPEN' or cfg['network_G']['netG'] == 'comodgan':
       if cfg['datasets']['train']['mode'] == 'DS_inpaint' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled' or cfg['datasets']['train']['mode'] == 'DS_inpaint_tiled_batch':
           # masked test with inpaint dataloader
           tmp = torch.cat([train_batch[0], train_batch[1]],1)

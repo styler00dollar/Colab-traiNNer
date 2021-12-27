@@ -24,13 +24,13 @@ datasets:
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
-    dataroot_HR: '/workspace/tensorrt/train_input/hr' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/workspace/tensorrt/train_input/lr' # Original, with a single directory
+    dataroot_HR: '/content/data/hr' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/content/data/lr' # Original, with a single directory
     loading_backend: 'OpenCV' # 'PIL' | 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, turboJPEG only for DS_video, 'PIL' for DS_inpaint_TF
 
     n_workers: 0 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     pipeline_threads: 16 # only for DS_video_direct
-    batch_size: 2
+    batch_size: 1
     
     # does not apply to video dataloaders, look into python file instead
     HR_size: 128 # The resolution the network will get. Random crop gets applied if that resolution does not match.
@@ -47,16 +47,16 @@ datasets:
 
   val:
     loading_backend: 'OpenCV' # 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, currently only for DS_video
-    dataroot_HR: '/workspace/tensorrt/val_input/hr'
-    dataroot_LR: '/workspace/tensorrt/val_input/lr' # Inpainting will use this directory as input
+    dataroot_HR: '/content/data/hr'
+    dataroot_LR: '/content/data/lr' # Inpainting will use this directory as input
 
 path:
     pretrain_model_G: #"/content/model.pth"
     pretrain_model_D: 
     checkpoint_path:
-    checkpoint_save_path: '/workspace/tensorrt/training_temp'
-    validation_output_path: '/workspace/tensorrt/training_temp/val'
-    log_path: '/workspace/tensorrt/training_temp/logs'
+    checkpoint_save_path: '/content/'
+    validation_output_path: '/content/val'
+    log_path: '/content/logs'
 
 # Generator options:
 network_G:
@@ -67,22 +67,22 @@ network_G:
     finetune: False # Important for further rfr/dsnet training. Apply that after training for a while. https://github.com/jingyuanli001/RFR-Inpainting/issues/33
 
     # ESRGAN:
-    netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch)
-    norm_type: null
-    mode: CNA
-    nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
-    nb: 23 # (default: 23, good: 8)
-    in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
-    out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
-    gc: 32
-    group: 1
-    convtype: Conv2D # Conv2D | PartialConv2D
-    net_act: leakyrelu # swish | leakyrelu
-    gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
-    plus: false # true | false
-    finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
-    upsample_mode: 'upconv'
-    nr: 3
+    #netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch)
+    #norm_type: null
+    #mode: CNA
+    #nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
+    #nb: 23 # (default: 23, good: 8)
+    #in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
+    #out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
+    #gc: 32
+    #group: 1
+    #convtype: Conv2D # Conv2D | PartialConv2D
+    #net_act: leakyrelu # swish | leakyrelu
+    #gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
+    #plus: false # true | false
+    #finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
+    #upsample_mode: 'upconv'
+    #nr: 3
 
     # ASRGAN:
     #which_model_G: asr_resnet # asr_resnet | asr_cnn
@@ -272,7 +272,16 @@ network_G:
     #netG: ESRT
     #hiddenDim: 32
     #mlpDim: 128
-    
+
+    # RealESRGAN Anime Compact model (2021)
+    netG: SRVGGNetCompact
+    num_in_ch: 3
+    num_out_ch: 3
+    num_feat: 64
+    num_conv: 16
+    upscale: 4
+    act_type: 'prelu'
+
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
     #netG: DFNet
