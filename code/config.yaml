@@ -886,6 +886,9 @@ train:
     CTSDG_edge_weight: 0 #0.01
     CTSDG_projected_weight: 0 #0.1
 
+    # loss for rife
+    SOBEL_loss: 0.1 # not recommended, leave it at 0
+
     # Three different augmentation options, diffaug and muaraugment apply to both training loops,
     # while batch_aug only applies to the discriminator training loop
     augmentation_method: "batch_aug" # diffaug, MuarAugment, batch_aug, None

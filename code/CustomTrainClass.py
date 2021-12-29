@@ -1303,7 +1303,7 @@ class CustomTrainClass(pl.LightningModule):
 
         # rife
         if cfg['network_G']['netG'] == 'rife':
-          sobel_loss = self.sobel(flow[3], flow[3]*0).mean()
+          sobel_loss = self.sobel(flow[3], flow[3]*0).mean() * cfg['train']['SOBEL_loss']
           total_loss += sobel_loss
           writer.add_scalar('loss/sobel_loss', sobel_loss, self.trainer.global_step)
 
