@@ -20,12 +20,12 @@ datasets:
     # only works with n_workers = 0, use pipeline_threads instead
     # pip install --extra-index-url https://developer.download.nvidia.com/compute/redist --upgrade nvidia-dali-cuda110
 
-    mode: DS_lrhr # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr
+    mode: DS_video # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
-    dataroot_HR: '/content/data/hr' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/data/lr' # Original, with a single directory
+    dataroot_HR: '/content/ramdisk/dataset/' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/content/ramdisk/dataset/' # Original, with a single directory
     loading_backend: 'OpenCV' # 'PIL' | 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, turboJPEG only for DS_video, 'PIL' for DS_inpaint_TF
 
     n_workers: 0 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
@@ -47,8 +47,8 @@ datasets:
 
   val:
     loading_backend: 'OpenCV' # 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, currently only for DS_video
-    dataroot_HR: '/content/data/hr'
-    dataroot_LR: '/content/data/lr' # Inpainting will use this directory as input
+    dataroot_HR: '/content/drive/MyDrive/Colab-BasicSR/FourierUnit_conv_ca_2/val_input/'
+    dataroot_LR: '/content/drive/MyDrive/Colab-BasicSR/FourierUnit_conv_ca_2/val_input/' # Inpainting will use this directory as input
 
 path:
     pretrain_model_G: #"/content/model.pth"
@@ -274,13 +274,13 @@ network_G:
     #mlpDim: 128
 
     # RealESRGAN Anime Compact model (2021)
-    netG: SRVGGNetCompact
-    num_in_ch: 3
-    num_out_ch: 3
-    num_feat: 64
-    num_conv: 16
-    upscale: 4
-    act_type: 'prelu'
+    #netG: SRVGGNetCompact
+    #num_in_ch: 3
+    #num_out_ch: 3
+    #num_feat: 64
+    #num_conv: 16
+    #upscale: 4
+    #act_type: 'prelu'
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
@@ -450,7 +450,11 @@ network_G:
     #reduce: 4
 
     # rife 4.0
-    #netG: rife
+    netG: rife
+    conv: conv2d # doconv | conv2d | gated | TBC | dynamic | MBConv | fft | WSConv
+    # for dynamic
+    nof_kernels: 4
+    reduce: 4
 
     # RRIN (2020)
     #netG: RRIN

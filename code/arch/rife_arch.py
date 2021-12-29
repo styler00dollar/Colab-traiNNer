@@ -5,6 +5,10 @@ https://drive.google.com/file/d/1mUK9iON6Es14oK46-cCflRoPTeGiI_A9/view
 https://github.com/hzwer/Practical-RIFE/blob/main/model/warplayer.py
 https://github.com/HolyWu/vs-rife/blob/master/vsrife/__init__.py
 """
+import yaml
+with open("config.yaml", "r") as ymlfile:
+    cfg = yaml.safe_load(ymlfile)
+    
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.optim import AdamW
 import itertools
@@ -16,6 +20,30 @@ import torch.optim as optim
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 backwarp_tenGrid = {}
+
+# CONV
+if cfg['network_G']['conv'] == 'doconv':
+  from .conv.doconv import *
+
+if cfg['network_G']['conv'] == 'gated':
+  from .conv.gatedconv import *
+
+if cfg['network_G']['conv'] == 'TBC':
+  from .conv.TBC import *
+
+if cfg['network_G']['conv'] == 'dynamic':
+  from .conv.dynamicconv import *
+  nof_kernels_param = cfg['network_G']['nof_kernels']
+  reduce_param = cfg['network_G']['reduce']
+
+if cfg['network_G']['conv'] == 'MBConv':
+  from .conv.MBConv import MBConv
+
+if cfg['network_G']['conv'] == 'fft':
+  from .lama_arch import FourierUnit
+
+if cfg['network_G']['conv'] == 'WSConv':
+  from nfnets import WSConv2d, WSConvTranspose2d, ScaledStdConv2d
 
 def warp(tenInput, tenFlow):
     k = (str(tenFlow.device), str(tenFlow.size()))
@@ -33,21 +61,160 @@ def warp(tenInput, tenFlow):
     g = (backwarp_tenGrid[k] + tenFlow).permute(0, 2, 3, 1)
     return torch.nn.functional.grid_sample(input=tenInput, grid=g, mode='bilinear', padding_mode='border', align_corners=True)
 
-
+# CONV
 def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
-    return nn.Sequential(
-        nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
-                  padding=padding, dilation=dilation, bias=True),        
+    if cfg['network_G']['conv'] == 'doconv':
+      return nn.Sequential(
+        DOConv2d(in_planes, out_planes, stride=stride, kernel_size=1, bias=True),
         nn.PReLU(out_planes)
-    )
+        )
+    elif cfg['network_G']['conv'] == 'gated':
+      return nn.Sequential(
+          GatedConv2dWithActivation(in_planes, out_planes, stride=stride, kernel_size=1, bias=True),
+          nn.PReLU(out_planes)
+          )
+    elif cfg['network_G']['conv'] == 'TBC':
+      return nn.Sequential(
+          TiedBlockConv2d(in_planes, out_planes, stride=stride, kernel_size=1, bias=True),
+          nn.PReLU(out_planes)
+          )
+    elif cfg['network_G']['conv'] == 'dynamic':
+      return nn.Sequential(
+          DynamicConvolution(nof_kernels_param, reduce_param, in_channels=in_planes, out_channels=out_planes, stride=stride, kernel_size=1, bias=True),
+          nn.PReLU(out_planes)
+          )
+    elif cfg['network_G']['conv'] == 'MBConv':
+      return nn.Sequential(
+          MBConv(in_planes, out_planes, 1, 1, True),
+          nn.PReLU(out_planes)
+          )
+    elif cfg['network_G']['conv'] == 'fft':
+      return nn.Sequential(
+          FourierUnit(in_planes, out_planes),
+          nn.PReLU(out_planes)
+          )
+    elif cfg['network_G']['conv'] == 'WSConv':
+      return nn.Sequential(
+          WSConv2d(in_planes, out_planes, stride=stride, kernel_size=1, bias=True),
+          nn.PReLU(out_planes)
+          )
+    elif cfg['network_G']['conv'] == 'conv2d':
+      return nn.Sequential(
+          nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
+                    padding=padding, dilation=dilation, bias=True),
+          nn.PReLU(out_planes)
+          )
 
 def conv_bn(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
-    return nn.Sequential(
-        nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
-                  padding=padding, dilation=dilation, bias=False),
+    if cfg['network_G']['conv'] == 'doconv':
+      return nn.Sequential(
+        DOConv2d(in_planes, out_planes, stride=stride, kernel_size=kernel_size, bias=True),
         nn.BatchNorm2d(out_planes),
         nn.PReLU(out_planes)
-    )
+        )
+    elif cfg['network_G']['conv'] == 'gated':
+      return nn.Sequential(
+          GatedConv2dWithActivation(in_planes, out_planes, stride=stride, kernel_size=kernel_size, bias=True),
+          nn.BatchNorm2d(out_planes),
+          nn.PReLU(out_planes)
+          )
+    elif cfg['network_G']['conv'] == 'TBC':
+      return nn.Sequential(
+          TiedBlockConv2d(in_planes, out_planes, stride=stride, kernel_size=kernel_size, bias=True),
+          nn.BatchNorm2d(out_planes),
+          nn.PReLU(out_planes)
+          )
+    elif cfg['network_G']['conv'] == 'dynamic':
+      return nn.Sequential(
+          DynamicConvolution(nof_kernels_param, reduce_param, in_channels=in_planes, out_channels=out_planes, stride=stride, kernel_size=kernel_size, bias=True),
+          nn.BatchNorm2d(out_planes),
+          nn.PReLU(out_planes)
+          )
+    elif cfg['network_G']['conv'] == 'MBConv':
+      return nn.Sequential(
+          MBConv(in_planes, out_planes, 1, 1, True),
+          nn.BatchNorm2d(out_planes),
+          nn.PReLU(out_planes)
+          )
+    elif cfg['network_G']['conv'] == 'fft':
+      return nn.Sequential(
+          FourierUnit(in_planes, out_planes),
+          nn.BatchNorm2d(out_planes),
+          nn.PReLU(out_planes)
+          )
+    elif cfg['network_G']['conv'] == 'WSConv':
+      return nn.Sequential(
+          WSConv2d(in_planes, out_planes, stride=stride, kernel_size=kernel_size, bias=True),
+          nn.BatchNorm2d(out_planes),
+          nn.PReLU(out_planes)
+          )
+    elif cfg['network_G']['conv'] == 'conv2d':
+      return nn.Sequential(
+          nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
+                    padding=padding, dilation=dilation, bias=True),
+          nn.BatchNorm2d(out_planes),
+          nn.PReLU(out_planes)
+          )
+
+
+def conv_woact(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
+    return nn.Sequential(
+        nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
+                  padding=padding, dilation=dilation, bias=True),
+        )
+
+
+def conv_woact(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
+    if cfg['network_G']['conv'] == 'doconv':
+      return nn.Sequential(
+        DOConv2d(in_planes, out_planes, stride=stride, kernel_size=kernel_size, bias=True)
+        )
+    elif cfg['network_G']['conv'] == 'gated':
+      return nn.Sequential(
+          GatedConv2dWithActivation(in_planes, out_planes, stride=stride, kernel_size=kernel_size, bias=True)
+          )
+    elif cfg['network_G']['conv'] == 'TBC':
+      return nn.Sequential(
+          TiedBlockConv2d(in_planes, out_planes, stride=stride, kernel_size=kernel_size, bias=True)
+          )
+    elif cfg['network_G']['conv'] == 'dynamic':
+      return nn.Sequential(
+          DynamicConvolution(nof_kernels_param, reduce_param, in_channels=in_planes, out_channels=out_planes, stride=stride, kernel_size=kernel_size, bias=True)
+          )
+    elif cfg['network_G']['conv'] == 'MBConv':
+      return nn.Sequential(
+          MBConv(in_planes, out_planes, 1, 1, True)
+          )
+    elif cfg['network_G']['conv'] == 'fft':
+      return nn.Sequential(
+          FourierUnit(in_planes, out_planes)
+          )
+    elif cfg['network_G']['conv'] == 'WSConv':
+      return nn.Sequential(
+          WSConv2d(in_planes, out_planes, stride=stride, kernel_size=kernel_size, bias=True)
+          )
+    elif cfg['network_G']['conv'] == 'conv2d':
+      return nn.Sequential(
+          nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
+                    padding=padding, dilation=dilation, bias=True)
+          )
+
+def deconv(in_planes, out_planes, kernel_size=4, stride=2, padding=1):
+    return nn.Sequential(
+        torch.nn.ConvTranspose2d(in_channels=in_planes, out_channels=out_planes, kernel_size=4, stride=2, padding=1, bias=True),
+        nn.PReLU(out_planes)
+        )
+
+class Conv2(nn.Module):
+    def __init__(self, in_planes, out_planes, stride=2):
+        super(Conv2, self).__init__()
+        self.conv1 = conv(in_planes, out_planes, 3, stride, 1)
+        self.conv2 = conv(out_planes, out_planes, 3, 1, 1)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        return x
 
 class IFBlock(nn.Module):
     def __init__(self, in_planes, c=64):
@@ -68,6 +235,13 @@ class IFBlock(nn.Module):
         )
         self.lastconv = nn.ConvTranspose2d(c, 5, 4, 2, 1)
 
+        # shape hotfix
+        if cfg['network_G']['conv'] == 'fft' or cfg['network_G']['conv'] == 'MBConv':
+          self.fixconv192 = torch.nn.Conv2d(192, 192, kernel_size=1, stride=4)
+          self.fixconv128 = torch.nn.Conv2d(128, 128, kernel_size=1, stride=4)
+          self.fixconv96 = torch.nn.Conv2d(96, 96, kernel_size=1, stride=4)
+          self.fixconv64 = torch.nn.Conv2d(64, 64, kernel_size=1, stride=4)
+
     def forward(self, x, flow=None, scale=1):
         x = F.interpolate(x, scale_factor= 1. / scale, mode="bilinear", align_corners=False)
         if flow is not None:
@@ -75,6 +249,17 @@ class IFBlock(nn.Module):
             x = torch.cat((x, flow), 1)
         feat = self.conv0(x)
         feat = self.convblock(feat) + feat
+
+        # shape hotfix
+        if (cfg['network_G']['conv'] == 'fft' or cfg['network_G']['conv'] == 'MBConv') and feat.shape[1] == 192:
+          feat = self.fixconv192(feat)
+        elif (cfg['network_G']['conv'] == 'fft' or cfg['network_G']['conv'] == 'MBConv') and feat.shape[1] == 128:
+          feat = self.fixconv128(feat)
+        elif (cfg['network_G']['conv'] == 'fft' or cfg['network_G']['conv'] == 'MBConv') and feat.shape[1] == 96:
+          feat = self.fixconv96(feat)
+        elif (cfg['network_G']['conv'] == 'fft' or cfg['network_G']['conv'] == 'MBConv') and feat.shape[1] == 64:
+          feat = self.fixconv64(feat)
+
         tmp = self.lastconv(feat)
         tmp = F.interpolate(tmp, scale_factor=scale*2, mode="bilinear", align_corners=False)
         flow = tmp[:, :4] * scale * 2
@@ -154,36 +339,7 @@ class IFNet(nn.Module):
             merged[3] = torch.clamp(merged[3] + res, 0, 1)
         return merged[3][:, :, :h , :w], flow_list
 
-def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
-    return nn.Sequential(
-        nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
-                  padding=padding, dilation=dilation, bias=True),
-        nn.PReLU(out_planes)
-        )
 
-def conv_woact(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
-    return nn.Sequential(
-        nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
-                  padding=padding, dilation=dilation, bias=True),
-        )
-
-def deconv(in_planes, out_planes, kernel_size=4, stride=2, padding=1):
-    return nn.Sequential(
-        torch.nn.ConvTranspose2d(in_channels=in_planes, out_channels=out_planes, kernel_size=4, stride=2, padding=1, bias=True),
-        nn.PReLU(out_planes)
-        )
-            
-class Conv2(nn.Module):
-    def __init__(self, in_planes, out_planes, stride=2):
-        super(Conv2, self).__init__()
-        self.conv1 = conv(in_planes, out_planes, 3, stride, 1)
-        self.conv2 = conv(out_planes, out_planes, 3, 1, 1)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        return x
-    
 c = 16
 class Contextnet(nn.Module):
     def __init__(self):
