@@ -1,6 +1,6 @@
 name: template
 scale: 4
-gpus: 1 # amount of gpus, 0 = cpu
+gpus: 0 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
@@ -20,12 +20,12 @@ datasets:
     # only works with n_workers = 0, use pipeline_threads instead
     # pip install --extra-index-url https://developer.download.nvidia.com/compute/redist --upgrade nvidia-dali-cuda110
 
-    mode: DS_video # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr
+    mode: DS_lrhr # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
-    dataroot_HR: '/content/ramdisk/dataset/' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/ramdisk/dataset/' # Original, with a single directory
+    dataroot_HR: '/content/data/HR/' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/content/data/LR/' # Original, with a single directory
     loading_backend: 'OpenCV' # 'PIL' | 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, turboJPEG only for DS_video, 'PIL' for DS_inpaint_TF
 
     n_workers: 0 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
@@ -36,19 +36,55 @@ datasets:
     HR_size: 128 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
-    masks: '/content/masks/'
+    masks: '/content/masks/' # only for inpainting
     mask_invert_ratio: 0.3 # 0.3 = 30% of masks will be inverted
     max_epochs: 2000
-    save_step_frequency: 100 # also validation frequency
+    save_step_frequency: 10 # also validation frequency
 
     # if edge data is required
     canny_min: 100
     canny_max: 150
 
+    # image augmentations (only for lrhr dataloader)
+    # augmentations will apply in random order, for further customization, look at data.py
+    ColorJitter: True
+    RandomGaussianNoise: True
+    RandomPoissonNoise: True
+    RandomSPNoise: True
+    RandomSpeckleNoise: True
+    RandomCompression: True
+    RandomAverageBlur: True
+    RandomBilateralBlur: True
+    RandomBoxBlur: True
+    RandomGaussianBlur: True
+    RandomMedianBlur: True
+    RandomMotionBlur: True
+    RandomComplexMotionBlur: True
+    RandomAnIsoBlur: True
+    RandomSincBlur: True
+    BayerDitherNoise: True
+    FSDitherNoise: True
+    FilterMaxRGB: True
+    FilterColorBalance: True
+    FilterUnsharp: True
+    FilterCanny: True
+    SimpleQuantize: True
+    RandomAnIsoBlur: True
+    CLAHE: True
+    RandomGamma: True
+    Superpixels: True
+    RandomCameraNoise: True
+
+    # create them with https://github.com/victorca25/DLIP/tree/main/kgan
+    # this will downscale the hr picture with a kernel and ignore the lr folder
+    ApplyKernel: True
+    kernel_path: "/content/kernels"
+    
+
   val:
     loading_backend: 'OpenCV' # 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, currently only for DS_video
-    dataroot_HR: '/content/drive/MyDrive/Colab-BasicSR/FourierUnit_conv_ca_2/val_input/'
-    dataroot_LR: '/content/drive/MyDrive/Colab-BasicSR/FourierUnit_conv_ca_2/val_input/' # Inpainting will use this directory as input
+    dataroot_HR: '/content/data/HR'
+    dataroot_LR: '/content/data/LR' # Inpainting will use this directory as input
 
 path:
     pretrain_model_G: #"/content/model.pth"
@@ -67,22 +103,22 @@ network_G:
     finetune: False # Important for further rfr/dsnet training. Apply that after training for a while. https://github.com/jingyuanli001/RFR-Inpainting/issues/33
 
     # ESRGAN:
-    #netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch)
-    #norm_type: null
-    #mode: CNA
-    #nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
-    #nb: 23 # (default: 23, good: 8)
-    #in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
-    #out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
-    #gc: 32
-    #group: 1
-    #convtype: Conv2D # Conv2D | PartialConv2D
-    #net_act: leakyrelu # swish | leakyrelu
-    #gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
-    #plus: false # true | false
-    #finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
-    #upsample_mode: 'upconv'
-    #nr: 3
+    netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch)
+    norm_type: null
+    mode: CNA
+    nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
+    nb: 23 # (default: 23, good: 8)
+    in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
+    out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
+    gc: 32
+    group: 1
+    convtype: Conv2D # Conv2D | PartialConv2D
+    net_act: leakyrelu # swish | leakyrelu
+    gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
+    plus: false # true | false
+    finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
+    upsample_mode: 'upconv'
+    nr: 3
 
     # ASRGAN:
     #which_model_G: asr_resnet # asr_resnet | asr_cnn
@@ -450,11 +486,11 @@ network_G:
     #reduce: 4
 
     # rife 4.0
-    netG: rife
-    conv: conv2d # doconv | conv2d | gated | TBC | dynamic | MBConv | fft | WSConv
-    # for dynamic
-    nof_kernels: 4
-    reduce: 4
+    #netG: rife
+    #conv: conv2d # doconv | conv2d | gated | TBC | dynamic | MBConv | fft | WSConv
+    ## for dynamic
+    #nof_kernels: 4
+    #reduce: 4
 
     # RRIN (2020)
     #netG: RRIN

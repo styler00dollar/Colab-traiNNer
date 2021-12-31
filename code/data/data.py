@@ -14,7 +14,8 @@ import random
 import cv2
 import random
 import glob
-import torchvision.transforms as transforms
+from .augmentation import transforms as transforms
+import random
 
 if cfg['datasets']['train']['mode'] == "DS_inpaint_TF" or cfg['datasets']['train']['mode'] == "DS_svg_TF":
   from tfrecord.torch.dataset import TFRecordDataset
@@ -242,9 +243,11 @@ class DS_lrhr(Dataset):
         hr_image = cv2.cvtColor(hr_image, cv2.COLOR_BGR2RGB)
 
         # getting lr image
-        lr_path = os.path.join(self.lr_path, os.path.basename(hr_path))
-        lr_image = cv2.imread(lr_path)
-        lr_image = cv2.cvtColor(lr_image, cv2.COLOR_BGR2RGB)
+        # only get image if kernels are not used
+        if cfg['datasets']['train']['ApplyKernel'] == False:
+          lr_path = os.path.join(self.lr_path, os.path.basename(hr_path))
+          lr_image = cv2.imread(lr_path)
+          lr_image = cv2.cvtColor(lr_image, cv2.COLOR_BGR2RGB)
 
         # checking for hr_size limitation
         if hr_image.shape[0] > self.hr_size or hr_image.shape[1] > self.hr_size:
@@ -252,10 +255,141 @@ class DS_lrhr(Dataset):
           random_pos1 = random.randint(0,hr_image.shape[0]-self.hr_size)
           random_pos2 = random.randint(0,hr_image.shape[1]-self.hr_size)
 
-
           hr_image = hr_image[random_pos1:random_pos1+self.hr_size, random_pos2:random_pos2+self.hr_size]
-          lr_image = lr_image[int(random_pos1/self.scale):int((random_pos1/self.scale)+self.hr_size/self.scale),
-                              int(random_pos2/self.scale):int((random_pos2/self.scale)+self.hr_size/self.scale)]
+          if cfg['datasets']['train']['ApplyKernel'] == False:
+            lr_image = lr_image[int(random_pos1/self.scale):int((random_pos1/self.scale)+self.hr_size/self.scale),
+                                int(random_pos2/self.scale):int((random_pos2/self.scale)+self.hr_size/self.scale)]
+
+        # ApplyKernel
+        if cfg['datasets']['train']['ApplyKernel'] == True:
+          kernel_apply =  transforms.ApplyKernel(scale = cfg['scale'], kernels_path = 
+              cfg['datasets']['train']['kernel_path'], kernel = None, 
+              pattern = 'kernelgan', kformat = 'npy', size = 13, 
+              permute = True, center = False)
+          lr_image = kernel_apply(hr_image)
+
+        # performning augmentation
+        all_transforms = []
+        # ColorJitter
+        if cfg['datasets']['train']['ColorJitter'] == True:
+          all_transforms.append(transforms.ColorJitter(brightness=0, contrast=0, saturation=0, hue=0))
+        # RandomGaussianNoise
+        if cfg['datasets']['train']['RandomGaussianNoise'] == True:
+          all_transforms.append(transforms.RandomGaussianNoise(p=0.5, mean=0.0,
+            var_limit=(10.0, 50.0), prob_color=0.5,
+            multi=True, mode='gauss', sigma_calc='sig'))
+        # RandomPoissonNoise
+        if cfg['datasets']['train']['RandomPoissonNoise'] == True:
+          all_transforms.append(transforms.RandomPoissonNoise(p=0.5, prob_color=0.5,
+            scale_range=(0.5, 1.0)))
+        # RandomSPNoise
+        if cfg['datasets']['train']['RandomSPNoise'] == True:
+          all_transforms.append(transforms.RandomSPNoise(p=0.5, prob=0.1))
+        # RandomSpeckleNoise
+        if cfg['datasets']['train']['RandomSpeckleNoise'] == True:
+          all_transforms.append(transforms.RandomSpeckleNoise(p=0.5, mean=0.0,
+            var_limit=(0.04, 0.12), prob_color=0.5,
+            sigma_calc='var'))
+        # RandomCompression
+        if cfg['datasets']['train']['RandomCompression'] == True:
+          all_transforms.append(transforms.RandomCompression(p=0.5, min_quality=20,
+            max_quality=90, compression_type='.jpg'))
+        # [APPLY] RandomAverageBlur
+        if cfg['datasets']['train']['RandomAverageBlur'] == True:
+          all_transforms.append(transforms.RandomAverageBlur(p=0.5, kernel_size = 3))
+        # [APPLY] RandomBilateralBlur
+        if cfg['datasets']['train']['RandomAverageBlur'] == True:
+          all_transforms.append(transforms.RandomAverageBlur(p=0.5, kernel_size=3, sigmaX=0.5, sigmaY=0.5))   
+        # [APPLY] RandomBoxBlur
+        if cfg['datasets']['train']['RandomBoxBlur'] == True:
+          all_transforms.append(transforms.RandomBoxBlur(p=0.5, kernel_size=3))
+        # [APPLY] RandomGaussianBlur
+        if cfg['datasets']['train']['RandomGaussianBlur'] == True:
+          all_transforms.append(transforms.RandomGaussianBlur(p=0.5, kernel_size=3, sigmaX=0.5, sigmaY=0.5))
+        # [APPLY] RandomMedianBlur
+        if cfg['datasets']['train']['RandomGaussianBlur'] == True:
+          all_transforms.append(transforms.RandomGaussianBlur(p=0.5, kernel_size=3))
+        # RandomMotionBlur
+        if cfg['datasets']['train']['RandomMotionBlur'] == True:
+          all_transforms.append(transforms.RandomMotionBlur(p=0.5, kernel_size=3, per_channel=False))
+        # RandomComplexMotionBlur
+        if cfg['datasets']['train']['RandomComplexMotionBlur'] == True:
+          all_transforms.append(transforms.RandomComplexMotionBlur(p = 0.5, size = (100, 100), complexity = 0, eps = 0.1))
+        # RandomAnIsoBlur
+        if cfg['datasets']['train']['RandomAnIsoBlur'] == True:
+          all_transforms.append(transforms.RandomAnIsoBlur(p=0.5, min_kernel_size=1,
+            kernel_size=3, sigmaX=None, sigmaY=None, angle=None,
+            noise=None, scale=1))
+        # RandomSincBlur
+        if cfg['datasets']['train']['RandomSincBlur'] == True:
+          all_transforms.append(transforms.RandomSincBlur(p=0.5, min_kernel_size=7,
+            kernel_size=21, min_cutoff=None))
+        # [APPLY] BayerDitherNoise
+        if cfg['datasets']['train']['BayerDitherNoise'] == True:
+          all_transforms.append(transforms.BayerDitherNoise(p=0.5))
+        # FSDitherNoise
+        if cfg['datasets']['train']['FSDitherNoise'] == True:
+          all_transforms.append(transforms.FSDitherNoise(p=0.5))
+        # [APPLY] FilterMaxRGB
+        if cfg['datasets']['train']['FilterMaxRGB'] == True:
+          all_transforms.append(transforms.FilterMaxRGB(p=0.5))
+        # FilterColorBalance
+        if cfg['datasets']['train']['FilterColorBalance'] == True:
+          all_transforms.append(transforms.FilterColorBalance(p=0.5, percent=1, random_params = False))
+        # FilterUnsharp
+        if cfg['datasets']['train']['FilterUnsharp'] == True:
+          all_transforms.append(transforms.FilterUnsharp(blur_algo='median', kernel_size=None,
+          strength=0.3, unsharp_algo='laplacian', p=0.5))
+        # FilterCanny
+        if cfg['datasets']['train']['FilterCanny'] == True:
+          all_transforms.append(transforms.FilterCanny(sigma=0.33, p=0.5,
+            bin_thresh=False, threshold=127))
+        # SimpleQuantize
+        if cfg['datasets']['train']['SimpleQuantize'] == True:
+          all_transforms.append(transforms.SimpleQuantize(rgb_range = 40, p = 0.5))
+        # RandomAnIsoBlur
+        if cfg['datasets']['train']['RandomAnIsoBlur'] == True:
+          all_transforms.append(transforms.RandomAnIsoBlur(p=0.5, min_kernel_size=1,
+            kernel_size=3, sigmaX=None, sigmaY=None, angle=None,
+            noise=None, scale=1))
+        # CLAHE
+        if cfg['datasets']['train']['CLAHE'] == True:
+          all_transforms.append(transforms.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=0.5))
+        # RandomGamma
+        if cfg['datasets']['train']['RandomGamma'] == True:
+          all_transforms.append(transforms.RandomGamma(gamma_range=(80, 120), gain=1, p=0.5))
+        # Superpixels
+        if cfg['datasets']['train']['Superpixels'] == True:
+          all_transforms.append(transforms.Superpixels(p_replace=0.1,
+            n_segments=100, cs=None, algo='slic', n_iters=10,
+            kind='mix', reduction=None, max_size=128, interpolation='BILINEAR', p=0.5))
+        # RandomCameraNoise
+        if cfg['datasets']['train']['Superpixels'] == True:
+          all_transforms.append(transforms.RandomCameraNoise(p=0.5, demosaic_fn='malvar',
+            xyz_arr='D50', rg_range=(1.2, 2.4),
+            bg_range=(1.2, 2.4), random_params=False))
+
+        # BW augmentations
+        """
+        # [APPLY] BayerBWDitherNoise / 1ch output
+        all_transforms.append(transforms.BayerBWDitherNoise(p=0.5))
+        # [APPLY] BinBWDitherNoise / 1ch output
+        all_transforms.append(transforms.BinBWDitherNoise(p=0.5))
+        # FSBWDitherNoise / 1ch output
+        all_transforms.append(transforms.FSBWDitherNoise(p=0.5, samplingF = 1))
+        # [APPLY] RandomBWDitherNoise / 1ch output
+        all_transforms.append(transforms.RandomBWDitherNoise(p=0.5))
+        """
+        # [BROKED] RandomChromaticAberration
+        #all_transforms.append(transforms.RandomChromaticAberration(p=0.5, radial_blur=True,
+        #  strength=1.0, jitter=0, alpha=0.0,
+        #  random_params=False))
+
+        # randomly shuffle transforms
+        random.shuffle(all_transforms)
+        # apply transforms
+        transform = transforms.Compose(all_transforms)
+        lr_image = transform(lr_image)
 
         # to tensor
         hr_image = torch.from_numpy(hr_image).permute(2, 0, 1)/255

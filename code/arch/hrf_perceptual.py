@@ -20,7 +20,6 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 import torchvision
-import wget
 
 try:
     from urllib import urlretrieve
@@ -351,7 +350,10 @@ class ModelBuilder:
                     *arts, **kwargs):
         if segmentation:
           if not os.path.exists("encoder_epoch_20.pth"):
-            wget.download("http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50dilated-ppm_deepsup/encoder_epoch_20.pth")
+            import gdown
+            url = 'https://drive.google.com/uc?id=1WdN7_wZbT5ZFz1nkca41ug8MX-sTF2rf'
+            output = 'encoder_epoch_20.pth'
+            gdown.download(url, output, quiet=False)
             print("encoder_epoch_20.pth downloaded")
           else:
             print("encoder_epoch_20.pth already downloaded")
