@@ -7,7 +7,8 @@ import torch
 import math
 import random
 # from PIL import Image, ImageOps, ImageEnhance
-# accimage mimics the PIL API and can be used as a backend for torchvision for Image.resize, Image.crop and Image.transpose
+# accimage mimics the PIL API and can be used as a backend for torchvision
+# for Image.resize, Image.crop and Image.transpose
 try:
     import accimage
 except ImportError:
@@ -25,7 +26,7 @@ from . import superpixels as SP
 from . import spadd as SCIP
 from .minisom import MiniSom
 from .common import (fetch_kernels, to_tuple, _cv2_interpolation2str,
-    _cv2_str2interpolation, convolve, sample, MAX_VALUES_BY_DTYPE)
+                     _cv2_str2interpolation, convolve, sample, MAX_VALUES_BY_DTYPE)
 
 
 __all__ = ["Compose", "ToTensor", "ToCVImage",
@@ -49,7 +50,6 @@ __all__ = ["Compose", "ToTensor", "ToCVImage",
            "FilterCanny", "ApplyKernel", "RandomGamma", "Superpixels",
            "RandomChromaticAberration", "RandomCameraNoise",
            ]
-
 
 
 class Compose:
@@ -103,7 +103,7 @@ class ToTensor:
 
 
 class ToCVImage:
-    """Convert a tensor or an to ndarray Image.
+    """Convert a tensor or an ndarray to a CV Image.
 
     Converts a torch.*Tensor of shape C x H x W or a numpy ndarray of shape
     H x W x C to a CV Image while preserving the value range.
@@ -128,7 +128,7 @@ class ToCVImage:
 
 class Normalize:
     """Normalize a tensor image with mean and standard deviation.
-    Given mean: ``(M1,...,Mn)`` and std: ``(S1,..,Sn)`` for ``n`` channels, this transform
+    Given mean: ``(M1,...,Mn)`` and std: ``(S1,...,Sn)`` for ``n`` channels, this transform
     will normalize each channel of the input ``torch.*Tensor`` i.e.
     ``input[channel] = (input[channel] - mean[channel]) / std[channel]``
     .. note::
@@ -175,7 +175,7 @@ class Resize:
     def __init__(self, size, interpolation='BILINEAR'):
         # assert isinstance(size, int) or (isinstance(size, collections.Iterable) and len(size) == 2)
         if isinstance(size, int):
-            self.size = (size,size)
+            self.size = (size, size)
         elif isinstance(size, collections.Iterable) and len(size) == 2:
             if type(size) is list:
                 size = tuple(size)
@@ -197,7 +197,7 @@ class Resize:
 
     def __repr__(self):
         interpolate_str = _cv2_interpolation2str[self.interpolation]
-        #interpolate_str = self.interpolation        
+        # interpolate_str = self.interpolation
         return self.__class__.__name__ + '(size={0}, interpolation={1})'.format(self.size, interpolate_str)
 
 
@@ -300,13 +300,14 @@ class Lambda:
         assert isinstance(lambd, types.LambdaType)
         self.lambd = lambd
         # if 'Windows' in platform.system():
-        #     raise RuntimeError("Can't pickle lambda funciton in windows system")
-        
+        #     raise RuntimeError("Can't pickle lambda function in Windows system")
+
     def __call__(self, img):
         return self.lambd(img)
 
     def __repr__(self):
         return self.__class__.__name__ + '()'
+
 
 class RandomTransforms:
     """Base class for a list of transformations with randomness
@@ -385,7 +386,7 @@ class RandomCrop:
             int instead of sequence like (h, w), a square crop (size, size) is
             made.
         padding (int or sequence, optional): Optional padding on each border
-            of the image. Default is None, i.e no padding. If a sequence of length
+            of the image. Default is None, i.e. no padding. If a sequence of length
             4 is provided, it is used to pad left, top, right, bottom borders
             respectively. If a sequence of length 2 is provided, it is used to
             pad left/right, top/bottom borders, respectively.
@@ -405,8 +406,8 @@ class RandomCrop:
                 will result in [2, 1, 1, 2, 3, 4, 4, 3]
     """
 
+    # def __init__(self, size, padding=0, pad_if_needed=False):
     def __init__(self, size, padding=None, pad_if_needed=False, fill=0, padding_mode='constant'):
-    #def __init__(self, size, padding=0, pad_if_needed=False):
         if isinstance(size, numbers.Number):
             self.size = (int(size), int(size))
         else:
@@ -421,11 +422,11 @@ class RandomCrop:
         """Get parameters for ``crop`` for a random crop.
         Args:
             img (numpy ndarray): Image to be cropped.
-            output_size (tuple): Expected output size of the crop. 
+            output_size (tuple): Expected output size of the crop.
         Returns:
             tuple: params (i, j, h, w) to be passed to ``crop`` for random crop.
         """
-        h,w = img.shape[0:2] #h, w, _ = img.shape
+        h, w = img.shape[0:2]  # h, w, _ = img.shape
         th, tw = output_size
         if w == tw and h == th:
             return 0, 0, h, w
@@ -447,7 +448,7 @@ class RandomCrop:
         Returns:
             numpy ndarray: Cropped image.
         """
-        if self.padding is not None: #if self.padding > 0:
+        if self.padding is not None:  # if self.padding > 0:
             img = F.pad(img, self.padding, self.fill, self.padding_mode)
             # img = F.pad(img, self.padding)
 
@@ -455,11 +456,11 @@ class RandomCrop:
         if self.pad_if_needed and img.shape[1] < self.size[1]:
             img = F.pad(img, (self.size[1] - img.shape[1], 0), self.fill, self.padding_mode)
             # img = F.pad(img, (int((1 + self.size[1] - img.shape[1]) / 2), 0))
-        
+
         # pad the height if needed
         if self.pad_if_needed and img.shape[0] < self.size[0]:
             img = F.pad(img, (0, self.size[0] - img.shape[0]), self.fill, self.padding_mode)
-            # img = F.pad(img, (0, int((1 + self.size[0] - img.shape[0]) / 2)))           
+            # img = F.pad(img, (0, int((1 + self.size[0] - img.shape[0]) / 2)))
 
         i, j, h, w = self.get_params(img, self.size)
 
@@ -486,7 +487,7 @@ class RandomHorizontalFlip:
         Returns:
             numpy ndarray: Randomly flipped image.
         """
-        
+
         if random.random() < self.p:
             return F.hflip(img)
         return img
@@ -535,8 +536,8 @@ class RandomResizedCrop:
         interpolation: Default: BILINEAR=cv2.INTER_LINEAR
     """
 
-    def __init__(self, size, scale=(0.08, 1.0), ratio=(3. / 4., 4. / 3.), interpolation=cv2.INTER_LINEAR):
     # def __init__(self, size, scale=(0.08, 1.0), ratio=(3. / 4., 4. / 3.), interpolation='BILINEAR'):
+    def __init__(self, size, scale=(0.08, 1.0), ratio=(3. / 4., 4. / 3.), interpolation=cv2.INTER_LINEAR):
         self.size = (size, size)
         self.interpolation = interpolation
         self.scale = scale
@@ -548,7 +549,7 @@ class RandomResizedCrop:
         Args:
             img (numpy ndarray): Image to be cropped.
             scale (tuple): range of size of the origin size cropped
-            ratio (tuple): range of aspect ratio of the origin aspect ratio cropped  
+            ratio (tuple): range of aspect ratio of the origin aspect ratio cropped
 
         Returns:
             tuple: params (i, j, h, w) to be passed to ``crop`` for a random
@@ -595,6 +596,7 @@ class RandomResizedCrop:
         format_string += ', interpolation={0})'.format(interpolate_str)
         return format_string
 
+
 class RandomSizedCrop(RandomResizedCrop):
     """
     Note: This transform is deprecated in favor of RandomResizedCrop.
@@ -603,6 +605,7 @@ class RandomSizedCrop(RandomResizedCrop):
         warnings.warn("The use of the transforms.RandomSizedCrop transform is deprecated, " +
                       "please use transforms.RandomResizedCrop instead.")
         super(RandomSizedCrop, self).__init__(*args, **kwargs)
+
 
 class FiveCrop:
     """Crop the given numpy ndarray into four corners and the central crop
@@ -616,14 +619,14 @@ class FiveCrop:
             instead of sequence like (h, w), a square crop of size (size, size) is made.
     Example:
          >>> transform = Compose([
-         >>>    FiveCrop(size), # this is a list of numpy ndarrays
-         >>>    Lambda(lambda crops: torch.stack([ToTensor()(crop) for crop in crops])) # returns a 4D tensor
+         >>>    FiveCrop(size),  # this is a list of numpy ndarrays
+         >>>    Lambda(lambda crops: torch.stack([ToTensor()(crop) for crop in crops]))  # returns a 4D tensor
          >>> ])
-         >>> #In your test loop you can do the following:
-         >>> input, target = batch # input is a 5d tensor, target is 2d
+         >>> # In your test loop you can do the following:
+         >>> input, target = batch  # input is a 5d tensor, target is 2d
          >>> bs, ncrops, c, h, w = input.size()
-         >>> result = model(input.view(-1, c, h, w)) # fuse batch size and ncrops
-         >>> result_avg = result.view(bs, ncrops, -1).mean(1) # avg over crops
+         >>> result = model(input.view(-1, c, h, w))  # fuse batch size and ncrops
+         >>> result_avg = result.view(bs, ncrops, -1).mean(1)  # avg over crops
     """
 
     def __init__(self, size):
@@ -644,7 +647,7 @@ class FiveCrop:
 class TenCrop:
     """Crop the given numpy ndarray into four corners and the central crop plus the flipped version of
     these (horizontal flipping is used by default)
-    
+
     .. Note::
          This transform returns a tuple of images and there may be a mismatch in the number of
          inputs and targets your Dataset returns. See below for an example of how to deal with
@@ -658,14 +661,14 @@ class TenCrop:
 
     Example:
          >>> transform = Compose([
-         >>>    TenCrop(size), # this is a list of PIL Images
-         >>>    Lambda(lambda crops: torch.stack([ToTensor()(crop) for crop in crops])) # returns a 4D tensor
+         >>>    TenCrop(size),  # this is a list of PIL Images
+         >>>    Lambda(lambda crops: torch.stack([ToTensor()(crop) for crop in crops]))  # returns a 4D tensor
          >>> ])
-         >>> #In your test loop you can do the following:
-         >>> input, target = batch # input is a 5d tensor, target is 2d
+         >>> # In your test loop you can do the following:
+         >>> input, target = batch  # input is a 5d tensor, target is 2d
          >>> bs, ncrops, c, h, w = input.size()
-         >>> result = model(input.view(-1, c, h, w)) # fuse batch size and ncrops
-         >>> result_avg = result.view(bs, ncrops, -1).mean(1) # avg over crops
+         >>> result = model(input.view(-1, c, h, w))  # fuse batch size and ncrops
+         >>> result_avg = result.view(bs, ncrops, -1).mean(1)  # avg over crops
     """
 
     def __init__(self, size, vertical_flip=False):
@@ -733,34 +736,34 @@ class ColorJitter:
     Args:
         brightness (float or tuple of float (min, max)): How much to jitter brightness.
             brightness_factor is chosen uniformly from [max(0, 1 - brightness), 1 + brightness]
-            or the given [min, max]. (Should be non negative numbers).
+            or the given [min, max]. (Should be non-negative numbers).
         contrast (float or tuple of float (min, max)): How much to jitter contrast.
             contrast_factor is chosen uniformly from [max(0, 1 - contrast), 1 + contrast]
-            (or the given [min, max]. Should be non negative numbers).
+            (or the given [min, max]. Should be non-negative numbers).
         saturation (float or tuple of float (min, max)): How much to jitter saturation.
             saturation_factor is chosen uniformly from [max(0, 1 - saturation), 1 + saturation]
-            (or the given [min, max]. Should be non negative numbers.)
+            (or the given [min, max]. Should be non-negative numbers.)
         hue (float or tuple of float (min, max)): How much to jitter hue.
             hue_factor is chosen uniformly from [-hue, hue] or the given [min, max].
             Should have 0<= hue <= 0.5 or -0.5 <= min <= max <= 0.5.
     """
-    
-    def __init__(self, brightness=0, contrast=0, saturation=0, hue=0):
+
+    def __init__(self, brightness=0, contrast=0, saturation=0, hue=0, p: float = 0.5):
         self.brightness = self._check_input(brightness, 'brightness')
-        # self.brightness = brightness
         self.contrast = self._check_input(contrast, 'contrast')
-        # self.contrast = contrast
         self.saturation = self._check_input(saturation, 'saturation')
-        # self.saturation = saturation
         self.hue = self._check_input(hue, 'hue', center=0, bound=(-0.5, 0.5),
                                      clip_first_on_zero=False)
-        # self.hue = hue
+        assert isinstance(p, numbers.Number) and p >= 0, 'p should be a positive value'
+        self.p = p
+
         if self.saturation is not None:
             warnings.warn('Saturation jitter enabled. Will slow down loading immensely.')
         if self.hue is not None:
             warnings.warn('Hue jitter enabled. Will slow down loading immensely.')
 
-    def _check_input(self, value, name, center=1, bound=(0, float('inf')), clip_first_on_zero=True):
+    @staticmethod
+    def _check_input(value, name, center=1, bound=(0, float('inf')), clip_first_on_zero=True):
         if isinstance(value, numbers.Number):
             if value < 0:
                 raise ValueError("If {} is a single number, it must be non negative.".format(name))
@@ -790,24 +793,24 @@ class ColorJitter:
         """
         transforms = []
 
-        if brightness is not None: # if brightness > 0:
+        if brightness is not None:  # if brightness > 0:
             brightness_factor = random.uniform(brightness[0], brightness[1])
             # brightness_factor = random.uniform(max(0, 1 - brightness), 1 + brightness)
             transforms.append(Lambda(lambda img: F.adjust_brightness(img, brightness_factor)))
 
-        if contrast is not None: # if contrast > 0:
+        if contrast is not None:  # if contrast > 0:
             contrast_factor = random.uniform(contrast[0], contrast[1])
             # contrast_factor = random.uniform(max(0, 1 - contrast), 1 + contrast)
             transforms.append(Lambda(lambda img: F.adjust_contrast(img, contrast_factor)))
 
-        if saturation is not None: # if saturation > 0:
+        if saturation is not None:  # if saturation > 0:
             saturation_factor = random.uniform(saturation[0], saturation[1])
             # saturation_factor = random.uniform(max(0, 1 - saturation), 1 + saturation)
             transforms.append(Lambda(lambda img: F.adjust_saturation(img, saturation_factor)))
 
-        if hue is not None: # if hue > 0:
+        if hue is not None:  # if hue > 0:
             hue_factor = random.uniform(hue[0], hue[1])
-            # hue_factor = random.uniform(-hue, hue)            
+            # hue_factor = random.uniform(-hue, hue)
             transforms.append(Lambda(lambda img: F.adjust_hue(img, hue_factor)))
 
         random.shuffle(transforms)
@@ -820,7 +823,7 @@ class ColorJitter:
         Args:
             img (numpy ndarray): Input image.
         Returns:
-            numpy ndarray: Color jittered image.        
+            numpy ndarray: Color jittered image.
         """
         transform = self.get_params(self.brightness, self.contrast,
                                     self.saturation, self.hue)
@@ -842,19 +845,19 @@ class RandomRotation:
             If degrees is a number instead of sequence like (min, max), the range of degrees
             will be (-degrees, +degrees) clockwise order.
         resample ({cv2.INTER_NEAREST, cv2.INTER_LINEAR, cv2.INTER_CUBIC, cv2.INTER_LANCZOS4}, optional):
-            An optional resampling filter. #See `filters`_ for more information.
+            An optional resampling filter. # See `filters`_ for more information.
             If omitted, or if the image has mode "1" or "P", it is set to cv2.INTER_NEAREST.
         expand (bool, optional): Optional expansion flag.
             If true, expands the output to make it large enough to hold the entire rotated image.
             If false or omitted, make the output image the same size as the input image.
-            Note that the expand flag assumes rotation around the center and no translation.
+            Note that the 'expand' flag assumes rotation around the center and no translation.
         center (2-tuple, optional): Optional center of rotation.
             Origin is the upper left corner.
             Default is the center of the image.
     """
 
-    def __init__(self, degrees, resample=cv2.INTER_NEAREST, expand=False, center=None):
     # def __init__(self, degrees, resample='BILINEAR', expand=False, center=None):
+    def __init__(self, degrees, resample=cv2.INTER_NEAREST, expand=False, center=None):
         if isinstance(degrees, numbers.Number):
             if degrees < 0:
                 raise ValueError("If degrees is a single number, it must be positive.")
@@ -916,15 +919,15 @@ class RandomAffine:
         shear (sequence or float or int, optional): Range of degrees to select from.
             If degrees is a number instead of sequence like (min, max), the range of degrees
             will be (-degrees, +degrees). Will not apply shear by default
-        resample ({cv2.INTER_NEAREST, cv2.INTER_LINEAR, cv2.INTER_CUBIC, cv2.INTER_LANCZOS4}, optional):
-            An optional resampling filter. See `filters`_ for more information.
-            If omitted, or if the image has mode "1" or "P", it is set to PIL.Image.NEAREST in torchvision,
-            cv2.INTER_LINEAR here.
+        # resample ({cv2.INTER_NEAREST, cv2.INTER_LINEAR, cv2.INTER_CUBIC, cv2.INTER_LANCZOS4}, optional):
+        #    An optional resampling filter. See `filters`_ for more information.
+        #    If omitted, or if the image has mode "1" or "P", it is set to PIL.Image.NEAREST in torchvision,
+        #    cv2.INTER_LINEAR here.
         fillcolor (int): Optional fill color for the area outside the transform in the output image.
     """
 
-    def __init__(self, degrees, translate=None, scale=None, shear=None, interpolation=cv2.INTER_LINEAR, fillcolor=0):
     # def __init__(self, degrees=0, translate=None, scale=None, shear=None, resample='BILINEAR', fillcolor=0):
+    def __init__(self, degrees, translate=None, scale=None, shear=None, interpolation=cv2.INTER_LINEAR, fillcolor=0):
         if isinstance(degrees, numbers.Number):
             if degrees < 0:
                 raise ValueError("If degrees is a single number, it must be positive.")
@@ -979,7 +982,7 @@ class RandomAffine:
             # max_dx = translate[0] * img_size[1]
             max_dy = translate[1] * img_size[1]
             # max_dy = translate[1] * img_size[0]
-            
+
             translations = (np.round(random.uniform(-max_dx, max_dx)),
                             np.round(random.uniform(-max_dy, max_dy)))
         else:
@@ -1007,7 +1010,7 @@ class RandomAffine:
         # ret = self.get_params(self.degrees, self.translate, self.scale, self.shear, img.shape)
         return F.affine(img, *ret, interpolation=self.interpolation, fillcolor=self.fillcolor)
         # return F.affine(img, *ret, resample=self.resample, fillcolor=self.fillcolor)
-        
+
     def __repr__(self):
         s = '{name}(degrees={degrees}'
         if self.translate is not None:
@@ -1016,8 +1019,8 @@ class RandomAffine:
             s += ', scale={scale}'
         if self.shear is not None:
             s += ', shear={shear}'
-        if self.resample > 0:
-            s += ', resample={resample}'
+        # if self.resample > 0:
+        #     s += ', resample={resample}'
         if self.fillcolor != 0:
             s += ', fillcolor={fillcolor}'
         s += ')'
@@ -1046,7 +1049,7 @@ class Grayscale:
         Args:
             img (numpy ndarray): Image to be converted to grayscale.
         Returns:
-            numpy ndarray: Randomly grayscaled image.            
+            numpy ndarray: Randomly grayscaled image.
         """
         return F.to_grayscale(img, num_output_channels=self.num_output_channels)
 
@@ -1093,7 +1096,7 @@ class RandomAffine6:
     Args:
         anglez (sequence or float or int): Range of rotate to select from.
             If degrees is a number instead of sequence like (min, max), the range of degrees
-            will be (-anglez, +anglez). Set to 0 to desactivate rotations.
+            will be (-anglez, +anglez). Set to 0 to deactivate rotations.
         shear (sequence or float or int): Range of shear to select from.
             If degrees is a number instead of sequence like (min, max), the range of degrees
             will be (-shear, +shear). Set to 0 to desactivate shear.
@@ -1217,8 +1220,10 @@ class RandomErasing:
         >>> ])
     """
 
-    #s=(0.02, 0.4) #r=(0.3, 3)
-    # erasing probability p, the area ratio range of erasing region sl and sh, and the aspect ratio range of erasing region r1 and r2.
+    # s = (0.02, 0.4)
+    # r = (0.3, 3)
+    # erasing probability p, the area ratio range of erasing region sl and sh,
+    # and the aspect ratio range of erasing region r1 and r2.
     def __init__(self, p=0.5, scale=(0.02, 0.33), ratio=(0.3, 3.3), value=0, inplace=False):
         assert isinstance(value, (numbers.Number, str, tuple, list))
         if (scale[0] > scale[1]) or (ratio[0] > ratio[1]):
@@ -1241,6 +1246,7 @@ class RandomErasing:
             img (Tensor): Tensor image of size (C, H, W) to be erased.
             scale: range of proportion of erased area against input image.
             ratio: range of aspect ratio of erased area.
+            value: it literally does nothing but get returned idk
         Returns:
             tuple: params (i, j, h, w, v) to be passed to ``erase`` for random erasing.
         """
@@ -1248,30 +1254,30 @@ class RandomErasing:
         area = img_h * img_w
 
         erase_area = np.random.uniform(scale[0], scale[1]) * area
-        #erase_area = random.uniform(scale[0], scale[1]) * area
+        # erase_area = random.uniform(scale[0], scale[1]) * area
 
         aspect_ratio = np.random.rand() * ratio[1] + ratio[0]
-        #aspect_ratio = random.uniform(ratio[0], ratio[1])
+        # aspect_ratio = random.uniform(ratio[0], ratio[1])
 
         h = int(np.sqrt(erase_area / aspect_ratio))
-        #h = int(round(math.sqrt(erase_area * aspect_ratio)))
+        # h = int(round(math.sqrt(erase_area * aspect_ratio)))
         if h > img_h - 1:
             h = img_h - 1
         w = int(aspect_ratio * h)
-        #w = int(round(math.sqrt(erase_area / aspect_ratio)))
+        # w = int(round(math.sqrt(erase_area / aspect_ratio)))
         if w > img_w - 1:
             w = img_w - 1
 
         i = np.random.randint(0, img_h - h)
-        #i = random.randint(0, img_h - h)
+        # i = random.randint(0, img_h - h)
         j = np.random.randint(0, img_w - w)
-        #j = random.randint(0, img_w - w)
-        
-        #return functional parameters
+        # j = random.randint(0, img_w - w)
+
+        # return functional parameters
         return i, j, h, w, value
 
         # Return original image
-        #return 0, 0, img_h, img_w, img
+        # return 0, 0, img_h, img_w, img
 
     def __call__(self, img, mode=None):
         """
@@ -1282,28 +1288,32 @@ class RandomErasing:
         Returns:
             img (Tensor): Erased Tensor image.
         """
-        if random.uniform(0, 1) < self.p: #np.random.rand() > p:
+        if random.uniform(0, 1) < self.p:  # np.random.rand() > p:
             x, y, h, w, v = self.get_params(img, scale=self.scale, ratio=self.ratio, value=self.value)
 
             if v == 0 and mode:
-                #if mode is list (mode=[0,1,2]), can random choose one, otherwise use the single mode sent 
-                if type(mode) is list: 
+                # if mode is list (mode=[0,1,2]), can random choose one, otherwise use the single mode sent
+                if type(mode) is list:
                     mode = random.choice(mode)
                 assert isinstance(mode, int), 'mode should be an int or a list of ints. Got {}'.format(type(mode))
-                #mode 0 fills with a random number, mode 1 fills with ImageNet mean values, mode 2 fills with random pixel values (noise)
-                if mode == 0: # original code , random single color
+                # mode 0 fills with a random number, mode 1 fills with ImageNet mean values,
+                # mode 2 fills with random pixel values (noise)
+                if mode == 0:  # original code , random single color
                     v = np.random.uniform(0., 255.)
-                elif mode == 1: # use ImageNet mean pixel values for each channel 
+                elif mode == 1:  # use ImageNet mean pixel values for each channel
                     if img.shape[2] == 3:
-                        v=[0.4465*255, 0.4822*255, 0.4914*255] #OpenCV follows BGR convention and PIL follows RGB color convention
-                    else: 
-                        v=[0.4914*255]
-                elif mode == 2: # replace with random pixel values (noise) (With the selected erasing region Ie, each pixel in Ie is assigned to a random value in [0, 1], respectively.)
+                        # OpenCV follows BGR convention and PIL follows RGB color convention
+                        v = [0.4465*255, 0.4822*255, 0.4914*255]
+                    else:
+                        v = [0.4914*255]
+                elif mode == 2:
+                    # replace with random pixel values (noise) (With the selected erasing region Ie,
+                    # each pixel in Ie is assigned to a random value in [0, 1], respectively.)
                     v = np.random.rand(np.abs(h), np.abs(w), img.shape[2])*255
-                elif mode == 3: # from cutout, the image mean
+                elif mode == 3:  # from cutout, the image mean
                     v = img.mean()
-                else: #leave at the default, mask_value = 0
-                    v = 0 
+                else:  # leave at the default, mask_value = 0
+                    v = 0
             return F.erase(img, x, y, h, w, v, self.inplace)
         return img
 
@@ -1316,7 +1326,7 @@ class RandomErasing:
 
 class Cutout:
     def __init__(self, p=0.5, inplace=False, mask_size=10):
-        assert isinstance(mask_size, (int))
+        assert isinstance(mask_size, int)
         if p < 0 or p > 1:
             raise ValueError("range of random cutout probability should be between 0 and 1")
 
@@ -1336,8 +1346,8 @@ class Cutout:
 
         mask_value = img.mean()
         img_h, img_w, _ = img.shape
-        i = np.random.randint(0 - mask_size // 2, img_h - mask_size) #top = i
-        j = np.random.randint(0 - mask_size // 2, img_w - mask_size) #left = j
+        i = np.random.randint(0 - mask_size // 2, img_h - mask_size)  # top = i
+        j = np.random.randint(0 - mask_size // 2, img_w - mask_size)  # left = j
         h = i + mask_size
         w = j + mask_size
 
@@ -1347,7 +1357,7 @@ class Cutout:
         return i, j, h, w, mask_value
 
     def __call__(self, img):
-        if random.uniform(0, 1) < self.p: #np.random.rand() > p:
+        if random.uniform(0, 1) < self.p:  # np.random.rand() > p:
             x, y, h, w, v = self.get_params(img, self.mask_size)
 
             return F.erase(img, x, y, h, w, v, self.inplace)
@@ -1360,13 +1370,13 @@ class RandomPerspective:
             fov(float): range of wide angle = 90+-fov
             anglex (sequence or float or int): Range of degrees rote around X axis to select from.
                 If degrees is a number instead of sequence like (min, max), the range of degrees
-                will be (-degrees, +degrees). Set to 0 to desactivate rotations.
+                will be (-degrees, +degrees). Set to 0 to deactivate rotations.
             angley (sequence or float or int): Range of degrees rote around Y axis to select from.
                 If degrees is a number instead of sequence like (min, max), the range of degrees
-                will be (-degrees, +degrees). Set to 0 to desactivate rotations.
+                will be (-degrees, +degrees). Set to 0 to deactivate rotations.
             anglez (sequence or float or int): Range of degrees rote around Z axis to select from.
                 If degrees is a number instead of sequence like (min, max), the range of degrees
-                will be (-degrees, +degrees). Set to 0 to desactivate rotations.
+                will be (-degrees, +degrees). Set to 0 to deactivate rotations.
 
             shear (sequence or float or int): Range of degrees for shear rote around axis to select from.
                 If degrees is a number instead of sequence like (min, max), the range of degrees
@@ -1464,9 +1474,9 @@ class RandomPerspective:
         return s.format(name=self.__class__.__name__, **d)
 
 
-#TBD
-#randomly apply noise types. Extend RandomOrder, must find a way to implement
-#random parameters for the noise types
+# TBD
+# randomly apply noise types. Extend RandomOrder, must find a way to implement
+# random parameters for the noise types
 # '''
 # class RandomNoise(RandomTransforms):
 #     """Apply a list of noise transformations in a random order
@@ -1485,7 +1495,7 @@ class RandomBase:
         p (float): probability of applying the transform.
             Default: 0.5
     """
-    def __init__(self, p:float=0.5):
+    def __init__(self, p: float = 0.5):
         assert isinstance(p, numbers.Number) and p >= 0, 'p should be a positive value'
         self.p = p
         self.params = {}
@@ -1536,9 +1546,9 @@ class RandomGaussianNoise(RandomBase):
             In: `var`, `sig`.
     """
 
-    def __init__(self, p:float=0.5, mean:float=0.0,
-        var_limit=(10.0, 50.0), prob_color:float=0.5,
-        multi:bool=True, mode:str='gauss', sigma_calc:str='sig'):
+    def __init__(self, p: float = 0.5, mean: float = 0.0, var_limit=(10.0, 50.0),
+                 prob_color: float = 0.5, multi: bool = True, mode: str = 'gauss',
+                 sigma_calc: str = 'sig'):
         super(RandomGaussianNoise, self).__init__(p=p)
 
         if not isinstance(mean, numbers.Number) or mean < 0:
@@ -1575,7 +1585,7 @@ class RandomGaussianNoise(RandomBase):
         Returns:
             dict: params to be passed to the affine transformation
         """
-        # mean = random.uniform(-self.mean, self.mean) #= 0
+        # mean = random.uniform(-self.mean, self.mean)  # = 0
 
         gtype = 'color' if random.random() < self.prob_color else 'gray'
 
@@ -1606,8 +1616,7 @@ class RandomGaussianNoise(RandomBase):
                 "mode": self.mode,
                 "gtype": gtype,
                 "rounds": False,
-                "clip": True,
-            }
+                "clip": True}
 
 
 class RandomPoissonNoise(RandomBase):
@@ -1620,8 +1629,8 @@ class RandomPoissonNoise(RandomBase):
             in range [0.0, 1.0], higher means more chance of `color`.
     """
 
-    def __init__(self, p:float=0.5, prob_color:float=0.5,
-        scale_range=(0.5, 1.0)):
+    def __init__(self, p: float = 0.5, prob_color: float = 0.5,
+                 scale_range=(0.5, 1.0)):
         super(RandomPoissonNoise, self).__init__(p=p)
         if not isinstance(prob_color, (int, float)):
             raise ValueError('prob_color must be a number in [0, 1]')
@@ -1630,12 +1639,12 @@ class RandomPoissonNoise(RandomBase):
             if scale_range[0] < 0 or scale_range[1] < 0:
                 raise ValueError(
                     f"scale_range values: {scale_range} should "
-                     "be non negative.")
+                    f"be non negative.")
             self.scale_range = scale_range
         elif isinstance(scale_range, (int, float)):
             if scale_range < 0:
                 raise ValueError("scale_range should be non negative.")
-            self.scale_range = (scale_range)
+            self.scale_range = scale_range
 
         self.prob_color = prob_color
         self.scale_range = scale_range
@@ -1645,7 +1654,7 @@ class RandomPoissonNoise(RandomBase):
         Returns: dict of parameters.
         """
         gtype = 'color' if random.random() < self.prob_color else 'gray'
-        scale = random.uniform(scale_range[0], scale_range[1])
+        scale = random.uniform(self.scale_range[0], self.scale_range[1])
         return {"gtype": gtype,
                 "scale": scale}
 
@@ -1661,7 +1670,7 @@ class RandomSPNoise(RandomBase):
         prob: probability (threshold) that controls level of S&P noise
     """
 
-    def __init__(self, p:float=0.5, prob:float=0.1):
+    def __init__(self, p: float = 0.5, prob: float = 0.1):
         super(RandomSPNoise, self).__init__(p=p)
 
         if not isinstance(prob, numbers.Number) or prob < 0:
@@ -1698,13 +1707,13 @@ class RandomSpeckleNoise(RandomGaussianNoise):
             in range [0.0, 1.0], higher means more chance of `color`.
             (Note: Color type can introduce color noise during training)
     """
-    def __init__(self, p:float=0.5, mean:float=0.0,
-        var_limit=(0.04, 0.12), prob_color:float=0.5,
-        sigma_calc:str='var'):
+    def __init__(self, p: float = 0.5, mean: float = 0.0,
+                 var_limit=(0.04, 0.12), prob_color: float = 0.5,
+                 sigma_calc: str = 'var'):
 
-        super(RandomSpeckleNoise, self).__init__(p=p, mean=mean,
-            var_limit=var_limit, prob_color=prob_color, multi=False,
-            mode='speckle', sigma_calc=sigma_calc)
+        super(RandomSpeckleNoise, self).__init__(
+            p=p, mean=mean, var_limit=var_limit, prob_color=prob_color,
+            multi=False, mode='speckle', sigma_calc=sigma_calc)
 
 
 class RandomCompression(RandomBase):
@@ -1714,7 +1723,7 @@ class RandomCompression(RandomBase):
     higher compression (lower quality).
     Args:
         p: probability of the image being noised. Default value is 0.5
-        quality (int: [0,100]):
+            quality (int: [0,100]):
         min_quality: lower bound on the image quality. In [0, 100]
             range for jpeg and [1, 100] for webp.
         max_quality: upper bound on the image quality. In [0, 100]
@@ -1722,15 +1731,15 @@ class RandomCompression(RandomBase):
         compression_type: should be 'jpeg'/'jpg' or 'webp'.
     """
 
-    def __init__(self, p:float=0.5, min_quality:int=20,
-        max_quality:int=90, compression_type:str='.jpg'):
+    def __init__(self, p: float = 0.5, min_quality: int = 20,
+                 max_quality: int = 90, compression_type: str = '.jpg'):
         super(RandomCompression, self).__init__(p=p)
 
         self.compression_type = compression_type
         low_q_thresh = 1 if compression_type == ".webp" else 0
-        if not  low_q_thresh <= min_quality <= 100:
+        if not low_q_thresh <= min_quality <= 100:
             raise ValueError(f"Invalid min_quality. Got: {min_quality}")
-        if not  low_q_thresh <= max_quality <= 100:
+        if not low_q_thresh <= max_quality <= 100:
             raise ValueError(f"Invalid max_quality. Got: {max_quality}")
 
         self.min_quality = min_quality
@@ -1744,8 +1753,7 @@ class RandomCompression(RandomBase):
             quality level to be passed to compression
         """
         return {"quality": random.randint(self.min_quality, self.max_quality),
-                "compression_type": self.compression_type
-                }
+                "compression_type": self.compression_type}
 
     def apply(self, img, **params):
         return EF.compression(img, **params)
@@ -1760,7 +1768,7 @@ class RandomQuantize(RandomBase):
     Returns:
         numpy ndarray: quantized version of the image.
     """
-    def __init__(self, num_colors:int=32, p:float=0.5):
+    def __init__(self, num_colors: int = 32, p: float = 0.5):
         super(RandomQuantize, self).__init__(p=p)
         assert isinstance(num_colors, int) and num_colors >= 0, 'num_colors should be a positive integrer value'
         self.num_colors = num_colors
@@ -1787,8 +1795,8 @@ class RandomQuantizeSOM(RandomBase):
         numpy ndarray: quantized version of the image.
     """
 
-    def __init__(self, p:float=0.5, num_colors=None, sigma:float=1.0,
-        learning_rate:float=0.2, neighborhood_function:str='bubble'):
+    def __init__(self, p: float = 0.5, num_colors=None, sigma: float = 1.0,
+                 learning_rate: float = 0.2, neighborhood_function: str = 'bubble'):
         super(RandomQuantizeSOM, self).__init__(p=p)
 
         if not num_colors:
@@ -1800,8 +1808,9 @@ class RandomQuantizeSOM(RandomBase):
         # x and y are the "palette" matrix shape. x=2, y=N means 2xN final colors, but
         # could reshape to something like x=3, y=3 too
         # try sigma = 0.1 , 0.2, 1.0, etc
-        self.som = MiniSom(x=2, y=N, input_len=3, sigma=sigma,
-                    learning_rate=0.2, neighborhood_function=neighborhood_function)
+        self.som = MiniSom(
+            x=2, y=N, input_len=3, sigma=sigma,
+            learning_rate=0.2, neighborhood_function=neighborhood_function)
 
     def apply(self, img, **params):
         """
@@ -1822,7 +1831,7 @@ class RandomQuantizeSOM(RandomBase):
         # save the starting weights (the image’s initial colors)
         starting_weights = self.som.get_weights().copy()
         self.som.train_random(pixels, 500, verbose=False)
-        #som.train_random(pixels, 100)
+        # som.train_random(pixels, 100)
 
         # vector quantization: quantize each pixel of the image
         # to reduce the number of colors
@@ -1852,8 +1861,8 @@ class BlurBase:
     def __init__(self,
                  p: float = 0.5,
                  kernel_size: int = 3,
-                 sigmaX = None,
-                 sigmaY = None,
+                 sigmaX=None,
+                 sigmaY=None,
                  init_params: bool = False):
 
         if not isinstance(p, numbers.Number) or p < 0:
@@ -1869,8 +1878,8 @@ class BlurBase:
             self.sigmaX = to_tuple(sigmaX if sigmaX is not None else 0, 0)
             self.sigmaY = to_tuple(sigmaY, 0) if sigmaY is not None else None
         elif self.kind == 'bilateral':
-            self.sigmaColor = to_tuple(sigmaX, 0) if sigmaX is not None else 5
-            self.sigmaSpace = to_tuple(sigmaY, 0) if sigmaY is not None else 5
+            self.sigmaColor = to_tuple(sigmaX, 0) if sigmaX is not None else (0, 5)
+            self.sigmaSpace = to_tuple(sigmaY, 0) if sigmaY is not None else (0, 5)
         self.params = self.get_params() if init_params else None
 
     @staticmethod
@@ -1913,7 +1922,7 @@ class BlurBase:
             if self.sigmaSpace:
                 params["sigmaSpace"] = random.uniform(*self.sigmaSpace)
         return params
-    
+
     def apply(self, image, **params):
         """Dummy, use the appropriate function in each class"""
         return image
@@ -1979,8 +1988,9 @@ class RandomBoxBlur(BlurBase):
     def get_kind():
         return 'box'
 
+
 class RandomGaussianBlur(BlurBase):
-    """Applying Gaussian blurring filter on the given CV Image 
+    """Applying Gaussian blurring filter on the given CV Image
         randomly with a given probability.
     Args:
         p (float): probability of applying the transform.
@@ -2126,13 +2136,13 @@ class RandomComplexMotionBlur:
             Default: (100, 100)
         complexity (Float between 0 and 1.):
             complexity/intensity of the motion blur path.
-            0 means linear motion blur and 1 is a highly non linear
+            0 means linear motion blur and 1 is a highly non-linear
             and often convex motion blur path. Default: 0.
-        eps: tiny error used for nummerical stability. Default: 0.1
+        eps: tiny error used for numerical stability. Default: 0.1
     """
     def __init__(self,
                  p: float = 0.5,
-                 size: tuple = (100, 100), #new
+                 size: tuple = (100, 100),  # new
                  complexity: float = 0,
                  eps: float = 0.1):
 
@@ -2141,6 +2151,8 @@ class RandomComplexMotionBlur:
         self.p = p
 
         # checking if size is correctly given
+        if isinstance(size, list):
+            size = tuple(size)
         if isinstance(size, int):
             size = (size, size)
         if not isinstance(size, tuple):
@@ -2192,13 +2204,13 @@ class RandomComplexMotionBlur:
         # TODO: continue testing
         # using the full kernel size produces a lot more movement/blur
         # with a smaller kernel, there's less motion.
-        # kernel = resize(kernel, scale_factors=None, out_shape=(19,19),  #scale_factors=1/sf
+        # kernel = resize(kernel, scale_factors=None, out_shape=(19,19),  # scale_factors=1/sf
         #                             interpolation="gaussian", kernel_width=None,
         #                             antialiasing=True)
         # kernel = cv2.resize(kernel,
         #                 dsize=(19,19),
-        #                 #fx=scale,
-        #                 #fy=scale,
+        #                 # fx=scale,
+        #                 # fy=scale,
         #                 interpolation=cv2.INTER_CUBIC)
 
         return {"kernel": kernel,
@@ -2238,9 +2250,9 @@ class FSDitherNoise(RandomBase):
     r"""Adds colored Floyd–Steinberg dithering noise to the image.
     Args:
         p (float): probability of the image being noised. Default value is 0.5
-        samplingF: controls the amount of dithering 
+        samplingF: controls the amount of dithering
     """
-    def __init__(self, p:float=0.5, samplingF = 1):
+    def __init__(self, p: float = 0.5, samplingF=1):
         super(FSDitherNoise, self).__init__(p=p)
         self.samplingF = samplingF
 
@@ -2279,9 +2291,9 @@ class FSBWDitherNoise(RandomBase):
     r"""Adds black and white Floyd–Steinberg dithering noise to the image.
     Args:
         p (float): probability of the image being noised. Default value is 0.5
-        samplingF: controls the amount of dithering 
+        samplingF: controls the amount of dithering
     """
-    def __init__(self, p:float=0.5, samplingF = 1):
+    def __init__(self, p: float = 0.5, samplingF=1):
         super(FSBWDitherNoise, self).__init__(p=p)
         self.samplingF = samplingF
 
@@ -2299,20 +2311,20 @@ class RandomBWDitherNoise(RandomBase):
 
 
 class FilterMaxRGB(RandomBase):
-    r"""The Max RGB filter is used to visualize which channel contributes most to a given area of an image. 
+    r"""The Max RGB filter is used to visualize which channel contributes most to a given area of an image.
         Can be used for simple color-based segmentation.
-        More infotmation on: https://www.pyimagesearch.com/2015/09/28/implementing-the-max-rgb-filter-in-opencv/
+        More information on: https://www.pyimagesearch.com/2015/09/28/implementing-the-max-rgb-filter-in-opencv/
     Args:
         img (numpy ndarray): Image to be filtered.
         p (float): probability of the image being noised. Default value is 0.5
     """
     def apply(self, image, **params):
         return EF.filter_max_rgb(image)
-        
+
 
 class FilterColorBalance:
     r"""Simple color balance algorithm (similar to Photoshop "auto levels")
-        More infotmation on: 
+        More information on:
         https://gist.github.com/DavidYKay/9dad6c4ab0d8d7dbf3dc#gistcomment-3025656
         http://www.morethantechnical.com/2015/01/14/simplest-color-balance-with-opencv-wcode/
         https://web.stanford.edu/~sujason/ColorBalancing/simplestcb.html
@@ -2321,7 +2333,7 @@ class FilterColorBalance:
         percent (int): amount of balance to apply
     """
 
-    def __init__(self, p:float=0.5, percent=1, random_params: bool = False):
+    def __init__(self, p: float = 0.5, percent=1, random_params: bool = False):
         assert isinstance(p, numbers.Number) and p >= 0, 'p should be a positive value'
         self.p = p
         self.percent = percent
@@ -2355,7 +2367,7 @@ class FilterColorBalance:
 
 class FilterUnsharp:
     r"""Unsharp mask filter, used to sharpen images to make edges and interfaces look crisper.
-        More infotmation on: 
+        More information on:
         https://www.idtools.com.au/unsharp-masking-python-opencv/
     Args:
         img (numpy ndarray): Image to be filtered.
@@ -2366,7 +2378,7 @@ class FilterUnsharp:
     """
 
     def __init__(self, blur_algo='median', kernel_size=None,
-        strength:float=0.3, unsharp_algo='laplacian', p:float=0.5):
+                 strength: float = 0.3, unsharp_algo='laplacian', p: float = 0.5):
         assert isinstance(p, numbers.Number) and p >= 0, 'p should be a positive value'
         self.blur_algo = blur_algo
         self.kernel_size = kernel_size
@@ -2383,8 +2395,8 @@ class FilterUnsharp:
             np.ndarray: Randomly noised image.
         """
         if random.random() < self.p:
-            return EF.filter_unsharp(img, blur_algo=self.blur_algo, kernel_size=self.kernel_size, 
-                                        strength=self.strength, unsharp_algo=self.unsharp_algo)
+            return EF.filter_unsharp(img, blur_algo=self.blur_algo, kernel_size=self.kernel_size,
+                                     strength=self.strength, unsharp_algo=self.unsharp_algo)
         return img
 
     def __repr__(self):
@@ -2396,18 +2408,20 @@ class FilterCanny(RandomBase):
     Args:
         img (numpy ndarray): Image to be filtered.
         sigma: standard deviation from the median to automatically
-            calculate minimun values and maximum values thresholds.
+            calculate minimum values and maximum values thresholds.
         p: probability of the image being noised.
     Returns:
         numpy ndarray: version of the image after Canny filter.
     """
-    def __init__(self, sigma:float=0.33, p:float=0.5,
-        bin_thresh:bool=False, threshold:int=127):
+    def __init__(self, sigma: float = 0.33, p: float = 0.5,
+                 bin_thresh: bool = False, threshold: int = 127):
         super(FilterCanny, self).__init__(p=p)
         self.sigma = sigma
+        self.bin_thresh = bin_thresh
+        self.threshold = threshold
 
     def apply(self, image, **params):
-        return EF.filter_canny(image, self.sigma)
+        return EF.filter_canny(image, self.sigma, self.bin_thresh, self.threshold)
 
 
 class SimpleQuantize(RandomBase):
@@ -2420,9 +2434,10 @@ class SimpleQuantize(RandomBase):
     Returns:
         numpy ndarray: quantized version of the image.
     """
-    def __init__(self, rgb_range = 40, p:float = 0.5):
+    def __init__(self, rgb_range=40, p: float = 0.5):
         super(SimpleQuantize, self).__init__(p=p)
-        assert isinstance(rgb_range, numbers.Number) and rgb_range >= 0, 'rgb_range should be a positive value'
+        assert isinstance(rgb_range, numbers.Number) \
+               and rgb_range >= 0, 'rgb_range should be a positive value'
         self.rgb_range = rgb_range
 
     def apply(self, image, **params):
@@ -2443,8 +2458,8 @@ class ApplyKernel:
 
     def __init__(self, 
                  scale: float = 1.0, 
-                 kernels_path = None, 
-                 kernel = None, 
+                 kernels_path=None,
+                 kernel=None,
                  pattern: str = '',
                  kformat: str = 'npy',
                  size: int = 13, 
@@ -2523,9 +2538,9 @@ class RandomAnIsoBlur(ApplyKernel):
         noise (float): multiplicative kernel noise. Default: None.
         scale (int): option to subsample image by a scale.
     """
-    def __init__(self, p:float=0.5, min_kernel_size:int=1,
-        kernel_size:int=3, sigmaX=None, sigmaY=None, angle=None,
-        noise=None, scale:int=1):
+    def __init__(self, p: float = 0.5, min_kernel_size: int = 1,
+                 kernel_size: int = 3, sigmaX=None, sigmaY=None, angle=None,
+                 noise=None, scale: int = 1):
 
         if not isinstance(p, numbers.Number) or p < 0:
             raise ValueError('p should be a positive value')
@@ -2542,10 +2557,10 @@ class RandomAnIsoBlur(ApplyKernel):
         kernel = EF.get_gaussian_kernel(**self.get_params())
 
         super(RandomAnIsoBlur, self).__init__(
-            scale = self.scale,
-            kernel = kernel,
-            size = None,
-            center = False)
+            scale=self.scale,
+            kernel=kernel,
+            size=None,
+            center=False)
 
     def get_params(self, imgdim=None):
         """ Get function parameters. """
@@ -2558,7 +2573,7 @@ class RandomAnIsoBlur(ApplyKernel):
         # force odd kernel size
         kernel_size = int(np.ceil(kernel_size))
         if kernel_size != 0 and kernel_size % 2 == 0:
-            kernel_size+=1
+            kernel_size += 1
 
         sigmaX = random.uniform(*self.sigmaX)
         sigmaY = random.uniform(*self.sigmaY) if self.sigmaY else sigmaX
@@ -2588,9 +2603,9 @@ class AlignedDownsample(RandomAnIsoBlur):
         p: probability of applying the transform.
         scale: scale factor to subsample image by.
     """
-    def __init__(self, p:float=0.5, scale:int=1):
-        super(AlignedDownsample, self).__init__(p=p,
-            min_kernel_size=21, kernel_size=21,
+    def __init__(self, p: float = 0.5, scale: int = 1):
+        super(AlignedDownsample, self).__init__(
+            p=p, min_kernel_size=21, kernel_size=21,
             sigmaX=(0.1, 0.1), scale=scale)
 
 
@@ -2603,8 +2618,8 @@ class RandomSincBlur(ApplyKernel):
         kernel_size: maximum kernel size.
         min_cutoff: min omega cutoff frequency in radians (pi is max).
     """
-    def __init__(self, p:float=0.5, min_kernel_size:int=7,
-        kernel_size:int=21, min_cutoff=None):
+    def __init__(self, p: float = 0.5, min_kernel_size: int = 7,
+                 kernel_size: int = 21, min_cutoff=None):
 
         if not isinstance(p, numbers.Number) or p < 0:
             raise ValueError('p should be a positive value')
@@ -2614,10 +2629,10 @@ class RandomSincBlur(ApplyKernel):
         kernel = SCIP.get_sinc_kernel(**self.get_params())
 
         super(RandomSincBlur, self).__init__(
-            scale = 1,
-            kernel = kernel,
-            size = None,
-            center = False)
+            scale=1,
+            kernel=kernel,
+            size=None,
+            center=False)
 
     def get_params(self, imgdim=None):
         """ Get function parameters. """
@@ -2663,7 +2678,7 @@ class CLAHE(RandomBase):
         self.clip_limit = to_tuple(clip_limit, 1)
         self.tile_grid_size = tuple(tile_grid_size)
 
-    def apply(self, img, clip_limit=2, **params):
+    def apply(self, img, clip_limit=2.0, **params):
         return EF.clahe(img, clip_limit, self.tile_grid_size)
 
     def get_params(self):
@@ -2679,7 +2694,7 @@ class CLAHE(RandomBase):
 class RandomGamma(RandomBase):
     """
     Args:
-        gamma_range (float or (float, float)): Range of gamma values
+        gamma_range (int or (int, int)): Range of gamma values
             to randomly select from. Use integer values, they will
             be divided by 100 for the proper gamma values.
             Default: (80, 120) -> will be (0.8, 1.2).
@@ -2713,7 +2728,7 @@ class RandomGamma(RandomBase):
 
 
 class Superpixels(RandomBase):
-    """Transform images parially/completely to their superpixel representation.
+    """Transform images partially/completely to their superpixel representation.
     This implementation Can use either cv2 (default) or skimage
     algorithms if available.
     Args:
@@ -2744,7 +2759,7 @@ class Superpixels(RandomBase):
         cs (str or None): Colorspace conversion to apply to images before superpixels
             algorithms for better results. In: ``lab`` or ``hsv``, leave ``None`` for defaults.
         algo (str): Selection of the superpixels algorithm. OpenCV and scikit-image algorithms
-            are suported. In: 'seeds', 'slic', 'slico', 'mslic', 'sk_slic', 'sk_felzenszwalb'.
+            are supported. In: 'seeds', 'slic', 'slico', 'mslic', 'sk_slic', 'sk_felzenszwalb'.
         n_iters (int): Number of iterations to perform (only for OpenCV algorithms and `sk_slic`).
         kind (str): Kind of color aggregation to apply to segments. The original behavior
             is to average all the colors in the segment ('avg'), but can also use 'median' or
@@ -2770,12 +2785,12 @@ class Superpixels(RandomBase):
         n_segments=100,
         cs=None,
         algo='slic',
-        n_iters: int=10,
+        n_iters: int = 10,
         kind='mix',
         reduction=None,
         max_size=128,
-        interpolation: str='BILINEAR',
-        p: float=0.5,
+        interpolation: str = 'BILINEAR',
+        p: float = 0.5,
     ):
         super(Superpixels, self).__init__(p)
         self.p_replace = to_tuple(p_replace, p_replace)
@@ -2814,8 +2829,8 @@ class Superpixels(RandomBase):
                 "reduction": reduction,
                 }
 
-    def apply(self, img: np.ndarray, replace_samples=(False,), n_segments:int=1,
-        algo='slic', kind='mix', reduction=None, **kwargs):
+    def apply(self, img: np.ndarray, replace_samples=(False,), n_segments: int = 1,
+              algo='slic', kind='mix', reduction=None, **kwargs):
         return SP.superpixels(
             img, n_segments, self.cs, self.n_iters, algo, kind, reduction,
             replace_samples, self.max_size, self.interpolation)
@@ -2845,9 +2860,9 @@ class RandomChromaticAberration(RandomBase):
         numpy ndarray: image with chromatic aberration.
     """
 
-    def __init__(self, p=0.5, radial_blur:bool=True,
-        strength:float=1.0, jitter:int=0, alpha:float=0.0,
-        random_params:bool=False):
+    def __init__(self, p=0.5, radial_blur: bool = True,
+                 strength: float = 1.0, jitter: int = 0, alpha: float = 0.0,
+                 random_params: bool = False):
         super(RandomChromaticAberration, self).__init__(p=p)
 
         self.radial_blur = radial_blur
@@ -2923,8 +2938,8 @@ class RandomCameraNoise(RandomBase):
     """
 
     def __init__(self, p=0.5, demosaic_fn='malvar',
-        xyz_arr='D50', rg_range:tuple=(1.2, 2.4),
-        bg_range:tuple=(1.2, 2.4), random_params:bool=False):
+                 xyz_arr='D50', rg_range: tuple = (1.2, 2.4),
+                 bg_range: tuple = (1.2, 2.4), random_params: bool = False):
         super(RandomCameraNoise, self).__init__(p=p)
 
         if isinstance(demosaic_fn, str):

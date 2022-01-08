@@ -881,7 +881,7 @@ def filter_colorbalance(img:np.ndarray, percent:int=1) -> np.ndarray:
 
 @preserve_shape
 @preserve_type
-def filter_unsharp(img:np.ndarray, blur_algo:int='median',
+def filter_unsharp(img:np.ndarray, blur_algo:str='median',
     kernel_size=None, strength:float=0.3,
     unsharp_algo:str='laplacian') -> np.ndarray:
     r"""Unsharp mask filter, used to sharpen images to make edges
@@ -916,7 +916,7 @@ def filter_unsharp(img:np.ndarray, blur_algo:int='median',
         # 'laplacian': using LoG (actually, median blur instead of gaussian)
         #randomize kernel_size between 1, 3 and 5
         if kernel_size is None:
-            kernel_sizes = [1, 3, 5] #TODO: ks 5 is causing errors
+            kernel_sizes = [1, 3, 5]
             kernel_size = random.choice(kernel_sizes)
         # Median filtering (could be Gaussian for proper LoG)
         #gray_image_mf = median_filter(gray_image, 1)
@@ -956,7 +956,7 @@ def filter_canny(img: np.ndarray, sigma:float=0.33,
     r"""Automatic Canny filter for edge detection
     Args:
         img: Image to be filtered.
-        sigma: standard deviation from the median to automatically calculate minimun 
+        sigma: standard deviation from the median to automatically calculate minimum
             values and maximum values thresholds. Default: 0.33.
         bin_thresh: flag to apply binarize (threshold) operation
 
@@ -1051,8 +1051,8 @@ def complex_motion_kernel(SIZE, SIZEx2, DIAGONAL,
     #                 antialiasing=True)
     kernel = cv2.resize(kernel,
                         dsize=SIZE,
-                        #fx=scale,
-                        #fy=scale,
+                        # fx=scale,
+                        # fy=scale,
                         interpolation=cv2.INTER_CUBIC)
 
     # normalize kernel, so it suns up to 1
