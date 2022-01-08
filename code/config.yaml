@@ -25,7 +25,7 @@ datasets:
 
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
     dataroot_HR: '/content/hr/' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/hr/' # Original, with a single directory
+    dataroot_LR: '/content/lr/' # Original, with a single directory
     loading_backend: 'OpenCV' # 'PIL' | 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, turboJPEG only for DS_video, 'PIL' for DS_inpaint_TF
 
     n_workers: 0 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
@@ -83,8 +83,8 @@ datasets:
 
   val:
     loading_backend: 'OpenCV' # 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, currently only for DS_video
-    dataroot_HR: '/content/hr/'
-    dataroot_LR: '/content/hr/' # Inpainting will use this directory as input
+    dataroot_HR: '/content/val_hr/'
+    dataroot_LR: '/content/val_lr/' # Inpainting will use this directory as input
 
 path:
     pretrain_model_G: #"/content/model.pth"
