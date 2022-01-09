@@ -25,7 +25,7 @@ datasets:
 
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
     dataroot_HR: '/content/hr/' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/hr/' # Original, with a single directory
+    dataroot_LR: '/content/lr/' # Original, with a single directory
     loading_backend: 'OpenCV' # 'PIL' | 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, turboJPEG only for DS_video, 'PIL' for DS_inpaint_TF
 
     n_workers: 0 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
@@ -33,7 +33,7 @@ datasets:
     batch_size: 1
     
     # does not apply to video dataloaders, look into python file instead
-    HR_size: 256 # The resolution the network will get. Random crop gets applied if that resolution does not match.
+    HR_size: 128 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
     masks: '/content/masks/' # only for inpainting
@@ -45,8 +45,9 @@ datasets:
     canny_min: 100
     canny_max: 150
 
-    # image augmentations (only for lrhr dataloader)
-    # augmentations will apply in random order, for further customization, look at data.py
+    # Image augmentations (only for lrhr dataloader). Set 'True' to use.
+    # To customize individual augmentations, edit aug_config.yaml.
+    # Augmentations will apply in random order.
     ColorJitter: False
     RandomGaussianNoise: False
     RandomPoissonNoise: False
@@ -69,7 +70,6 @@ datasets:
     FilterUnsharp: False
     FilterCanny: False
     SimpleQuantize: False
-    RandomAnIsoBlur: False
     CLAHE: False
     RandomGamma: False
     Superpixels: False
@@ -83,8 +83,8 @@ datasets:
 
   val:
     loading_backend: 'OpenCV' # 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, currently only for DS_video
-    dataroot_HR: '/content/hr/'
-    dataroot_LR: '/content/hr/' # Inpainting will use this directory as input
+    dataroot_HR: '/content/val_hr/'
+    dataroot_LR: '/content/val_lr/' # Inpainting will use this directory as input
 
 path:
     pretrain_model_G: #"/content/model.pth"
@@ -103,22 +103,22 @@ network_G:
     finetune: False # Important for further rfr/dsnet training. Apply that after training for a while. https://github.com/jingyuanli001/RFR-Inpainting/issues/33
 
     # ESRGAN:
-    #netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch)
-    #norm_type: null
-    #mode: CNA
-    #nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
-    #nb: 23 # (default: 23, good: 8)
-    #in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
-    #out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
-    #gc: 32
-    #group: 1
-    #convtype: Conv2D # Conv2D | PartialConv2D
-    #net_act: leakyrelu # swish | leakyrelu
-    #gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
-    #plus: false # true | false
-    #finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
-    #upsample_mode: 'upconv'
-    #nr: 3
+    netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch)
+    norm_type: null
+    mode: CNA
+    nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
+    nb: 23 # (default: 23, good: 8)
+    in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
+    out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
+    gc: 32
+    group: 1
+    convtype: Conv2D # Conv2D | PartialConv2D
+    net_act: leakyrelu # swish | leakyrelu
+    gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
+    plus: false # true | false
+    finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
+    upsample_mode: 'upconv'
+    nr: 3
 
     # ASRGAN:
     #which_model_G: asr_resnet # asr_resnet | asr_cnn
@@ -509,16 +509,16 @@ network_G:
 
     #-----------Misc---------------
     # Restormer (2021) (1x model)
-    netG: restormer
-    inp_channels: 3
-    out_channels: 3
-    dim: 48
-    num_blocks: [4,6,6,8]
-    num_refinement_blocks: 4
-    heads: [1,2,4,8]
-    ffn_expansion_factor: 2.66
-    bias: False
-    LayerNorm_type: 'WithBias' # 'WithBias' | 'BiasFree'
+    #netG: restormer
+    #inp_channels: 3
+    #out_channels: 3
+    #dim: 48
+    #num_blocks: [4,6,6,8]
+    #num_refinement_blocks: 4
+    #heads: [1,2,4,8]
+    #ffn_expansion_factor: 2.66
+    #bias: False
+    #LayerNorm_type: 'WithBias' # 'WithBias' | 'BiasFree'
 
 # Discriminator options:
 network_D:
@@ -585,8 +585,8 @@ network_D:
     #input_nc: 3
     #ndf: 64
     #n_layers: 3
-    #norm_layer: nn.BatchNorm2d
-    #se_sigmoid: False
+    #norm_layer: nn.BatchNorm2d  # Currently only nn.BatchNorm2d will be used
+    #use_sigmoid: False
     #num_D: 3
     #getIntermFeat: False
 
@@ -800,14 +800,14 @@ train:
     norm: False
 
     # Elastic
-    Elatic_weight: 0
+    Elastic_weight: 0
     a: 0.2
     reduction_elastic: 'mean'
 
     # Relative L1
     Relative_l1_weight: 0
-    eps: .01
-    reduction_realtive: 'mean'
+    l1_eps: .01
+    reduction_relative: 'mean'
 
     # L1CosineSim (3-channel input)
     L1CosineSim_weight: 0
@@ -828,19 +828,17 @@ train:
 
     # GPLoss
     GPLoss_weight: 0
-    trace: False
-    spl_denorm: False
+    gp_trace: False
+    gp_spl_denorm: False
 
     # CPLoss
     CPLoss_weight: 0
     rgb: True
     yuv: True
     yuvgrad: True
-    trace: False
-    spl_denorm: False
+    cp_trace: False
+    cp_spl_denorm: False
     yuv_denorm: False
-
-    StyleLoss_weight: 0
 
     # TVLoss
     TVLoss_weight: 0
@@ -848,7 +846,7 @@ train:
     p: 1
 
     # Contextual_Loss (3-channel input)
-    Contexual_weight: 0
+    Contextual_weight: 0
     crop_quarter: False
     max_1d_size: 100
     distance_type: 'cosine' # ["11", "l2", "consine"]
@@ -935,7 +933,7 @@ train:
     CTSDG_projected_weight: 0 #0.1
 
     # loss for rife
-    SOBEL_weight: 0.1 # not recommended, leave it at 0
+    SOBEL_weight: 0 # not recommended, leave it at 0
 
     # Three different augmentation options, diffaug and muaraugment apply to both training loops,
     # while batch_aug only applies to the discriminator training loop
