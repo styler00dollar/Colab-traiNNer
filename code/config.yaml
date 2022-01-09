@@ -585,8 +585,8 @@ network_D:
     #input_nc: 3
     #ndf: 64
     #n_layers: 3
-    #norm_layer: nn.BatchNorm2d
-    #se_sigmoid: False
+    #norm_layer: nn.BatchNorm2d  # Currently only nn.BatchNorm2d will be used
+    #use_sigmoid: False
     #num_D: 3
     #getIntermFeat: False
 

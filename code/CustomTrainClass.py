@@ -557,7 +557,6 @@ class CustomTrainClass(pl.LightningModule):
                 input_nc=cfg['network_D']['input_nc'],
                 ndf=cfg['network_D']['ndf'],
                 n_layers=cfg['network_D']['n_layers'],
-                norm_layer=cfg['network_D']['norm_layer'],
                 use_sigmoid=cfg['network_D']['use_sigmoid'],
                 num_D=cfg['network_D']['num_D'],
                 getIntermFeat=cfg['network_D']['getIntermFeat'])

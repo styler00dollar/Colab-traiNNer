@@ -532,9 +532,6 @@ class Discriminator_VGG_128_fea(nn.Module):
         return x
 
 
-
-
-
 class NLayerDiscriminator(nn.Module):
     r"""
     PatchGAN discriminator
@@ -558,13 +555,13 @@ class NLayerDiscriminator(nn.Module):
         else:
             use_bias = norm_layer == nn.InstanceNorm2d
         '''
-        #self.getIntermFeat = getIntermFeat # not used for now
-        #use_sigmoid not used for now
-        #TODO: test if there are benefits by incorporating the use of intermediate features from pix2pixHD
+        # self.getIntermFeat = getIntermFeat # not used for now
+        # use_sigmoid not used for now
+        # TODO: test if there are benefits by incorporating the use of intermediate features from pix2pixHD
 
         use_bias = False
         kw = 4
-        padw = 1 # int(np.ceil((kw-1.0)/2))
+        padw = 1  # int(np.ceil((kw-1.0)/2))
 
         sequence = [nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]
         nf_mult = 1
@@ -1212,7 +1209,7 @@ class DropPath(pl.LightningModule):
         return drop_path(x, self.drop_prob, self.training)
 
 from itertools import repeat
-from torch._six import container_abcs
+import collections.abc as container_abcs
 
 
 # From PyTorch internals
@@ -1228,7 +1225,6 @@ to_1tuple = _ntuple(1)
 to_2tuple = _ntuple(2)
 to_3tuple = _ntuple(3)
 to_4tuple = _ntuple(4)
-
 
 
 def _no_grad_trunc_normal_(tensor, mean, std, a, b):
