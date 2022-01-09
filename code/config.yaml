@@ -1,10 +1,10 @@
 name: template
-scale: 1
-gpus: 1 # amount of gpus, 0 = cpu
+scale: 4
+gpus: 0 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
-use_amp: True
+use_amp: False
 use_swa: False
 progress_bar_refresh_rate: 20
 default_root_dir: '/content/'
@@ -30,7 +30,7 @@ datasets:
 
     n_workers: 0 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     pipeline_threads: 16 # only for DS_video_direct
-    batch_size: 1
+    batch_size: 2
     
     # does not apply to video dataloaders, look into python file instead
     HR_size: 128 # The resolution the network will get. Random crop gets applied if that resolution does not match.
@@ -70,6 +70,7 @@ datasets:
     FilterUnsharp: False
     FilterCanny: False
     SimpleQuantize: False
+    RandomAnIsoBlur: False
     CLAHE: False
     RandomGamma: False
     Superpixels: False
@@ -91,7 +92,7 @@ path:
     pretrain_model_D: 
     checkpoint_path:
     checkpoint_save_path: '/content/'
-    validation_output_path: '/content/val'
+    validation_output_path: '/content/validation'
     log_path: '/content/logs'
 
 # Generator options:
@@ -581,14 +582,14 @@ network_D:
     #use_spectral_norm: False
 
     # Multiscale
-    #netD: MultiscaleDiscriminator
-    #input_nc: 3
-    #ndf: 64
-    #n_layers: 3
-    #norm_layer: nn.BatchNorm2d  # Currently only nn.BatchNorm2d will be used
-    #use_sigmoid: False
-    #num_D: 3
-    #getIntermFeat: False
+    netD: MultiscaleDiscriminator
+    input_nc: 3
+    ndf: 64
+    n_layers: 3
+    norm_layer: nn.BatchNorm2d
+    use_sigmoid: False
+    num_D: 3
+    get_feats: False
 
     #netD: ResNet101FeatureExtractor
     #use_input_norm: True
@@ -732,8 +733,8 @@ network_D:
     # timm
     # pip install timm
     # you can loop up models here: https://rwightman.github.io/pytorch-image-models/
-    netD: timm
-    timm_model: "tf_efficientnetv2_b0"
+    #netD: timm
+    #timm_model: "tf_efficientnetv2_b0"
 
     #netD: resnet3d
     #model_depth: 50 # [10, 18, 34, 50, 101, 152, 200]
@@ -937,7 +938,7 @@ train:
 
     # Three different augmentation options, diffaug and muaraugment apply to both training loops,
     # while batch_aug only applies to the discriminator training loop
-    augmentation_method: "batch_aug" # diffaug, MuarAugment, batch_aug, None
+    augmentation_method: batch_aug # diffaug, MuarAugment, batch_aug, None
     # diffaug
     policy: 'color,translation,cutout'
     # MuarAugment
