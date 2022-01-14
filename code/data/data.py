@@ -23,8 +23,8 @@ if cfg['datasets']['train']['mode'] == "DS_svg_TF":
     from cairosvg import svg2png
     from io import BytesIO
 
-"""if cfg['datasets']['train']['loading_backend'] == "PIL":
-    import pillow_avif  # import not used"""
+if cfg['datasets']['train']['loading_backend'] == "PIL":
+    import pillow_avif
 
 
 def random_mask(height=256, width=256,
