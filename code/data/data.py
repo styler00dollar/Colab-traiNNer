@@ -26,7 +26,6 @@ if cfg['datasets']['train']['mode'] == "DS_svg_TF":
 if cfg['datasets']['train']['loading_backend'] == "PIL":
     import pillow_avif
 
-
 def random_mask(height=256, width=256,
                 min_stroke=1, max_stroke=10,
                 min_vertex=1, max_vertex=15,
@@ -559,6 +558,17 @@ class DS_inpaint_TF(Dataset):
         elif cfg['datasets']['train']['loading_backend'] == "PIL":
             sample = Image.open(io.BytesIO(np.array(data['data'])))
             sample = np.array(sample)
+
+        # resize
+        #sample = cv2.resize(sample, (self.HR_size, self.HR_size), interpolation=cv2.INTER_AREA)
+
+        # random crop
+        # checking for hr_size limitation
+        if sample.shape[0] > self.HR_size or sample.shape[1] > self.HR_size:
+            # image too big, random crop
+            random_pos1 = random.randint(0, sample.shape[0]-self.HR_size)
+            random_pos2 = random.randint(0, sample.shape[1]-self.HR_size)
+            sample = sample[random_pos1:random_pos1+self.HR_size, random_pos2:random_pos2+self.HR_size]
 
         # if edges are required
         if (cfg['network_G']['netG'] == 'EdgeConnect'
