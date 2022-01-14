@@ -331,7 +331,7 @@ class FourierUnit(nn.Module):
         # (batch, c, h, w/2+1, 2)
         fft_dim = (-3, -2, -1) if self.ffc3d else (-2, -1)
         if half_check == True:
-          ffted = torch.fft.rfftn(x.type(torch.cuda.FloatTensor), dim=fft_dim, norm=self.fft_norm) #.type(torch.cuda.HalfTensor)
+          ffted = torch.fft.rfftn(x.float(), dim=fft_dim, norm=self.fft_norm) #.type(torch.cuda.HalfTensor)
         else:
           ffted = torch.fft.rfftn(x, dim=fft_dim, norm=self.fft_norm)
 
@@ -349,13 +349,13 @@ class FourierUnit(nn.Module):
             ffted = self.se(ffted)
 
         if half_check == True:
-          ffted = self.conv_layer(ffted.type(torch.cuda.HalfTensor))  # (batch, c*2, h, w/2+1)
+          ffted = self.conv_layer(ffted.half())  # (batch, c*2, h, w/2+1)
         else:
           ffted = self.conv_layer(ffted) #.type(torch.cuda.FloatTensor)  # (batch, c*2, h, w/2+1)
 
         ffted = self.relu(self.bn(ffted))
         # forcing to be always float
-        ffted = ffted.type(torch.cuda.FloatTensor)
+        ffted = ffted.float()
 
         ffted = ffted.view((batch, -1, 2,) + ffted.size()[2:]).permute(
             0, 1, 3, 4, 2).contiguous()  # (batch,c, t, h, w/2+1, 2)
@@ -366,7 +366,7 @@ class FourierUnit(nn.Module):
         output = torch.fft.irfftn(ffted, s=ifft_shape_slice, dim=fft_dim, norm=self.fft_norm)
 
         if half_check == True:
-          output = output.type(torch.cuda.HalfTensor)
+          output = output.half()
 
         if self.spatial_scale_factor is not None:
           output = F.interpolate(output, size=orig_size, mode=self.spatial_scale_mode, align_corners=False)
