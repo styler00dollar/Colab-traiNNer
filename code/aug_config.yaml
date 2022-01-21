@@ -100,7 +100,10 @@
     threshold: 127  # Cutoff value for binarize (0-255)
   SimpleQuantize:
     p: 0.5
-    rgb_range: 40  # Maximum number of colors (1-255)
+    rgb_range: 40  # Higher values increase value range contained in each bin (1-255)
+  KMeansQuantize:
+    p: 0.5
+    n_colors: 128  # Number of colors in quantized image (1-255)
   CLAHE:  # Contrast-Limited Adaptive Histogram Equalization
     p: 0.5
     clip_limit: 4.0  # Upper threshold value for contrast limiting (min 1)

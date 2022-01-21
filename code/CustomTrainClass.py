@@ -546,7 +546,7 @@ class CustomTrainClass(pl.LightningModule):
                 n_layers=cfg['network_D']['n_layers'],
                 norm_layer=cfg['network_D']['norm_layer'],
                 use_sigmoid=cfg['network_D']['use_sigmoid'],
-                getIntermFeat=cfg['network_D']['getIntermFeat'],
+                get_feats=cfg['network_D']['getIntermFeat'],
                 patch=cfg['network_D']['patch'],
                 use_spectral_norm=cfg['network_D']['use_spectral_norm'])
 
@@ -1665,32 +1665,32 @@ class CustomTrainClass(pl.LightningModule):
                     # 2d
                     if cfg['train']['augmentation_method'] == "diffaug":
                         if cfg["network_D"]['netD'] == "MultiscaleDiscriminator":
-                          d_loss_fool = 0
-                          d_out = self.netD(DiffAugment(out, cfg['train']['policy']))
-                          for i in d_out:
-                            d_loss_fool += cfg["network_D"]["d_loss_fool_weight"] * \
-                                self.discriminator_criterion( \
-                                torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
+                            d_loss_fool = 0
+                            d_out = self.netD(DiffAugment(out, cfg['train']['policy']))
+                            for i in d_out:
+                                d_loss_fool += cfg["network_D"]["d_loss_fool_weight"] * \
+                                    self.discriminator_criterion(
+                                    torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
                         else:
-                          d_loss_fool = \
-                              cfg["network_D"]["d_loss_fool_weight"] * \
-                              self.discriminator_criterion(
-                                  self.netD(DiffAugment(out, cfg['train']['policy'])), fake)
+                            d_loss_fool = \
+                                cfg["network_D"]["d_loss_fool_weight"] * \
+                                self.discriminator_criterion(
+                                    self.netD(DiffAugment(out, cfg['train']['policy'])), fake)
                     elif cfg['train']['augmentation_method'] == "MuarAugment":
                         self.mu_transform.setup(self)
                         mu_augment, _ = self.mu_transform((out, fake))
                         if cfg["network_D"]['netD'] == "MultiscaleDiscriminator":
-                          d_loss_fool = 0
-                          d_out = self.netD(mu_augment)
-                          for i in d_out:
-                            d_loss_fool += cfg["network_D"]["d_loss_fool_weight"] * \
-                                self.discriminator_criterion( \
-                                torch.mean(torch.mean(i[0], dim=2), dim=2).float(), fake.float())
+                            d_loss_fool = 0
+                            d_out = self.netD(mu_augment)
+                            for i in d_out:
+                                d_loss_fool += cfg["network_D"]["d_loss_fool_weight"] * \
+                                    self.discriminator_criterion(
+                                    torch.mean(torch.mean(i[0], dim=2), dim=2).float(), fake.float())
                         else:
-                          d_loss_fool = \
-                              cfg["network_D"]["d_loss_fool_weight"] * \
-                              self.discriminator_criterion(
-                                  self.netD(mu_augment).float(), fake.float())
+                            d_loss_fool = \
+                                cfg["network_D"]["d_loss_fool_weight"] * \
+                                self.discriminator_criterion(
+                                    self.netD(mu_augment).float(), fake.float())
                     else:
                         if cfg['network_D']['netD'] == 'FFCNLayerDiscriminator':
                             FFCN_class, FFCN_feature = self.netD(out)
@@ -1699,16 +1699,16 @@ class CustomTrainClass(pl.LightningModule):
                                 self.discriminator_criterion(FFCN_class, fake)
                         else:
                             if cfg["network_D"]['netD'] == "MultiscaleDiscriminator":
-                              d_loss_fool = 0
-                              d_out = self.netD(out)
-                              for i in d_out:
-                                d_loss_fool += cfg["network_D"]["d_loss_fool_weight"] * \
-                                    self.discriminator_criterion( \
-                                    torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
+                                d_loss_fool = 0
+                                d_out = self.netD(out)
+                                for i in d_out:
+                                    d_loss_fool += cfg["network_D"]["d_loss_fool_weight"] * \
+                                        self.discriminator_criterion(
+                                        torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
                             else:
-                              d_loss_fool = \
-                                  cfg["network_D"]["d_loss_fool_weight"] * \
-                                  self.discriminator_criterion(self.netD(out), fake)
+                                d_loss_fool = \
+                                    cfg["network_D"]["d_loss_fool_weight"] * \
+                                    self.discriminator_criterion(self.netD(out), fake)
 
                 writer.add_scalar('loss/d_loss_fool', d_loss_fool, self.trainer.global_step)
 
@@ -1765,82 +1765,90 @@ class CustomTrainClass(pl.LightningModule):
             else:
                 # 2d
                 if cfg['train']['augmentation_method'] == "diffaug":
-                  if cfg["network_D"]['netD'] == "MultiscaleDiscriminator":
-                    # fake
-                    dis_fake_loss = 0
-                    d_out = self.netD(DiffAugment(out, cfg['train']['policy']))
-                    for i in d_out:
-                      dis_fake_loss += self.discriminator_criterion(torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
-                    # real
-                    dis_real_loss = 0
-                    d_out = self.netD(DiffAugment(train_batch[2], cfg['train']['policy']))
-                    for i in d_out:
-                      dis_real_loss += self.discriminator_criterion(torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
-                  else:
-                    discr_out_fake = self.netD(DiffAugment(out, cfg['train']['policy']))
-                    discr_out_real = self.netD(DiffAugment(train_batch[2], cfg['train']['policy']))
+                    if cfg["network_D"]['netD'] == "MultiscaleDiscriminator":
+                        # fake
+                        dis_fake_loss = 0
+                        d_out = self.netD(DiffAugment(out, cfg['train']['policy']))
+                        for i in d_out:
+                            dis_fake_loss += self.discriminator_criterion(
+                                torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
+                        # real
+                        dis_real_loss = 0
+                        d_out = self.netD(DiffAugment(train_batch[2], cfg['train']['policy']))
+                        for i in d_out:
+                            dis_real_loss += self.discriminator_criterion(
+                                torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
+                    else:
+                        discr_out_fake = self.netD(DiffAugment(out, cfg['train']['policy']))
+                        discr_out_real = self.netD(DiffAugment(train_batch[2], cfg['train']['policy']))
                 elif cfg['train']['augmentation_method'] == "MuarAugment":
                     self.mu_transform.setup(self)
                     if cfg["network_D"]['netD'] == "MultiscaleDiscriminator":
-                      # fake
-                      dis_fake_loss = 0
-                      mu_augment, _ = self.mu_transform((out, fake))
-                      d_out = self.netD(mu_augment)
-                      for i in d_out:
-                        dis_fake_loss += self.discriminator_criterion(torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
-                      # real
-                      dis_real_loss = 0
-                      mu_augment, _ = self.mu_transform((train_batch[2], valid))
-                      d_out = self.netD(mu_augment)
-                      for i in d_out:
-                        dis_real_loss += self.discriminator_criterion(torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
+                        # fake
+                        dis_fake_loss = 0
+                        mu_augment, _ = self.mu_transform((out, fake))
+                        d_out = self.netD(mu_augment)
+                        for i in d_out:
+                            dis_fake_loss += self.discriminator_criterion(
+                                torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
+                        # real
+                        dis_real_loss = 0
+                        mu_augment, _ = self.mu_transform((train_batch[2], valid))
+                        d_out = self.netD(mu_augment)
+                        for i in d_out:
+                            dis_real_loss += self.discriminator_criterion(
+                                torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
                     else:
-                      # fake
-                      mu_augment, _ = self.mu_transform((out, fake))
-                      discr_out_fake = self.netD(mu_augment)
-                      # real
-                      mu_augment, _ = self.mu_transform((train_batch[2], valid))
-                      discr_out_real = self.netD(mu_augment)
+                        # fake
+                        mu_augment, _ = self.mu_transform((out, fake))
+                        discr_out_fake = self.netD(mu_augment)
+                        # real
+                        mu_augment, _ = self.mu_transform((train_batch[2], valid))
+                        discr_out_real = self.netD(mu_augment)
                 elif cfg['train']['augmentation_method'] == "batch_aug":
                     fake_out, real_out = self.batch_aug(out, train_batch[2])
                     if cfg["network_D"]['netD'] == "MultiscaleDiscriminator":
-                      # fake
-                      dis_fake_loss = 0
-                      d_out = self.netD(fake_out)
-                      for i in d_out:
-                        dis_fake_loss += self.discriminator_criterion(torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
-                      # real
-                      dis_real_loss = 0
-                      d_out = self.netD(real_out)
-                      for i in d_out:
-                        dis_real_loss += self.discriminator_criterion(torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
+                        # fake
+                        dis_fake_loss = 0
+                        d_out = self.netD(fake_out)
+                        for i in d_out:
+                            dis_fake_loss += self.discriminator_criterion(
+                                torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
+                        # real
+                        dis_real_loss = 0
+                        d_out = self.netD(real_out)
+                        for i in d_out:
+                            dis_real_loss += self.discriminator_criterion(
+                                torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
                     else:
-                      discr_out_fake = self.netD(fake_out)
-                      discr_out_real = self.netD(real_out)
+                        discr_out_fake = self.netD(fake_out)
+                        discr_out_real = self.netD(real_out)
                 else:
                     if cfg['network_D']['netD'] == 'FFCNLayerDiscriminator':
                         discr_out_fake, _ = self.netD(out)
                         discr_out_real, _ = self.netD(train_batch[2])
                     else:
-                      if cfg["network_D"]['netD'] == "MultiscaleDiscriminator":
-                        # fake
-                        dis_fake_loss = 0
-                        d_out = self.netD(out)
-                        for i in d_out:
-                          dis_fake_loss += self.discriminator_criterion(torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
-                        # real
-                        dis_real_loss = 0
-                        d_out = self.netD(out)
-                        for i in d_out:
-                          dis_real_loss += self.discriminator_criterion(torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
-                      else:
-                        discr_out_fake = self.netD(out)
-                        discr_out_real = self.netD(train_batch[2])
+                        if cfg["network_D"]['netD'] == "MultiscaleDiscriminator":
+                            # fake
+                            dis_fake_loss = 0
+                            d_out = self.netD(out)
+                            for i in d_out:
+                                dis_fake_loss += self.discriminator_criterion(
+                                    torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
+                            # real
+                            dis_real_loss = 0
+                            d_out = self.netD(out)
+                            for i in d_out:
+                                dis_real_loss += self.discriminator_criterion(
+                                    torch.mean(torch.mean(i[0], dim=2), dim=2), fake)
+                        else:
+                            discr_out_fake = self.netD(out)
+                            discr_out_real = self.netD(train_batch[2])
 
             # loss for multi does get calculated with a loop
             if cfg["network_D"]['netD'] != "MultiscaleDiscriminator":
-              dis_fake_loss = self.discriminator_criterion(discr_out_fake.float(), fake.float())
-              dis_real_loss = self.discriminator_criterion(discr_out_real.float(), fake.float())
+                dis_fake_loss = self.discriminator_criterion(discr_out_fake.float(), fake.float())
+                dis_real_loss = self.discriminator_criterion(discr_out_real.float(), fake.float())
 
             # Total loss
             d_loss = cfg["network_D"]["d_loss_weight"] * ((dis_real_loss + dis_fake_loss) / 2)

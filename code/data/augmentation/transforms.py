@@ -20,13 +20,13 @@ import types
 import collections
 import warnings
 
-from . import functional as F
-from . import extra_functional as EF
-from . import superpixels as SP
-from . import spadd as SCIP
-from .minisom import MiniSom
-from .common import (fetch_kernels, to_tuple, _cv2_interpolation2str,
-                     _cv2_str2interpolation, convolve, sample, MAX_VALUES_BY_DTYPE)
+import functional as F
+import extra_functional as EF
+import superpixels as SP
+import spadd as SCIP
+from minisom import MiniSom
+from common import (fetch_kernels, to_tuple, _cv2_interpolation2str,
+                    _cv2_str2interpolation, convolve, sample, MAX_VALUES_BY_DTYPE)
 
 
 __all__ = ["Compose", "ToTensor", "ToCVImage",
@@ -2444,6 +2444,26 @@ class SimpleQuantize(RandomBase):
         return EF.simple_quantize(image, self.rgb_range)
 
 
+class KMeansQuantize(RandomBase):
+    r"""Color quantization using k-means clustering.
+    Args:
+        img (numpy ndarray): Image to be quantized.
+        n_colors (int): target number of colors in quantized image (1-255)
+        p (float): probability of the image being noised. Default value is 0.5
+    Returns:
+        numpy ndarray: quantized version of the image.
+    """
+
+    def __init__(self, n_colors: int = 255, p: float = 0.5):
+        super(KMeansQuantize, self).__init__(p=p)
+        assert isinstance(n_colors, int) \
+               and n_colors >= 1, 'n_colors should be integer >=1'
+        self.n_colors = n_colors
+
+    def apply(self, image, **params):
+        return EF.kmeans_quantize(image, self.n_colors)
+
+
 class ApplyKernel:
     r"""Apply supplied kernel(s) to images.
         Example kernels are motion kernels (motion blur) or
@@ -2522,6 +2542,26 @@ class ApplyKernel:
             out_im = sample(out_im, scale=self.scale, center=self.center)
 
         # return convolved image
+        return out_im
+
+
+class ApplyDownscale:
+    def __init__(self,
+                 scale: int = 1,
+                 filter_type: str = 'INTER_NEAREST'):
+
+        self.scale = scale
+        self.filter_type = filter_type
+
+    def __call__(self, img):
+        img_size = img.shape[:2]
+        if img_size[0] % self.scale == 0 and img_size[1] % self.scale == 0:
+            new_image_size = (img_size[0] // self.scale, img_size[1] // self.scale)
+        else:
+            raise ValueError(
+                f'Image dimensions {img_size} are not evenly divisible by scale {self.scale}.')
+        out_im = cv2.resize(img, new_image_size, interpolation=self.filter_type)
+
         return out_im
 
 
