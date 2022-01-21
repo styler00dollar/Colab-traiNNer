@@ -19,14 +19,13 @@ import numbers
 import types
 import collections
 import warnings
-
-import functional as F
-import extra_functional as EF
-import superpixels as SP
-import spadd as SCIP
-from minisom import MiniSom
-from common import (fetch_kernels, to_tuple, _cv2_interpolation2str,
-                    _cv2_str2interpolation, convolve, sample, MAX_VALUES_BY_DTYPE)
+from . import functional as F
+from . import extra_functional as EF
+from . import superpixels as SP
+from . import spadd as SCIP
+from .minisom import MiniSom
+from .common import (fetch_kernels, to_tuple, _cv2_interpolation2str,
+                     _cv2_str2interpolation, convolve, sample, MAX_VALUES_BY_DTYPE)
 
 
 __all__ = ["Compose", "ToTensor", "ToCVImage",

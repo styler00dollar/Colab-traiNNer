@@ -6,7 +6,7 @@ from PIL import Image
 import torch
 from torch.utils.data import Dataset
 import glob
-import augmentation.transforms as transforms
+from .augmentation import transforms
 import random
 
 INTERP_MAP = {'NEAREST': cv2.INTER_NEAREST, 'BILINEAR': cv2.INTER_LINEAR, 'AREA': cv2.INTER_AREA,
