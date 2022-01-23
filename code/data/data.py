@@ -1,10 +1,4 @@
 import yaml
-
-with open("config.yaml", "r") as ymlfile:
-    cfg = yaml.safe_load(ymlfile)
-with open("aug_config.yaml", "r") as ymlfile:
-    augcfg = yaml.safe_load(ymlfile)
-
 import os
 import cv2
 import numpy as np
@@ -12,8 +6,16 @@ from PIL import Image
 import torch
 from torch.utils.data import Dataset
 import glob
-from .augmentation import transforms as transforms
+from .augmentation import transforms
 import random
+
+INTERP_MAP = {'NEAREST': cv2.INTER_NEAREST, 'BILINEAR': cv2.INTER_LINEAR, 'AREA': cv2.INTER_AREA,
+              'BICUBIC': cv2.INTER_CUBIC, 'LANCZOS': cv2.INTER_LANCZOS4}
+
+with open("config.yaml", "r") as ymlfile:
+    cfg = yaml.safe_load(ymlfile)
+with open("aug_config.yaml", "r") as ymlfile:
+    augcfg = yaml.safe_load(ymlfile)
 
 if cfg['datasets']['train']['mode'] == "DS_inpaint_TF" or cfg['datasets']['train']['mode'] == "DS_svg_TF":
     from tfrecord.torch.dataset import TFRecordDataset
@@ -25,6 +27,7 @@ if cfg['datasets']['train']['mode'] == "DS_svg_TF":
 
 if cfg['datasets']['train']['loading_backend'] == "PIL":
     import pillow_avif
+
 
 def random_mask(height=256, width=256,
                 min_stroke=1, max_stroke=10,
@@ -61,7 +64,7 @@ def random_mask(height=256, width=256,
 
 
 class DS_inpaint(Dataset):
-    def __init__(self, root, mask_dir, HR_size=256):
+    def __init__(self, root, mask_dir, hr_size=256):
         self.samples = []
         for root, _, fnames in sorted(os.walk(root)):
             for fname in sorted(fnames):
@@ -76,7 +79,7 @@ class DS_inpaint(Dataset):
         files_jpg = glob.glob(self.mask_dir + '/**/*.jpg', recursive=True)
         self.files.extend(files_jpg)
 
-        self.HR_size = HR_size
+        self.HR_size = hr_size
 
     def __len__(self):
         return len(self.samples)
@@ -190,33 +193,33 @@ class DS_inpaint_val(Dataset):
 
 # DFDNet
 def get_part_location(landmark_path, imgname, downscale=1):
-    Landmarks = []
+    landmarks = []
     path = os.path.join(landmark_path, str(imgname) + '.txt')
     with open(path, 'r') as f:
         for line in f:
             tmp = [np.float(i) for i in line.split(' ') if i != '\n']
-            Landmarks.append(tmp)
-    Landmarks = np.array(Landmarks)/downscale  # 512 * 512
+            landmarks.append(tmp)
+    landmarks = np.array(landmarks)/downscale  # 512 * 512
 
     Map_LE = list(np.hstack((range(17, 22), range(36, 42))))
     Map_RE = list(np.hstack((range(22, 27), range(42, 48))))
     Map_NO = list(range(29, 36))
     Map_MO = list(range(48, 68))
     # left eye
-    Mean_LE = np.mean(Landmarks[Map_LE], 0)
-    L_LE = np.max((np.max(np.max(Landmarks[Map_LE], 0) - np.min(Landmarks[Map_LE], 0))/2, 16))
+    Mean_LE = np.mean(landmarks[Map_LE], 0)
+    L_LE = np.max((np.max(np.max(landmarks[Map_LE], 0) - np.min(landmarks[Map_LE], 0))/2, 16))
     Location_LE = np.hstack((Mean_LE - L_LE + 1, Mean_LE + L_LE)).astype(int)
     # right eye
-    Mean_RE = np.mean(Landmarks[Map_RE], 0)
-    L_RE = np.max((np.max(np.max(Landmarks[Map_RE], 0) - np.min(Landmarks[Map_RE], 0))/2, 16))
+    Mean_RE = np.mean(landmarks[Map_RE], 0)
+    L_RE = np.max((np.max(np.max(landmarks[Map_RE], 0) - np.min(landmarks[Map_RE], 0))/2, 16))
     Location_RE = np.hstack((Mean_RE - L_RE + 1, Mean_RE + L_RE)).astype(int)
     # nose
-    Mean_NO = np.mean(Landmarks[Map_NO], 0)
-    L_NO = np.max((np.max(np.max(Landmarks[Map_NO], 0) - np.min(Landmarks[Map_NO], 0))/2, 16))
+    Mean_NO = np.mean(landmarks[Map_NO], 0)
+    L_NO = np.max((np.max(np.max(landmarks[Map_NO], 0) - np.min(landmarks[Map_NO], 0))/2, 16))
     Location_NO = np.hstack((Mean_NO - L_NO + 1, Mean_NO + L_NO)).astype(int)
     # mouth
-    Mean_MO = np.mean(Landmarks[Map_MO], 0)
-    L_MO = np.max((np.max(np.max(Landmarks[Map_MO], 0) - np.min(Landmarks[Map_MO], 0))/2, 16))
+    Mean_MO = np.mean(landmarks[Map_MO], 0)
+    L_MO = np.max((np.max(np.max(landmarks[Map_MO], 0) - np.min(landmarks[Map_MO], 0))/2, 16))
 
     Location_MO = np.hstack((Mean_MO - L_MO + 1, Mean_MO + L_MO)).astype(int)
     return Location_LE, Location_RE, Location_NO, Location_MO
@@ -247,7 +250,7 @@ class DS_lrhr(Dataset):
 
         # getting lr image
         # only get image if kernels are not used
-        if cfg['datasets']['train']['ApplyKernel'] is False:
+        if cfg['datasets']['train']['apply_otf_downscale'] is False:
             lr_path = os.path.join(self.lr_path, os.path.basename(hr_path))
             lr_image = cv2.imread(lr_path)
             lr_image = cv2.cvtColor(lr_image, cv2.COLOR_BGR2RGB)
@@ -259,17 +262,26 @@ class DS_lrhr(Dataset):
             random_pos2 = random.randint(0, hr_image.shape[1]-self.hr_size)
 
             hr_image = hr_image[random_pos1:random_pos1+self.hr_size, random_pos2:random_pos2+self.hr_size]
-            if cfg['datasets']['train']['ApplyKernel'] is False:
+            if cfg['datasets']['train']['apply_otf_downscale'] is False:
                 lr_image = lr_image[int(random_pos1/self.scale):int((random_pos1/self.scale)+self.hr_size/self.scale),
                                     int(random_pos2/self.scale):int((random_pos2/self.scale)+self.hr_size/self.scale)]
 
-        # ApplyKernel
-        if cfg['datasets']['train']['ApplyKernel'] is True:
-            kernel_apply = transforms.ApplyKernel(
-                scale=cfg['scale'], kernels_path=cfg['datasets']['train']['kernel_path'],
-                kernel=None, pattern='kernelgan', kformat='npy', size=13,
-                permute=True, center=False)
-            lr_image = kernel_apply(hr_image)
+        # OTFDownscale
+        if cfg['datasets']['train']['apply_otf_downscale'] is True:
+            filter_type = random.choices(
+                cfg['datasets']['train']['otf_filter_types'],
+                cum_weights=cfg['datasets']['train']['otf_filter_probs'])[0].upper()
+            if filter_type == 'KERNEL':
+                downscale_apply = transforms.ApplyKernel(
+                    scale=cfg['scale'], kernels_path=cfg['datasets']['train']['kernel_path'],
+                    kernel=None, pattern='kernelgan', kformat='npy', size=13,
+                    permute=True, center=False)
+            elif filter_type in ('NEAREST', 'BILINEAR', 'AREA', 'BICUBIC', 'LANCZOS'):
+                downscale_apply = transforms.ApplyDownscale(
+                    scale=cfg['scale'], filter_type=INTERP_MAP[filter_type])
+            else:
+                raise ValueError(f'{filter_type} is not a valid filter for OTF downscaling.')
+            lr_image = downscale_apply(hr_image)
 
         # performing augmentation
         all_transforms = []
@@ -415,6 +427,11 @@ class DS_lrhr(Dataset):
             all_transforms.append(transforms.SimpleQuantize(
                 p=augcfg['SimpleQuantize']['p'],
                 rgb_range=augcfg['SimpleQuantize']['rgb_range']))
+        # KMeansQuantize
+        if cfg['datasets']['train']['KMeansQuantize'] is True:
+            all_transforms.append(transforms.KMeansQuantize(
+                p=augcfg['KMeansQuantize']['p'],
+                n_colors=augcfg['KMeansQuantize']['n_colors']))
         # CLAHE
         if cfg['datasets']['train']['CLAHE'] is True:
             all_transforms.append(transforms.CLAHE(
@@ -560,7 +577,7 @@ class DS_inpaint_TF(Dataset):
             sample = np.array(sample)
 
         # resize
-        #sample = cv2.resize(sample, (self.HR_size, self.HR_size), interpolation=cv2.INTER_AREA)
+        # sample = cv2.resize(sample, (self.HR_size, self.HR_size), interpolation=cv2.INTER_AREA)
 
         # random crop
         # checking for hr_size limitation
