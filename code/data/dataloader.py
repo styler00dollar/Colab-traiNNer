@@ -74,6 +74,13 @@ class DFNetDataModule(pl.LightningDataModule):
           self.DFNetdataset_validation = DS_lrhr_val(self.val_lr, self.val_hr)
           self.DFNetdataset_test = DS_lrhr_val(self.val_lr, self.val_hr)
 
+        elif cfg['datasets']['train']['mode'] == 'DS_realesrgan':
+          from .data import DS_lrhr_val
+          from .realesrgan import RealESRGANDataset
+          self.DFNetdataset_train = RealESRGANDataset(self.dir_hr, self.HR_size, self.scale)
+          self.DFNetdataset_validation = DS_lrhr_val(self.val_lr, self.val_hr)
+          self.DFNetdataset_test = DS_lrhr_val(self.val_lr, self.val_hr)
+
         else:
           print("Mode not found.")
 

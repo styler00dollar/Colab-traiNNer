@@ -10,7 +10,7 @@ pip install torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio==0.10.0+cu1
 pip install git+https://github.com/styler00dollar/pytorch-lightning.git@fc86f4ca817d5ba1702a210a898ac2729c870112
 pip install git+https://github.com/vballoli/nfnets-pytorch
 pip install git+https://github.com/styler00dollar/piq.git
-pip install albumentations IPython scipy pandas opencv-python pillow wget tfrecord x-transformers adamp efficientnet_pytorch tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf
+pip install basicsr albumentations IPython scipy pandas opencv-python pillow wget tfrecord x-transformers adamp efficientnet_pytorch tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf
 ```
 (You need this specific `pytorch-lightning` and `piq` version, or it won't work properly.)
 

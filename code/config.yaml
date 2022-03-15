@@ -18,9 +18,10 @@ datasets:
     # DS_inpaint_TF: takes one tfrecord file as dataset input, but the validation is still just green masked images like in DS_inpaint
     # DS_video_direct: direcly copy .npy files into GPU and avoiding CPU processing (upgrade to newest nvidia drivers and cuda, linux only)
     # only works with n_workers = 0, use pipeline_threads instead
+    # DS_realesrgan: will use the realesrgan dataloader (only uses hr folder)
     # pip install --extra-index-url https://developer.download.nvidia.com/compute/redist --upgrade nvidia-dali-cuda110
 
-    mode: DS_lrhr # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr
+    mode: DS_lrhr # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr | DS_realesrgan
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
@@ -535,7 +536,7 @@ network_D:
     # needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
     WSConv_replace: True
 
-    #netD: # in case there is no discriminator, leave it empty
+    netD: # in case there is no discriminator, leave it empty
 
     # VGG
     #netD: VGG
@@ -586,14 +587,14 @@ network_D:
     #use_spectral_norm: False
 
     # Multiscale
-    netD: MultiscaleDiscriminator
-    input_nc: 3
-    ndf: 64
-    n_layers: 3
-    norm_layer: nn.BatchNorm2d
-    use_sigmoid: False
-    num_D: 3
-    get_feats: False
+    #netD: MultiscaleDiscriminator
+    #input_nc: 3
+    #ndf: 64
+    #n_layers: 3
+    #norm_layer: nn.BatchNorm2d
+    #use_sigmoid: False
+    #num_D: 3
+    #get_feats: False
 
     #netD: ResNet101FeatureExtractor
     #use_input_norm: True

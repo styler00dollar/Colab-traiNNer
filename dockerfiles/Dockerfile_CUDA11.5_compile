@@ -52,7 +52,7 @@ RUN pip install /workspace/audio/dist/*.whl
 # other dependencies
 RUN pip install git+https://github.com/styler00dollar/pytorch-lightning.git@fc86f4ca817d5ba1702a210a898ac2729c870112
 RUN pip install git+https://github.com/vballoli/nfnets-pytorch
-RUN pip install albumentations IPython scipy pandas opencv-python pillow wget tfrecord x-transformers adamp efficientnet_pytorch tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf
+RUN pip install basicsr albumentations IPython scipy pandas opencv-python pillow wget tfrecord x-transformers adamp efficientnet_pytorch tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf
 RUN pip install git+https://github.com/styler00dollar/piq.git
 
 # optional stuff, skip these for faster install if you dont need them
