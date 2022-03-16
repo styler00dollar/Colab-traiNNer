@@ -282,7 +282,7 @@ class RealESRGANDataset(pl.LightningDataModule):
 
         self.lq = self.lq.contiguous()  # for the warning: grad and param do not obey the gradient layout contract
 
-        return 0, self.lq.squeeze(0), self.gt_usm.squeeze(0)
+        return 0, self.lq.squeeze(0).detach(), self.gt_usm.squeeze(0).detach()
 
     def __len__(self):
         return len(self.samples)
