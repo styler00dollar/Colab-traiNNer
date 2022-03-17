@@ -11,6 +11,36 @@ import torch.nn as nn
 #from models.modules.architectures.convolutions.deformconv2d import DeformConv2d
 #from models.networks import weights_init_normal, weights_init_xavier, weights_init_kaiming, weights_init_orthogonal
 
+import yaml
+with open("config.yaml", "r") as ymlfile:
+    cfg = yaml.safe_load(ymlfile)
+
+# CONV
+if cfg['network_G']['convtype'] == 'doconv':
+  from .conv.doconv import *
+
+if cfg['network_G']['convtype'] == 'gated':
+  from .conv.gatedconv import *
+
+if cfg['network_G']['convtype'] == 'TBC':
+  from .conv.TBC import *
+
+if cfg['network_G']['convtype'] == 'dynamic':
+  from .conv.dynamicconv import *
+  nof_kernels_param = cfg['network_G']['nof_kernels']
+  reduce_param = cfg['network_G']['reduce']
+
+if cfg['network_G']['convtype'] == 'MBConv':
+  from .conv.MBConv import MBConv
+
+if cfg['network_G']['convtype'] == 'CondConv':
+  from .conv.CondConv import CondConv
+
+if cfg['network_G']['convtype'] == 'fft':
+  from .lama_arch import FourierUnit
+
+if cfg['network_G']['convtype'] == 'WSConv':
+  from nfnets import WSConv2d, WSConvTranspose2d, ScaledStdConv2d
 
 ####################
 # Basic blocks
@@ -242,6 +272,28 @@ def conv_block(in_nc, out_nc, kernel_size, stride=1, dilation=1, groups=1, bias=
     elif convtype=='Conv3D':
         c = nn.Conv3d(in_nc, out_nc, kernel_size=kernel_size, stride=stride, padding=padding, \
                 dilation=dilation, bias=bias, groups=groups)
+    elif convtype=='doconv':
+        c = DOConv2d(in_nc, out_nc, kernel_size=kernel_size, stride=stride, padding=padding, \
+                dilation=dilation, bias=bias, groups=groups)
+    elif convtype=='gated':
+        c = GatedConv2dWithActivation(in_nc, out_nc, kernel_size=kernel_size, stride=stride, padding=padding, \
+                dilation=dilation, groups=groups, bias=bias)
+    elif convtype=='TBC':
+        c = TiedBlockConv2d(in_nc, out_nc, kernel_size=kernel_size, stride=stride, padding=padding, \
+                bias=bias, groups=groups)
+    elif convtype=='dynamic':
+        c = DynamicConvolution(nof_kernels=nof_kernels_param, reduce=reduce_param, in_channels=in_nc, out_channels=out_nc, \
+                kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation, groups=groups, bias=bias)
+    elif convtype=='MBConv':
+        c = MBConv(in_nc, out_nc, stride=stride, expand_ratio=2, use_se=True)
+    elif convtype=='CondConv':
+        c = CondConv(in_planes=in_nc,out_planes=out_nc, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation, \
+                grounps=groups, bias=bias, K=4, init_weight=True)
+    elif convtype=='fft':
+        c = FourierUnit(in_channels=in_nc, out_channels=out_nc, groups=groups, spatial_scale_factor=None, spatial_scale_mode='bilinear',
+                spectral_pos_encoding=False, use_se=False, se_kwargs=None, ffc3d=False, fft_norm='ortho')
+    elif convtype=='WSConv':
+        c = WSConv2d(in_nc, out_nc, kernel_size=kernel_size, stride=stride, padding=padding)
     else: #default case is standard 'Conv2D':
         c = nn.Conv2d(in_nc, out_nc, kernel_size=kernel_size, stride=stride, padding=padding, \
                 dilation=dilation, bias=bias, groups=groups) #normal conv2d
