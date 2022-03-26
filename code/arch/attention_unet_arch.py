@@ -120,6 +120,9 @@ class UNetDiscriminator(nn.Module):
         out = F.leaky_relu(self.conv8(out), negative_slope=0.2, inplace=True)
         out = self.conv9(out)
 
+        # reshaping into [b, 1]
+        out = torch.mean(torch.mean(out, dim=2), dim=2)
+
         return out
 
 
