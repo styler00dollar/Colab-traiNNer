@@ -771,6 +771,12 @@ network_D:
     # because of too many parameters, a seperate config file named "hrt_config.yaml" is available
     #netD: hrt
 
+    # Attention U-Net (from asergan) (2021)
+    #netD: attention_unet
+    #num_in_ch: 3
+    #num_feat: 64
+    #skip_connection: True
+
 train: 
     # Adam8bit needs "pip install bitsandbytes-cuda111"
     # SGD_AGC needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"

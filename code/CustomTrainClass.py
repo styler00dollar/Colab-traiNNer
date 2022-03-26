@@ -895,6 +895,12 @@ class CustomTrainClass(pl.LightningModule):
             from arch.hrt_arch import HighResolutionTransformer
             self.netD = HighResolutionTransformer()
 
+        elif cfg['network_D']['netD'] == 'attention_unet':
+            from arch.attention_unet_arch import UNetDiscriminator
+            self.netD = UNetDiscriminator(num_in_ch=cfg['network_D']['num_in_ch'], 
+                num_feat=cfg['network_D']['num_feat'], 
+                skip_connection=cfg['network_D']['skip_connection'])
+
         if cfg['network_D']['WSConv_replace'] == 'True':
             from nfnets import replace_conv, WSConv2d, ScaledStdConv2d
             replace_conv(self.netD, ScaledStdConv2d)
