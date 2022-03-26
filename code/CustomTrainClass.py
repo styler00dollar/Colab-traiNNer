@@ -901,6 +901,12 @@ class CustomTrainClass(pl.LightningModule):
                 num_feat=cfg['network_D']['num_feat'], 
                 skip_connection=cfg['network_D']['skip_connection'])
 
+        elif cfg['network_D']['netD'] == 'unet':
+            from arch.unet_arch import UNetDiscriminatorSN
+            self.netD = UNetDiscriminatorSN(num_in_ch=cfg['network_D']['num_in_ch'], 
+                num_feat=cfg['network_D']['num_feat'], 
+                skip_connection=cfg['network_D']['skip_connection'])
+
         if cfg['network_D']['WSConv_replace'] == 'True':
             from nfnets import replace_conv, WSConv2d, ScaledStdConv2d
             replace_conv(self.netD, ScaledStdConv2d)
