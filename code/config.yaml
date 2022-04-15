@@ -1,6 +1,6 @@
 name: template
-scale: 4
-gpus: 0 # amount of gpus, 0 = cpu
+scale: 2
+gpus: 1 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
@@ -21,17 +21,17 @@ datasets:
     # DS_realesrgan: will use the realesrgan dataloader (only uses hr folder)
     # pip install --extra-index-url https://developer.download.nvidia.com/compute/redist --upgrade nvidia-dali-cuda110
 
-    mode: DS_lrhr # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr | DS_realesrgan
+    mode: DS_realesrgan # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr | DS_realesrgan
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
-    dataroot_HR: '/content/hr/' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/content/lr/' # Original, with a single directory
+    dataroot_HR: '/workspace/tensorrt/training/data/esrgan_dataset/' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/workspace/tensorrt/training/data/esrgan_dataset/' # Original, with a single directory
     loading_backend: 'OpenCV' # 'PIL' | 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, turboJPEG only for DS_video, 'PIL' for DS_inpaint_TF
 
-    n_workers: 0 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
+    n_workers: 16 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     pipeline_threads: 16 # only for DS_video_direct
-    batch_size: 2
+    batch_size: 15 # 6
     
     # does not apply to video dataloaders, look into python file instead
     HR_size: 128 # The resolution the network will get. Random crop gets applied if that resolution does not match.
@@ -40,7 +40,7 @@ datasets:
     masks: '/content/masks/' # only for inpainting
     mask_invert_ratio: 0.3 # 0.3 = 30% of masks will be inverted
     max_epochs: 2000
-    save_step_frequency: 100 # also validation frequency
+    save_step_frequency: 5000 # also validation frequency
 
     # if edge data is required
     canny_min: 100
@@ -89,16 +89,16 @@ datasets:
 
   val:
     loading_backend: 'OpenCV' # 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, currently only for DS_video
-    dataroot_HR: '/content/val_hr/'
-    dataroot_LR: '/content/val_lr/' # Inpainting will use this directory as input
+    dataroot_HR: '/workspace/tensorrt/training/val_input/'
+    dataroot_LR: '/workspace/tensorrt/training/val_input/' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: #"/content/model.pth"
+    pretrain_model_G:
     pretrain_model_D: 
     checkpoint_path:
-    checkpoint_save_path: '/content/'
-    validation_output_path: '/content/validation'
-    log_path: '/content/logs'
+    checkpoint_save_path: '/workspace/tensorrt/training/models/'
+    validation_output_path: '/workspace/tensorrt/training/models/val/'
+    log_path: '/workspace/tensorrt/training/models/logs/'
 
 # Generator options:
 network_G:
@@ -126,7 +126,7 @@ network_G:
     finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
     upsample_mode: 'upconv'
     nr: 3
-    ## for dynamic
+    # for dynamic
     nof_kernels: 4
     reduce: 4
 
@@ -313,6 +313,18 @@ network_G:
     #upsampler: 'pixelshuffle'
     #resi_connection: '1conv'
 
+    # swinir2 (2022)
+    #netG: swinir2
+    #img_size: 48
+    #window_size: 8
+    #img_range: 1.
+    #depths: [3, 3, 3, 3] # [2, 2, 2, 2]
+    #embed_dim: 180 # 24
+    #num_heads: [6, 6, 6, 6]
+    #mlp_ratio: 2
+    #upsampler: 'pixelshuffledirect'
+    #use_deformable_block: False
+
     # ESRT (2021)
     #netG: ESRT
     #hiddenDim: 32
@@ -324,8 +336,8 @@ network_G:
     #num_out_ch: 3
     #num_feat: 64
     #num_conv: 16
-    #upscale: 4
     #act_type: 'prelu'
+    #conv_mode: 3 # 2 | 3
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
@@ -540,7 +552,7 @@ network_D:
     # needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
     WSConv_replace: True
 
-    netD: # in case there is no discriminator, leave it empty
+    #netD: # in case there is no discriminator, leave it empty
 
     # VGG
     #netD: VGG
@@ -778,10 +790,10 @@ network_D:
     #skip_connection: True
 
     # U-Net (from RealESRGAN) (2021)
-    #netD: unet
-    #num_in_ch: 3
-    #num_feat: 64
-    #skip_connection: True
+    netD: unet
+    num_in_ch: 3
+    num_feat: 64
+    skip_connection: True
 
 train: 
     # Adam8bit needs "pip install bitsandbytes-cuda111"
@@ -811,7 +823,7 @@ train:
     ############################
 
     # Losses:
-    L1Loss_weight: 1
+    L1Loss_weight: 0
 
     # HFENLoss
     HFEN_weight: 0
@@ -832,7 +844,7 @@ train:
     reduction_relative: 'mean'
 
     # L1CosineSim (3-channel input)
-    L1CosineSim_weight: 0
+    L1CosineSim_weight: 1
     loss_lambda: 5
     reduction_L1CosineSim: 'mean'
 
@@ -868,7 +880,7 @@ train:
     p: 1
 
     # Contextual_Loss (3-channel input)
-    Contextual_weight: 0
+    Contextual_weight: 0.5
     crop_quarter: False
     max_1d_size: 100
     distance_type: 'cosine' # ["11", "l2", "consine"]
@@ -888,7 +900,7 @@ train:
     StyleLoss_weight: 0
 
     # PerceptualLoss
-    perceptual_weight: 0
+    perceptual_weight: 1
     net: PNetLin # PNetLin, DSSIM (?)
     pnet_type: 'vgg' # alex, squeeze, vgg
     pnet_rand: False

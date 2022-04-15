@@ -2,7 +2,7 @@ import pytorch_lightning as pl
 import torch
 import yaml
 from checkpoint import CheckpointEveryNSteps
-from data.dataloader import DFNetDataModule
+from data.dataloader import DataModule
 
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
@@ -10,7 +10,7 @@ with open("config.yaml", "r") as ymlfile:
 if __name__ == '__main__':
   #############################################
   # Dataloader
-  dm = DFNetDataModule(batch_size=cfg['datasets']['train']['batch_size'], val_lr = cfg['datasets']['val']['dataroot_LR'], val_hr = cfg['datasets']['val']['dataroot_HR'], dir_lr = cfg['datasets']['train']['dataroot_LR'], dir_hr = cfg['datasets']['train']['dataroot_HR'], num_workers = cfg['datasets']['train']['n_workers'], HR_size = cfg['datasets']['train']['HR_size'], scale = cfg['scale'], mask_dir=cfg['datasets']['train']['masks'], canny_min = cfg['datasets']['train']['canny_min'], canny_max = cfg['datasets']['train']['canny_max'])
+  dm = DataModule(batch_size=cfg['datasets']['train']['batch_size'], val_lr = cfg['datasets']['val']['dataroot_LR'], val_hr = cfg['datasets']['val']['dataroot_HR'], dir_lr = cfg['datasets']['train']['dataroot_LR'], dir_hr = cfg['datasets']['train']['dataroot_HR'], num_workers = cfg['datasets']['train']['n_workers'], HR_size = cfg['datasets']['train']['HR_size'], scale = cfg['scale'], mask_dir=cfg['datasets']['train']['masks'], canny_min = cfg['datasets']['train']['canny_min'], canny_max = cfg['datasets']['train']['canny_max'])
   #############################################
   # Model
   from CustomTrainClass import CustomTrainClass

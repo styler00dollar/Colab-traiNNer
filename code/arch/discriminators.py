@@ -703,6 +703,9 @@ class MultiscaleDiscriminator(nn.Module):
                 self.singleD_forward(model, input_downsampled, return_maps))
             if i != (num_D-1):
                 input_downsampled = self.downsample(input_downsampled)
+        
+        """
+        # unused
         if return_maps:
             last_res = []
             feat_maps = []
@@ -710,7 +713,9 @@ class MultiscaleDiscriminator(nn.Module):
                 last_res.append(result[i][0])
                 feat_maps.extend(result[i][1])
             return [last_res, feat_maps]
-        return result
+        """
+        # TODO: creating average of all
+        return torch.mean(torch.mean(result[0], dim=2), dim=2)
 
 
 class PixelDiscriminator(nn.Module):

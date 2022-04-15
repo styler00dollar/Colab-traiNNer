@@ -1,8 +1,13 @@
 from torch import nn as nn
 from torch.nn import functional as F
+
+import yaml
+with open("config.yaml", "r") as ymlfile:
+    cfg = yaml.safe_load(ymlfile)
+
 # https://github.com/xinntao/Real-ESRGAN/blob/master/realesrgan/archs/srvgg_arch.py
 class SRVGGNetCompact(nn.Module):
-    def __init__(self, num_in_ch=3, num_out_ch=3, num_feat=64, num_conv=16, upscale=4, act_type='prelu'):
+    def __init__(self, num_in_ch=3, num_out_ch=3, num_feat=64, num_conv=16, upscale=4, act_type='prelu', conv_mode=3):
         super(SRVGGNetCompact, self).__init__()
         self.num_in_ch = num_in_ch
         self.num_out_ch = num_out_ch
@@ -10,6 +15,7 @@ class SRVGGNetCompact(nn.Module):
         self.num_conv = num_conv
         self.upscale = upscale
         self.act_type = act_type
+        self.conv_mode = conv_mode
 
         self.body = nn.ModuleList()
         # the first conv
@@ -25,7 +31,14 @@ class SRVGGNetCompact(nn.Module):
 
         # the body structure
         for _ in range(num_conv):
-            self.body.append(nn.Conv2d(num_feat, num_feat, 3, 1, 1))
+            if self.conv_mode == 3:
+                self.body.append(nn.Conv2d(num_feat, num_feat, 3, 1, 1))
+            elif self.conv_mode == 2:
+                self.body.append(nn.Conv2d(num_feat, num_feat, kernel_size=2, padding=1))
+                self.body.append(nn.Conv2d(num_feat, num_feat, kernel_size=2, padding=0))
+            else:
+                print("Invalid conv mode!")
+
             # activation
             if act_type == 'relu':
                 activation = nn.ReLU(inplace=True)

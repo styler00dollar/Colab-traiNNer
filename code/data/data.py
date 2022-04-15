@@ -175,10 +175,6 @@ class DS_inpaint_val(Dataset):
         sample = torch.from_numpy(sample.astype(np.float32)).permute(2, 0, 1)/255
         sample = sample * green_mask
 
-        # train_batch[0] = masked
-        # train_batch[1] = mask
-        # train_batch[2] = path
-
         # EdgeConnect
         if cfg['network_G']['netG'] == 'EdgeConnect':
             return sample, green_mask, sample_path, edges, grayscale
@@ -478,7 +474,7 @@ class DS_lrhr(Dataset):
         # [APPLY] RandomBWDitherNoise / 1ch output
         all_transforms.append(transforms.RandomBWDitherNoise(p=0.5))
         """
-        # [BROKED] RandomChromaticAberration
+        # [BROKEN] RandomChromaticAberration
         # all_transforms.append(transforms.RandomChromaticAberration(p=0.5, radial_blur=True,
         # strength=1.0, jitter=0, alpha=0.0,
         # random_params=False))
@@ -642,7 +638,6 @@ class DS_svg_TF(Dataset):
         tfrecord_path = cfg['datasets']['train']['tfrecord_path']
 
         self.HR_size = cfg['datasets']['train']['HR_size']
-        # self.batch_size = cfg['datasets']['train']['batch_size']
 
         self.dataset = TFRecordDataset(tfrecord_path, None)
         self.loader = iter(torch.utils.data.DataLoader(self.dataset, batch_size=1))
@@ -672,10 +667,6 @@ class DS_svg_TF(Dataset):
         lr_image = hr_image.resize((64, 64), Image.ANTIALIAS)
 
         # to tensor
-        lr_image = transforms.ToTensor()(lr_image)  # .unsqueeze_(0)
-        hr_image = transforms.ToTensor()(hr_image)  # .unsqueeze_(0)
-
-        # from torchvision.utils import save_image
-        # save_image(hr_image*255, 'hr_image.png')
-
+        lr_image = transforms.ToTensor()(lr_image)
+        hr_image = transforms.ToTensor()(hr_image)
         return 0, lr_image, hr_image

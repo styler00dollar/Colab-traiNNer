@@ -84,12 +84,6 @@ class RealESRGANDataset(pl.LightningDataModule):
         self.pulse_tensor = torch.zeros(21, 21).float()  # convolving with pulse tensor brings no blurry effect
         self.pulse_tensor[10, 10] = 1
 
-        # setting it manually
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-        self.jpeger = DiffJPEG(differentiable=False).to(self.device)  # simulate JPEG compression artifacts
-        self.usm_sharpener = USMSharp().to(self.device)  # do usm sharpening
-
     def __getitem__(self, index):
         # -------------------------------- Load gt images -------------------------------- #
         # Shape: (h, w, c); channel order: BGR; image range: [0, 1], float32.
@@ -177,17 +171,42 @@ class RealESRGANDataset(pl.LightningDataModule):
         kernel1 = torch.FloatTensor(kernel)
         kernel2 = torch.FloatTensor(kernel2)
 
-        #return_d = {'gt': img_gt, 'kernel1': kernel1, 'kernel2': kernel2, 'sinc_kernel': sinc_kernel, 'gt_path': gt_path}
-        #return return_d
+        # you need to return tensors because of lightning
+        return img_gt, kernel1, kernel2, sinc_kernel
 
-        ###############################################################
-        self.gt = img_gt.unsqueeze(0).to(self.device)
+
+    def __len__(self):
+        return len(self.samples)
+
+# Due to CUDA reasons, a workaround like in the original RealESRGAN repo needs to be integrated,
+# so multithreading can be used in the dataloader
+
+class RealESRGANDatasetApply(pl.LightningDataModule):
+    def __init__(self, device):
+        super(RealESRGANDatasetApply, self).__init__()
+
+        with open("realesrgan_aug_config.yaml", "r") as ymlfile:
+            self.opt = yaml.safe_load(ymlfile)
+
+        with open("config.yaml", "r") as ymlfile:
+            self.config = yaml.safe_load(ymlfile)
+
+        # the .to statements need to be inside the loop, because __init__ is on cpu
+        # and due to multi-gpu the device can change in forward()
+        self.jpeger = DiffJPEG(differentiable=False)  # simulate JPEG compression artifacts
+        self.usm_sharpener = USMSharp() # do usm sharpening
+
+    def forward(self, img_gt, kernel1, kernel2, sinc_kernel, device):
+        self.jpeger = self.jpeger.to(device)
+        self.usm_sharpener = self.usm_sharpener.to(device)
+
+        self.gt = img_gt.to(device)
         ori_h, ori_w = self.gt.size()[2:4]
 
         self.gt_usm = self.usm_sharpener(self.gt)
-        self.kernel1 = kernel1.to(self.device)
-        self.kernel2 = kernel2.to(self.device)
-        self.sinc_kernel = sinc_kernel.to(self.device)
+        self.kernel1 = kernel1.to(device)
+        self.kernel2 = kernel2.to(device)
+        self.sinc_kernel = sinc_kernel.to(device)
 
         # ----------------------- The first degradation process ----------------------- #
         # blur
@@ -282,7 +301,4 @@ class RealESRGANDataset(pl.LightningDataModule):
 
         self.lq = self.lq.contiguous()  # for the warning: grad and param do not obey the gradient layout contract
 
-        return 0, self.lq.squeeze(0).detach(), self.gt_usm.squeeze(0).detach()
-
-    def __len__(self):
-        return len(self.samples)
+        return self.lq.squeeze(0).detach(), self.gt_usm.squeeze(0).detach()

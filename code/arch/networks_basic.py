@@ -14,9 +14,59 @@ from pdb import set_trace as st
 #from skimage import color
 from IPython import embed
 from . import pretrained_networks as pn
-
 from . import perceptual_loss as util
-from .block import Upsample
+import pytorch_lightning as pl
+
+####################
+# Upsampler
+####################
+
+class Upsample(pl.LightningModule):
+    r"""Upsamples a given multi-channel 1D (temporal), 2D (spatial) or 3D (volumetric) data.
+
+    The input data is assumed to be of the form
+    `minibatch x channels x [optional depth] x [optional height] x width`.
+
+    Args:
+        size (int or Tuple[int] or Tuple[int, int] or Tuple[int, int, int], optional):
+            output spatial sizes
+        scale_factor (float or Tuple[float] or Tuple[float, float] or Tuple[float, float, float], optional):
+            multiplier for spatial size. Has to match input size if it is a tuple.
+        mode (str, optional): the upsampling algorithm: one of ``'nearest'``,
+            ``'linear'``, ``'bilinear'``, ``'bicubic'`` and ``'trilinear'``.
+            Default: ``'nearest'``
+        align_corners (bool, optional): if ``True``, the corner pixels of the input
+            and output tensors are aligned, and thus preserving the values at
+            those pixels. This only has effect when :attr:`mode` is
+            ``'linear'``, ``'bilinear'``, or ``'trilinear'``. Default: ``False``
+    """
+    # To prevent warning: nn.Upsample is deprecated
+    # https://discuss.pytorch.org/t/which-function-is-better-for-upsampling-upsampling-or-interpolate/21811/8
+    # From: https://pytorch.org/docs/stable/_modules/torch/nn/modules/upsampling.html#Upsample
+    # Alternative: https://discuss.pytorch.org/t/using-nn-function-interpolate-inside-nn-sequential/23588/2?u=ptrblck
+
+    def __init__(self, size=None, scale_factor=None, mode="nearest", align_corners=None):
+        super(Upsample, self).__init__()
+        if isinstance(scale_factor, tuple):
+            self.scale_factor = tuple(float(factor) for factor in scale_factor)
+        else:
+            self.scale_factor = float(scale_factor) if scale_factor else None
+        self.mode = mode
+        self.size = size
+        self.align_corners = align_corners
+        # self.interp = nn.functional.interpolate
+
+    def forward(self, x):
+        return nn.functional.interpolate(x, size=self.size, scale_factor=self.scale_factor, mode=self.mode, align_corners=self.align_corners)
+        # return self.interp(x, size=self.size, scale_factor=self.scale_factor, mode=self.mode, align_corners=self.align_corners)
+
+    def extra_repr(self):
+        if self.scale_factor is not None:
+            info = 'scale_factor=' + str(self.scale_factor)
+        else:
+            info = 'size=' + str(self.size)
+        info += ', mode=' + self.mode
+        return info
 
 def spatial_average(in_tens, keepdim=True):
     #return in_tens.mean([2,3],keepdim=keepdim) # For Pytorch > 1.0 #https://github.com/richzhang/PerceptualSimilarity/issues/30
