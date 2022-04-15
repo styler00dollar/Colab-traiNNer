@@ -7,7 +7,7 @@ from collections import OrderedDict
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-from networks_basic import Upsample
+from .networks_basic import Upsample
 
 import yaml
 with open("config.yaml", "r") as ymlfile:
