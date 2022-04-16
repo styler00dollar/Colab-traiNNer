@@ -144,6 +144,7 @@ class AllLoss(pl.LightningModule):
                 truncate_long_and_double=True)
             del example_data
 
+        """
         from arch.hrf_perceptual import ResNetPL
         self.hrf_perceptual_loss = ResNetPL()
         for param in self.hrf_perceptual_loss.parameters():
@@ -151,6 +152,7 @@ class AllLoss(pl.LightningModule):
 
         if cfg['train']['force_fp16_hrf'] is True:
             self.hrf_perceptual_loss = self.hrf_perceptual_loss.half()
+        """
 
         self.ColorLoss = ColorLoss()
         self.FrobeniusNormLoss = FrobeniusNormLoss()
@@ -567,6 +569,11 @@ class AllLoss(pl.LightningModule):
                 writer.add_scalar('loss/sobel_loss', sobel_loss, global_step)
             
             #########################
+
+            # replicating realesrgan strategy, using normal gt for discriminator
+            if self.cfg['datasets']['train']['mode'] == 'DS_realesrgan':
+                hr_image = other['gt']
+
             if self.cfg['network_D']['netD'] is not None:
                 # Try to fool the discriminator
                 Tensor = torch.FloatTensor
@@ -636,6 +643,9 @@ class AllLoss(pl.LightningModule):
 
         # train discriminator
         elif optimizer_idx == 1:
+            if self.cfg['datasets']['train']['mode'] == 'DS_realesrgan':
+                hr_image = other['gt']
+
             Tensor = torch.FloatTensor  # if cuda else torch.FloatTensor
             valid = Variable(
                 Tensor((out.shape[0])).fill_(1.0), requires_grad=False).unsqueeze(-1).to(self.device)

@@ -1,7 +1,4 @@
-"""
-15-04-22
-https://github.com/nullxjx/Swinir-V2
-"""
+# https://github.com/nullxjx/Swinir-V2
 
 # -----------------------------------------------------------------------------------
 # SwinIR: Image Restoration Using Swin Transformer, https://arxiv.org/abs/2108.10257
@@ -16,6 +13,26 @@ import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 from typing import Tuple, Optional, List, Union, Any
 import timm
+
+import yaml
+with open("config.yaml", "r") as ymlfile:
+    cfg = yaml.safe_load(ymlfile)
+
+# CONV
+if cfg['network_G']['first_conv'] == 'doconv':
+  from .conv.doconv import *
+
+if cfg['network_G']['first_conv'] == 'TBC':
+  from .conv.TBC import *
+
+if cfg['network_G']['first_conv'] == 'dynamic':
+  from .conv.dynamicconv import *
+  nof_kernels_param = cfg['network_G']['nof_kernels']
+  reduce_param = cfg['network_G']['reduce']
+
+if cfg['network_G']['first_conv'] == 'fft':
+  from .lama_arch import FourierUnit
+
 
 class FeedForward(nn.Sequential):
     """
@@ -1320,8 +1337,20 @@ class SwinIR(nn.Module):
 
         #####################################################################################################
         ################################### 1, shallow feature extraction ###################################
-        self.conv_first = nn.Conv2d(num_in_ch, embed_dim, 3, 1, 1)
-
+        if cfg['network_G']['first_conv'] == "Conv2D":
+            self.conv_first = nn.Conv2d(num_in_ch, embed_dim, 3, 1, 1)
+        elif cfg['network_G']['first_conv'] ==  "doconv":
+            self.conv_first = DOConv2d(num_in_ch, embed_dim, kernel_size=3, stride=1, padding=1, \
+                dilation=1, bias=False, groups=1)
+        elif cfg['network_G']['first_conv'] ==  "TBC":
+            self.conv_first = TiedBlockConv2d(num_in_ch, embed_dim, kernel_size=3, stride=1, padding=1, \
+                bias=False, groups=1)
+        elif cfg['network_G']['first_conv'] ==  "dynamic":
+            self.conv_first = DynamicConvolution(nof_kernels=nof_kernels_param, reduce=reduce_param, in_channels=num_in_ch, out_channels=embed_dim, \
+                kernel_size=3, stride=1, padding=1, dilation=1, groups=1, bias=False)
+        elif cfg['network_G']['first_conv'] ==  "fft":
+            self.conv_first = FourierUnit(in_channels=num_in_ch, out_channels=embed_dim, groups=1, spatial_scale_factor=None, spatial_scale_mode='bilinear',
+                spectral_pos_encoding=False, use_se=False, se_kwargs=None, ffc3d=False, fft_norm='ortho')
         #####################################################################################################
         ################################### 2, deep feature extraction ######################################
         self.num_layers = len(depths)

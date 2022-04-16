@@ -131,7 +131,7 @@ class CustomTrainClass(pl.LightningModule):
                  'USRNet', 'srflow', 'DFDNet', 'GFPGAN', 'GPEN', 'comodgan', 'ESRT',
                  'SRVGGNetCompact', 'swinir2') and cfg['datasets']['train']['mode'] in ('DS_lrhr', 'DS_realesrgan'):
             if cfg['datasets']['train']['mode'] == 'DS_realesrgan':
-                lr_image, hr_image = self.RealESRGANDatasetApply.forward(train_batch[0], train_batch[1], \
+                lr_image, hr_image, other['gt'] = self.RealESRGANDatasetApply.forward(train_batch[0], train_batch[1], \
                     train_batch[2], train_batch[3], self.device)
                 # hotfix: at the end of one epoch it can happen that only 3d tensor gets returned
                 if lr_image.dim() == 3:
@@ -418,11 +418,11 @@ class CustomTrainClass(pl.LightningModule):
                 out = cv2.cvtColor(out, cv2.COLOR_RGB2BGR)
                 cv2.imwrite(
                     os.path.join(validation_output, filename,
-                                 str(self.trainer.global_step) + '.png'), out)
+                                 str(self.trainer.global_step) + '.webp'), out)
             else:
                 save_image(
                     out[counter], os.path.join(validation_output, filename,
-                                               str(self.trainer.global_step) + '.png'))
+                                               str(self.trainer.global_step) + '.webp'))
 
             counter += 1
 

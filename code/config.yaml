@@ -1,5 +1,5 @@
 name: template
-scale: 2
+scale: 4 
 gpus: 1 # amount of gpus, 0 = cpu
 distributed_backend: ddp # dp, ddp (for multi-gpu training)
 tpu_cores: 8 # 8 if you use a Google Colab TPU
@@ -31,10 +31,10 @@ datasets:
 
     n_workers: 16 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     pipeline_threads: 16 # only for DS_video_direct
-    batch_size: 15 # 6
+    batch_size: 4 # 6
     
     # does not apply to video dataloaders, look into python file instead
-    HR_size: 128 # The resolution the network will get. Random crop gets applied if that resolution does not match.
+    HR_size: 192 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
     masks: '/content/masks/' # only for inpainting
@@ -93,12 +93,12 @@ datasets:
     dataroot_LR: '/workspace/tensorrt/training/val_input/' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G:
-    pretrain_model_D: 
+    pretrain_model_G: 
+    pretrain_model_D:
     checkpoint_path:
-    checkpoint_save_path: '/workspace/tensorrt/training/models/'
-    validation_output_path: '/workspace/tensorrt/training/models/val/'
-    log_path: '/workspace/tensorrt/training/models/logs/'
+    checkpoint_save_path: '/workspace/tensorrt/training/models_swinir2_small/'
+    validation_output_path: '/workspace/tensorrt/training/models_swinir2_small/val/'
+    log_path: '/workspace/tensorrt/training/models_swinir2_small/logs/'
 
 # Generator options:
 network_G:
@@ -109,26 +109,26 @@ network_G:
     finetune: False # Important for further rfr/dsnet training. Apply that after training for a while. https://github.com/jingyuanli001/RFR-Inpainting/issues/33
 
     # ESRGAN:
-    netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch)
-    norm_type: null
-    mode: CNA
-    nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
-    nb: 3 # (default: 23, good: 8)
-    in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
-    out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
-    gc: 32
-    group: 1
+    #netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch)
+    #norm_type: null
+    #mode: CNA
+    #nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
+    #nb: 3 # (default: 23, good: 8)
+    #in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
+    #out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
+    #gc: 32
+    #group: 1
     # conv only applies to RRDB_net and not MRRDB_net
-    convtype: Conv2D # Conv2D | PartialConv2D | doconv | gated | TBC | dynamic | MBConv | CondConv | fft | WSConv
-    net_act: leakyrelu # swish | leakyrelu
-    gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
-    plus: false # true | false
-    finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
-    upsample_mode: 'upconv'
-    nr: 3
+    #convtype: Conv2D # Conv2D | PartialConv2D | doconv | gated | TBC | dynamic | MBConv | CondConv | fft | WSConv
+    #net_act: leakyrelu # swish | leakyrelu
+    #gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
+    #plus: false # true | false
+    #finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
+    #upsample_mode: 'upconv'
+    #nr: 3
     # for dynamic
-    nof_kernels: 4
-    reduce: 4
+    #nof_kernels: 4
+    #reduce: 4
 
     # ASRGAN:
     #which_model_G: asr_resnet # asr_resnet | asr_cnn
@@ -314,16 +314,20 @@ network_G:
     #resi_connection: '1conv'
 
     # swinir2 (2022)
-    #netG: swinir2
-    #img_size: 48
-    #window_size: 8
-    #img_range: 1.
-    #depths: [3, 3, 3, 3] # [2, 2, 2, 2]
-    #embed_dim: 180 # 24
-    #num_heads: [6, 6, 6, 6]
-    #mlp_ratio: 2
-    #upsampler: 'pixelshuffledirect'
-    #use_deformable_block: False
+    netG: swinir2
+    img_size: 48
+    window_size: 8
+    img_range: 1.
+    depths: [3, 3, 3, 3] # [2, 2, 2, 2]
+    embed_dim: 180 # 24
+    num_heads: [6, 6, 6, 6]
+    mlp_ratio: 2
+    upsampler: 'pixelshuffledirect'
+    use_deformable_block: False
+    first_conv: fft # Conv2D | doconv | TBC | dynamic | fft
+    # for dynamic
+    nof_kernels: 4
+    reduce: 4
 
     # ESRT (2021)
     #netG: ESRT
@@ -784,16 +788,16 @@ network_D:
     #netD: hrt
 
     # Attention U-Net (from asergan) (2021)
-    #netD: attention_unet
-    #num_in_ch: 3
-    #num_feat: 64
-    #skip_connection: True
-
-    # U-Net (from RealESRGAN) (2021)
-    netD: unet
+    netD: attention_unet
     num_in_ch: 3
     num_feat: 64
     skip_connection: True
+
+    # U-Net (from RealESRGAN) (2021)
+    #netD: unet
+    #num_in_ch: 3
+    #num_feat: 64
+    #skip_connection: True
 
 train: 
     # Adam8bit needs "pip install bitsandbytes-cuda111"
