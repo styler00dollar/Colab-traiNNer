@@ -144,7 +144,6 @@ class AllLoss(pl.LightningModule):
                 truncate_long_and_double=True)
             del example_data
 
-        """
         from arch.hrf_perceptual import ResNetPL
         self.hrf_perceptual_loss = ResNetPL()
         for param in self.hrf_perceptual_loss.parameters():
@@ -152,7 +151,6 @@ class AllLoss(pl.LightningModule):
 
         if cfg['train']['force_fp16_hrf'] is True:
             self.hrf_perceptual_loss = self.hrf_perceptual_loss.half()
-        """
 
         self.ColorLoss = ColorLoss()
         self.FrobeniusNormLoss = FrobeniusNormLoss()
