@@ -47,6 +47,8 @@ class CustomTrainClass(pl.LightningModule):
                 if self.global_step == 0:
                     weights_init(self.netD, 'kaiming')
                     print("Discriminator weight init complete.")
+        else:
+            self.netD = None # Passing none into loss calc
 
         ##################################################################
 
