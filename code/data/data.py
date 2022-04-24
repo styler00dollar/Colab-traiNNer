@@ -90,9 +90,7 @@ class DS_inpaint(Dataset):
         sample = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
 
         # if edges are required
-        if (cfg['network_G']['netG'] == 'EdgeConnect'
-                or cfg['network_G']['netG'] == 'PRVS'
-                or cfg['network_G']['netG'] == 'CTSDG'):
+        if cfg['network_G']['netG'] in ('EdgeConnect', 'PRVS', 'CTSDG', 'misf'):
             grayscale = cv2.cvtColor(np.array(sample), cv2.COLOR_RGB2GRAY)
             edges = cv2.Canny(grayscale, 100, 150)
             grayscale = torch.from_numpy(grayscale).unsqueeze(0)/255
@@ -129,7 +127,7 @@ class DS_inpaint(Dataset):
         masked = sample * mask
 
         # EdgeConnect
-        if cfg['network_G']['netG'] == 'EdgeConnect':
+        if cfg['network_G']['netG'] in ('EdgeConnect', 'misf'):
             return masked, mask, sample, edges, grayscale
 
         # PRVS
@@ -162,9 +160,7 @@ class DS_inpaint_val(Dataset):
         sample = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
 
         # if edges are required
-        if (cfg['network_G']['netG'] == 'EdgeConnect'
-                or cfg['network_G']['netG'] == 'PRVS'
-                or cfg['network_G']['netG'] == 'CTSDG'):
+        if cfg['network_G']['netG'] in ('EdgeConnect', 'PRVS', 'CTSDG', 'misf'):
             grayscale = cv2.cvtColor(sample, cv2.COLOR_RGB2GRAY)
             edges = cv2.Canny(grayscale, 100, 150)
             grayscale = torch.from_numpy(grayscale).unsqueeze(0)
@@ -176,7 +172,7 @@ class DS_inpaint_val(Dataset):
         sample = sample * green_mask
 
         # EdgeConnect
-        if cfg['network_G']['netG'] == 'EdgeConnect':
+        if cfg['network_G']['netG'] in ('EdgeConnect', 'misf'):
             return sample, green_mask, sample_path, edges, grayscale
 
         # PRVS
@@ -584,9 +580,7 @@ class DS_inpaint_TF(Dataset):
             sample = sample[random_pos1:random_pos1+self.HR_size, random_pos2:random_pos2+self.HR_size]
 
         # if edges are required
-        if (cfg['network_G']['netG'] == 'EdgeConnect'
-                or cfg['network_G']['netG'] == 'PRVS'
-                or cfg['network_G']['netG'] == 'CTSDG'):
+        if cfg['network_G']['netG'] in ('EdgeConnect', 'PRVS', 'CTSDG'):
             grayscale = cv2.cvtColor(np.array(sample), cv2.COLOR_RGB2GRAY)
             edges = cv2.Canny(grayscale, 100, 150)
             grayscale = torch.from_numpy(grayscale).unsqueeze(0)/255
@@ -622,7 +616,7 @@ class DS_inpaint_TF(Dataset):
         masked = sample * mask
 
         # EdgeConnect
-        if cfg['network_G']['netG'] == 'EdgeConnect':
+        if cfg['network_G']['netG'] in ('EdgeConnect', 'misf'):
             return masked, mask, sample, edges, grayscale
 
         # PRVS

@@ -407,6 +407,13 @@ def CreateGenerator(cfg):
         from arch.sepconv_enhanced_arch import Network
         netG = Network()
 
+    elif cfg['network_G']['netG'] == 'sepconv_rt':
+        from arch.sepconv_realtime_arch import InterpolationNet
+        netG = InterpolationNet(real_time=cfg['network_G']['real_time'], 
+            device=cfg['network_G']['device'], 
+            in_channels=cfg['network_G']['in_channels'], 
+            out_channels=cfg['network_G']['out_channels'])
+
     elif cfg['network_G']['netG'] == "CDFI":
         from arch.CDFI_arch import AdaCoFNet
         netG = AdaCoFNet()
@@ -436,7 +443,6 @@ def CreateGenerator(cfg):
             LayerNorm_type=cfg['network_G']['LayerNorm_type'])
 
     elif cfg['network_G']['netG'] == "swinir2":
-        print("yes swinir2")
         from arch.swinir2_arch import SwinIR
         netG = SwinIR(upscale=cfg['scale'], 
             img_size=(cfg['network_G']['img_size'], cfg['network_G']['img_size']), 
@@ -448,6 +454,11 @@ def CreateGenerator(cfg):
             mlp_ratio=cfg['network_G']['mlp_ratio'], 
             upsampler=cfg['network_G']['upsampler'], 
             use_deformable_block=cfg['network_G']['use_deformable_block'])
+
+    elif cfg['network_G']['netG'] == "misf":
+        from arch.misf_arch import MISF
+        netG = MISF(residual_blocks=cfg['network_G']['residual_blocks'], 
+            use_spectral_norm=cfg['network_G']['use_spectral_norm'])
 
     ############################
 

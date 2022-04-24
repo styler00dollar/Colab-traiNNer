@@ -21,23 +21,24 @@ datasets:
     # DS_realesrgan: will use the realesrgan dataloader (only uses hr folder)
     # pip install --extra-index-url https://developer.download.nvidia.com/compute/redist --upgrade nvidia-dali-cuda110
 
-    mode: DS_realesrgan # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr | DS_realesrgan
+    mode: DS_inpaint # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr | DS_realesrgan
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
-    dataroot_HR: '/workspace/tensorrt/training/data/esrgan_dataset/' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/workspace/tensorrt/training/data/esrgan_dataset/' # Original, with a single directory
+    dataroot_HR: '/workspace/tensorrt/training/data/inpaint_image/' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/workspace/tensorrt/training/data/inpaint_image/' # Original, with a single directory
     loading_backend: 'OpenCV' # 'PIL' | 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, turboJPEG only for DS_video, 'PIL' for DS_inpaint_TF
 
-    n_workers: 16 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
+    n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     pipeline_threads: 16 # only for DS_video_direct
-    batch_size: 4 # 6
+    batch_size: 1 # 67
     
+    # 192 / 200 / 208 / 216
     # does not apply to video dataloaders, look into python file instead
-    HR_size: 192 # The resolution the network will get. Random crop gets applied if that resolution does not match.
+    HR_size: 256 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
-    masks: '/content/masks/' # only for inpainting
+    masks: '/workspace/tensorrt/training/data/inpaint_mask/' # only for inpainting
     mask_invert_ratio: 0.3 # 0.3 = 30% of masks will be inverted
     max_epochs: 2000
     save_step_frequency: 5000 # also validation frequency
@@ -89,16 +90,16 @@ datasets:
 
   val:
     loading_backend: 'OpenCV' # 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, currently only for DS_video
-    dataroot_HR: '/workspace/tensorrt/training/val_input/'
-    dataroot_LR: '/workspace/tensorrt/training/val_input/' # Inpainting will use this directory as input
+    dataroot_HR: '/workspace/tensorrt/training/data/inpaint_val/'
+    dataroot_LR: '/workspace/tensorrt/training/data/inpaint_val/' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: 
-    pretrain_model_D:
-    checkpoint_path:
-    checkpoint_save_path: '/workspace/tensorrt/training/models_swinir2_small/'
-    validation_output_path: '/workspace/tensorrt/training/models_swinir2_small/val/'
-    log_path: '/workspace/tensorrt/training/models_swinir2_small/logs/'
+    pretrain_model_G: #'/workspace/tensorrt/training/models_swinir2_small/pretrain6_250.443/Checkpoint_381_250443_G.pth'
+    pretrain_model_D: #'/workspace/tensorrt/training/models_swinir2_small/pretrain6_250.443/Checkpoint_381_250443_D.pth'
+    checkpoint_path: #'/workspace/tensorrt/training/models_swinir2_small/Checkpoint_272_179589.ckpt'
+    checkpoint_save_path: '/workspace/tensorrt/training/misf/'
+    validation_output_path: '/workspace/tensorrt/training/misf/val/'
+    log_path: '/workspace/tensorrt/training/misf/logs/'
 
 # Generator options:
 network_G:
@@ -314,20 +315,20 @@ network_G:
     #resi_connection: '1conv'
 
     # swinir2 (2022)
-    netG: swinir2
-    img_size: 48
-    window_size: 8
-    img_range: 1.
-    depths: [3, 3, 3, 3] # [2, 2, 2, 2]
-    embed_dim: 180 # 24
-    num_heads: [6, 6, 6, 6]
-    mlp_ratio: 2
-    upsampler: 'pixelshuffledirect'
-    use_deformable_block: False
-    first_conv: fft # Conv2D | doconv | TBC | dynamic | fft
+    #netG: swinir2
+    #img_size: 48
+    #window_size: 8
+    #img_range: 1.
+    #depths: [3, 3, 3, 3] # [2, 2, 2, 2]
+    #embed_dim: 180 # 24
+    #num_heads: [6, 6, 6, 6]
+    #mlp_ratio: 2
+    #upsampler: 'pixelshuffledirect'
+    #use_deformable_block: False
+    #first_conv: fft # Conv2D | doconv | TBC | dynamic | fft
     # for dynamic
-    nof_kernels: 4
-    reduce: 4
+    #nof_kernels: 4
+    #reduce: 4
 
     # ESRT (2021)
     #netG: ESRT
@@ -498,6 +499,11 @@ network_G:
     # MST (2021)
     #netG: MST
 
+    # misf (2022)
+    netG: misf
+    residual_blocks: 8
+    use_spectral_norm: True
+
     # ----Interpolation Generators----
     # cain (2020)
     #netG: CAIN
@@ -529,6 +535,13 @@ network_G:
 
     # sepconv enhanced (2021) (needs cupy)
     #netG: sepconv_enhanced
+
+    # sepconv realtime (enet) (2022) (needs cupy)
+    #netG: sepconv_rt
+    #real_time: True
+    #device: cuda
+    #in_channels: 64
+    #out_channels: 51
 
     # AdaCoFNet (compressed) / CDFI (2021) (needs cupy)
     #netG: CDFI

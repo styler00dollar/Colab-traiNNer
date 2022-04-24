@@ -112,7 +112,7 @@ class CustomTrainClass(pl.LightningModule):
                 'RFR', 'LBAM', 'DMFN', 'Partial', 'RN', 'DSNet', 'DSNetRRDB',
                 'DSNetDeoldify', 'EdgeConnect', 'CSA', 'deepfillv1', 'deepfillv2',
                 'Adaptive', 'Global', 'Pluralistic', 'crfill', 'DeepDFNet',
-                'pennet', 'FRRN', 'PRVS', 'CRA', 'atrous', 'lightweight_gan', 'CTSDG',
+                'pennet', 'FRRN', 'PRVS', 'CRA', 'atrous', 'lightweight_gan', 'CTSDG', 'misf',
                 # sr genrators
                 "restormer", "SRVGGNetCompact", "ESRT", "swinir", 'lightweight_gan', 'RRDB_net',
                 'GLEAN', 'GPEN', 'comodgan', 'GFPGAN', 'swinir2') and \
@@ -121,9 +121,9 @@ class CustomTrainClass(pl.LightningModule):
             hr_image = train_batch[2]
             other['mask'] = train_batch[1]
 
-            if cfg['network_G']['netG'] == 'PRVS' or cfg['network_G']['netG'] == 'CTSDG':
+            if cfg['network_G']['netG'] in ('PRVS', 'CTSDG', 'EdgeConnect', 'misf'):
                 other['edge'] = train_batch[3]
-            if cfg['network_G']['netG'] == 'EdgeConnect':
+            if cfg['network_G']['netG'] in ('EdgeConnect', 'misf'):
                 other['grayscale'] = train_batch[4]
 
         # if super resolution
@@ -139,6 +139,7 @@ class CustomTrainClass(pl.LightningModule):
                 if lr_image.dim() == 3:
                     lr_image = lr_image.unsqueeze(0)
                     hr_image = hr_image.unsqueeze(0)
+                    other['gt'] = other['gt'].unsqueeze(0)
             else:
                 lr_image = train_batch[1]
                 hr_image = train_batch[2]
@@ -147,7 +148,7 @@ class CustomTrainClass(pl.LightningModule):
 
         # if interpolation
         elif cfg['network_G']['netG'] in \
-                        ("CDFI", "sepconv_enhanced", 'CAIN', 'rife', 'RRIN', 'ABME', 'EDSC'):
+                        ("CDFI", "sepconv_enhanced", 'CAIN', 'rife', 'RRIN', 'ABME', 'EDSC', 'sepconv_rt'):
             other['hr_image1'] = train_batch[0]
             other['hr_image3'] = train_batch[1]
             hr_image = train_batch[2]
@@ -176,8 +177,8 @@ class CustomTrainClass(pl.LightningModule):
         if cfg['network_G']['netG'] == 'CSA':
             other['coarse_result'], out, other['csa'], other['csa_d'] = self.netG(lr_image, other['mask'])
 
-        # EdgeConnect
-        if cfg['network_G']['netG'] == 'EdgeConnect':
+        # EdgeConnect / misf
+        if cfg['network_G']['netG'] in ('EdgeConnect', 'misf'):
             out, other['other_img'] = self.netG(lr_image, other['edge'], other['grayscale'], other['mask'])
 
         # PVRS
@@ -192,7 +193,7 @@ class CustomTrainClass(pl.LightningModule):
         if cfg['network_G']['netG'] in ('CTSDG', 'lama', 'MST', 'MANet', 'context_encoder', 
                 'DFNet', 'AdaFill', 'MEDFE', 'RFR', 'LBAM', 'DMFN', 'Partial', 'RN', 'RN', 
                 'DSNet', 'DSNetRRDB', 'DSNetDeoldify', 'deepfillv1', 'deepfillv2', 'Adaptive', 
-                'CSA', 'EdgeConnect', 'PVRS', 'FRRN'):
+                'CSA', 'EdgeConnect', 'PVRS', 'FRRN', 'misf'):
             out = lr_image*other['mask']+out*(1-other['mask'])
 
         # deoldify
@@ -201,7 +202,7 @@ class CustomTrainClass(pl.LightningModule):
 
         ############################
         # if frame interpolation
-        if cfg['network_G']['netG'] in ("CDFI", "sepconv_enhanced", 'CAIN', 'RRIN', 'ABME', 'EDSC'):
+        if cfg['network_G']['netG'] in ("CDFI", "sepconv_enhanced", 'CAIN', 'RRIN', 'ABME', 'EDSC', 'sepconv_rt'):
             out = self.netG(other['hr_image1'], other['hr_image3'])
 
         if cfg['network_G']['netG'] == 'rife':
@@ -274,14 +275,24 @@ class CustomTrainClass(pl.LightningModule):
         
         # if inpainting
         if cfg['network_G']['netG'] in \
-                ('lama', 'MST', 'MANet', 'context_encoder', 'DFNet', 'AdaFill', 'MEDFE',
-                 'RFR', 'LBAM', 'DMFN', 'Partial', 'RN', 'RN', 'DSNet', 'DSNetRRDB',
-                 'DSNetDeoldify'):
+            (   # real inpainting generators
+                'lama', 'MST', 'MANet', 'context_encoder', 'DFNet', 'AdaFill', 'MEDFE',
+                'RFR', 'LBAM', 'DMFN', 'Partial', 'RN', 'DSNet', 'DSNetRRDB',
+                'DSNetDeoldify', 'EdgeConnect', 'CSA', 'deepfillv1', 'deepfillv2',
+                'Adaptive', 'Global', 'Pluralistic', 'crfill', 'DeepDFNet',
+                'pennet', 'FRRN', 'PRVS', 'CRA', 'atrous', 'lightweight_gan', 'CTSDG', 'misf',
+                # sr genrators
+                "restormer", "SRVGGNetCompact", "ESRT", "swinir", 'lightweight_gan', 'RRDB_net',
+                'GLEAN', 'GPEN', 'comodgan', 'GFPGAN', 'swinir2') and \
+                cfg['datasets']['train']['mode'] in ('DS_inpaint', 'DS_inpaint_TF'):
             lr_image = train_batch[0]
             mask = train_batch[1]
             path = train_batch[2]
-            edge = train_batch[3]
-            grayscale = train_batch[4]
+            if cfg['network_G']['netG'] in ('PRVS', 'CTSDG', 'EdgeConnect', 'misf'):
+                edge = train_batch[3]
+            if cfg['network_G']['netG'] in ('EdgeConnect', 'misf'):
+                grayscale = train_batch[4]
+
         # if super resolution
         elif cfg['network_G']['netG'] in \
                 ("restormer", "SRVGGNetCompact", "ESRT", "swinir", 'lightweight_gan', 'RRDB_net',
@@ -293,7 +304,7 @@ class CustomTrainClass(pl.LightningModule):
                 landmarks = train_batch[3]
         # if interpolation
         elif cfg['network_G']['netG'] in \
-                        ("CDFI", "sepconv_enhanced", 'CAIN', 'rife', 'RRIN', 'ABME', 'EDSC'):
+                        ("CDFI", "sepconv_enhanced", 'CAIN', 'rife', 'RRIN', 'ABME', 'EDSC', 'sepconv_rt'):
             hr_image1, hr_image3 = train_batch[0]
             path = train_batch[2]
 
@@ -305,7 +316,7 @@ class CustomTrainClass(pl.LightningModule):
 
         # if frame interpolation
         if cfg['network_G']['netG'] in \
-                ("CDFI", "sepconv_enhanced", 'CAIN', 'RRIN', 'ABME', 'EDSC'):
+                ("CDFI", "sepconv_enhanced", 'CAIN', 'RRIN', 'ABME', 'EDSC', 'sepconv_rt'):
             out = self.netG(hr_image1, hr_image3)
 
         if cfg['network_G']['netG'] == 'rife':
@@ -326,8 +337,8 @@ class CustomTrainClass(pl.LightningModule):
         if cfg['network_G']['netG'] == 'CSA':
             _, out, _, _ = self(lr_image, mask)
 
-        # EdgeConnect
-        if cfg['network_G']['netG'] == 'EdgeConnect':
+        # EdgeConnect / misf
+        if cfg['network_G']['netG'] in ('EdgeConnect', 'misf'):
             out, _ = self.netG(lr_image, edge, grayscale, mask)
 
         # PVRS
@@ -342,7 +353,7 @@ class CustomTrainClass(pl.LightningModule):
         if cfg['network_G']['netG'] in ('CTSDG', 'lama', 'MST', 'MANet', 'context_encoder', 
                 'DFNet', 'AdaFill', 'MEDFE', 'RFR', 'LBAM', 'DMFN', 'Partial', 'RN', 'RN', 
                 'DSNet', 'DSNetRRDB', 'DSNetDeoldify', 'deepfillv1', 'deepfillv2', 'Adaptive', 
-                'CSA', 'EdgeConnect', 'PVRS', 'FRRN'):
+                'CSA', 'EdgeConnect', 'PVRS', 'FRRN', 'misf'):
             out = lr_image*mask+out*(1-mask)
 
         # deoldify
@@ -413,18 +424,18 @@ class CustomTrainClass(pl.LightningModule):
             filename = os.path.splitext(filename_with_extention)[0]
 
             # currently only supports batch_size 1
-            if cfg['network_G']['netG'] in ("sepconv_enhanced", 'CAIN', 'rife'):
+            if cfg['network_G']['netG'] in ("sepconv_enhanced", 'CAIN', 'rife', 'sepconv_rt'):
                 out = out.data.mul(255).mul(255 / 255).clamp(0, 255).round()
                 out = out.squeeze(0).permute(1, 2, 0).cpu().numpy()  # *255
                 out = out.astype(np.uint8)
                 out = cv2.cvtColor(out, cv2.COLOR_RGB2BGR)
                 cv2.imwrite(
                     os.path.join(validation_output, filename,
-                                 str(self.trainer.global_step) + '.webp'), out)
+                                 str(self.trainer.global_step) + '.png'), out)
             else:
                 save_image(
                     out[counter], os.path.join(validation_output, filename,
-                                               str(self.trainer.global_step) + '.webp'))
+                                               str(self.trainer.global_step) + '.png'))
 
             counter += 1
 
