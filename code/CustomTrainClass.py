@@ -113,6 +113,7 @@ class CustomTrainClass(pl.LightningModule):
                 'DSNetDeoldify', 'EdgeConnect', 'CSA', 'deepfillv1', 'deepfillv2',
                 'Adaptive', 'Global', 'Pluralistic', 'crfill', 'DeepDFNet',
                 'pennet', 'FRRN', 'PRVS', 'CRA', 'atrous', 'lightweight_gan', 'CTSDG', 'misf',
+                'mat',
                 # sr genrators
                 "restormer", "SRVGGNetCompact", "ESRT", "swinir", 'lightweight_gan', 'RRDB_net',
                 'GLEAN', 'GPEN', 'comodgan', 'GFPGAN', 'swinir2') and \
@@ -162,7 +163,7 @@ class CustomTrainClass(pl.LightningModule):
         if cfg['network_G']['netG'] in \
                 ('lama', 'MST', 'MANet', 'context_encoder', 'DFNet', 'AdaFill', 'MEDFE',
                  'RFR', 'LBAM', 'DMFN', 'Partial', 'RN', 'RN', 'DSNet', 'DSNetRRDB',
-                 'DSNetDeoldify'):
+                 'DSNetDeoldify', 'mat'):
             # generate fake (1 output)
             out = self.netG(lr_image, other['mask'])
 
@@ -193,7 +194,7 @@ class CustomTrainClass(pl.LightningModule):
         if cfg['network_G']['netG'] in ('CTSDG', 'lama', 'MST', 'MANet', 'context_encoder', 
                 'DFNet', 'AdaFill', 'MEDFE', 'RFR', 'LBAM', 'DMFN', 'Partial', 'RN', 'RN', 
                 'DSNet', 'DSNetRRDB', 'DSNetDeoldify', 'deepfillv1', 'deepfillv2', 'Adaptive', 
-                'CSA', 'EdgeConnect', 'PVRS', 'FRRN', 'misf'):
+                'CSA', 'EdgeConnect', 'PVRS', 'FRRN', 'misf', 'mat'):
             out = lr_image*other['mask']+out*(1-other['mask'])
 
         # deoldify
@@ -281,6 +282,7 @@ class CustomTrainClass(pl.LightningModule):
                 'DSNetDeoldify', 'EdgeConnect', 'CSA', 'deepfillv1', 'deepfillv2',
                 'Adaptive', 'Global', 'Pluralistic', 'crfill', 'DeepDFNet',
                 'pennet', 'FRRN', 'PRVS', 'CRA', 'atrous', 'lightweight_gan', 'CTSDG', 'misf',
+                'mat',
                 # sr genrators
                 "restormer", "SRVGGNetCompact", "ESRT", "swinir", 'lightweight_gan', 'RRDB_net',
                 'GLEAN', 'GPEN', 'comodgan', 'GFPGAN', 'swinir2') and \
@@ -327,8 +329,8 @@ class CustomTrainClass(pl.LightningModule):
         if cfg['network_G']['netG'] in \
                 ('lama', 'MST', 'MANet', 'context_encoder', 'aotgan', 'DFNet', 'AdaFill',
                  'MEDFE', 'RFR', 'LBAM', 'DMFN', 'Partial', 'RN', 'RN', 'DSNet',
-                 'DSNetRRDB', 'DSNetDeoldify'):
-            out = self(lr_image, mask)
+                 'DSNetRRDB', 'DSNetDeoldify', 'mat'):
+            out = self.netG(lr_image, mask)
 
         if cfg['network_G']['netG'] in ('deepfillv1', 'deepfillv2', 'Adaptive'):
             out, _ = self(lr_image, mask)

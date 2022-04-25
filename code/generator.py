@@ -460,6 +460,14 @@ def CreateGenerator(cfg):
         netG = MISF(residual_blocks=cfg['network_G']['residual_blocks'], 
             use_spectral_norm=cfg['network_G']['use_spectral_norm'])
 
+    elif cfg['network_G']['netG'] == "mat":
+        from arch.mat_arch import Generator
+        netG = Generator(z_dim=cfg['network_G']['z_dim'], 
+            c_dim=cfg['network_G']['c_dim'], 
+            w_dim=cfg['network_G']['w_dim'], 
+            img_resolution=cfg['network_G']['img_resolution'], 
+            img_channels=cfg['network_G']['img_channels'])
+
     ############################
 
     if cfg['network_G']['CEM'] is True:

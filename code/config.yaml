@@ -25,17 +25,16 @@ datasets:
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
-    dataroot_HR: '/workspace/tensorrt/training/data/inpaint_image/' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/workspace/tensorrt/training/data/inpaint_image/' # Original, with a single directory
+    dataroot_HR: '/workspace/tensorrt/training/data/inpaint_image_512px/' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/workspace/tensorrt/training/data/inpaint_image_512px/' # Original, with a single directory
     loading_backend: 'OpenCV' # 'PIL' | 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, turboJPEG only for DS_video, 'PIL' for DS_inpaint_TF
 
-    n_workers: 1 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
+    n_workers: 0 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     pipeline_threads: 16 # only for DS_video_direct
-    batch_size: 1 # 67
+    batch_size: 1 # 6
     
-    # 192 / 200 / 208 / 216
     # does not apply to video dataloaders, look into python file instead
-    HR_size: 256 # The resolution the network will get. Random crop gets applied if that resolution does not match.
+    HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
     masks: '/workspace/tensorrt/training/data/inpaint_mask/' # only for inpainting
@@ -90,16 +89,16 @@ datasets:
 
   val:
     loading_backend: 'OpenCV' # 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, currently only for DS_video
-    dataroot_HR: '/workspace/tensorrt/training/data/inpaint_val/'
-    dataroot_LR: '/workspace/tensorrt/training/data/inpaint_val/' # Inpainting will use this directory as input
+    dataroot_HR: '/workspace/tensorrt/training/data/inpaint_val_512px'
+    dataroot_LR: '/workspace/tensorrt/training/data/inpaint_val_512px' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: #'/workspace/tensorrt/training/models_swinir2_small/pretrain6_250.443/Checkpoint_381_250443_G.pth'
-    pretrain_model_D: #'/workspace/tensorrt/training/models_swinir2_small/pretrain6_250.443/Checkpoint_381_250443_D.pth'
-    checkpoint_path: #'/workspace/tensorrt/training/models_swinir2_small/Checkpoint_272_179589.ckpt'
-    checkpoint_save_path: '/workspace/tensorrt/training/misf/'
-    validation_output_path: '/workspace/tensorrt/training/misf/val/'
-    log_path: '/workspace/tensorrt/training/misf/logs/'
+    pretrain_model_G: 
+    pretrain_model_D: 
+    checkpoint_path: 
+    checkpoint_save_path: '/workspace/tensorrt/training/mat/'
+    validation_output_path: '/workspace/tensorrt/training/mat/val/'
+    log_path: '/workspace/tensorrt/training/mat/logs/'
 
 # Generator options:
 network_G:
@@ -316,7 +315,7 @@ network_G:
 
     # swinir2 (2022)
     #netG: swinir2
-    #img_size: 48
+    #img_size: 56 # 56/60 # 48
     #window_size: 8
     #img_range: 1.
     #depths: [3, 3, 3, 3] # [2, 2, 2, 2]
@@ -499,10 +498,13 @@ network_G:
     # MST (2021)
     #netG: MST
 
-    # misf (2022)
-    netG: misf
-    residual_blocks: 8
-    use_spectral_norm: True
+    # mat (2022) (compiling)
+    netG: mat
+    z_dim: 512
+    c_dim: 0
+    w_dim: 512
+    img_resolution: 512
+    img_channels: 3
 
     # ----Interpolation Generators----
     # cain (2020)
