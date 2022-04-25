@@ -433,11 +433,11 @@ class CustomTrainClass(pl.LightningModule):
                 out = cv2.cvtColor(out, cv2.COLOR_RGB2BGR)
                 cv2.imwrite(
                     os.path.join(validation_output, filename,
-                                 str(self.trainer.global_step) + '.png'), out)
+                                 str(self.trainer.global_step) + '.webp'), out)
             else:
                 save_image(
                     out[counter], os.path.join(validation_output, filename,
-                                               str(self.trainer.global_step) + '.png'))
+                                               str(self.trainer.global_step) + '.webp'))
 
             counter += 1
 
