@@ -4,28 +4,30 @@ https://github.com/victorca25/augmennt/blob/master/augmennt/camera.py
 """
 # Workaround to disable Intel Fortran Control+C console event handler installed by scipy
 from os import environ as os_env
-os_env['FOR_DISABLE_CONSOLE_CTRL_HANDLER'] = 'T'
+
+os_env["FOR_DISABLE_CONSOLE_CTRL_HANDLER"] = "T"
 
 import numpy as np
 import cv2
 
 try:
     from scipy.ndimage.filters import convolve, convolve1d
+
     scipy_available = True
 except ImportError:
     from .common import convolve
+
     scipy_available = False
 
 from .common import preserve_channel_dim, merge_channels
 
 
-DEFAULT_FLOAT_DTYPE = 'float64'
-
+DEFAULT_FLOAT_DTYPE = "float64"
 
 
 # TODO: move to common
 def tstack(a, dtype=None) -> np.ndarray:
-    """ Stacks arrays in sequence along the last axis (tail).
+    """Stacks arrays in sequence along the last axis (tail).
         Rebuilds arrays divided by :func:`tsplit`.
     Args:
         a: Array to perform the stacking.
@@ -46,7 +48,7 @@ def tstack(a, dtype=None) -> np.ndarray:
 
 # TODO: move to common
 def tsplit(a, dtype=None) -> np.ndarray:
-    """ Splits arrays in sequence along the last axis (tail).
+    """Splits arrays in sequence along the last axis (tail).
     Args:
     a: Array to perform the splitting.
     dtype: Type to use for initial conversion to *ndarray*,
@@ -69,8 +71,8 @@ def tsplit(a, dtype=None) -> np.ndarray:
 ######################
 
 
-def masks_CFA_Bayer(shape, pattern:str='RGGB') -> tuple:
-    """ Returns the *Bayer* color filter array (CFA) red, green 
+def masks_CFA_Bayer(shape, pattern: str = "RGGB") -> tuple:
+    """Returns the *Bayer* color filter array (CFA) red, green
         and blue masks for given pattern.
     Args:
         shape: Dimensions of the *Bayer* CFA.
@@ -81,36 +83,35 @@ def masks_CFA_Bayer(shape, pattern:str='RGGB') -> tuple:
     """
     pattern = pattern.upper()
 
-    channels = dict((channel, np.zeros(shape)) for channel in 'RGB')
+    channels = dict((channel, np.zeros(shape)) for channel in "RGB")
     for channel, (y, x) in zip(pattern, [(0, 0), (0, 1), (1, 0), (1, 1)]):
         channels[channel][y::2, x::2] = 1
 
-    return tuple(channels[c].astype(bool) for c in 'RGB')
+    return tuple(channels[c].astype(bool) for c in "RGB")
 
 
-def make_img_even(img:np.ndarray,
-    border=cv2.BORDER_REFLECT101) -> np.ndarray:
-    """ Extend image in order to make it even sized """
+def make_img_even(img: np.ndarray, border=cv2.BORDER_REFLECT101) -> np.ndarray:
+    """Extend image in order to make it even sized"""
 
     h, w = img.shape[0:2]
     top = 0
-    bottom = (h % 2 == 1)
+    bottom = h % 2 == 1
     left = 0
-    right = (w % 2 == 1)
+    right = w % 2 == 1
 
     if bottom > 0 or right > 0:
         return cv2.copyMakeBorder(img, top, bottom, left, right, border)
     return img
 
 
-def mosaic(RGB:np.ndarray) -> np.ndarray:
-    """ Extracts RGGB *Bayer* planes from an RGB image
-        as an array with each plane on a separate channel.
-        Args:
-            RGB: *RGB* colorspace array.
-        Note: only supports 'RGGB' arrangement and images
-            with even H and W dimensions at the moment,
-            so images are forced to expected dimensions.
+def mosaic(RGB: np.ndarray) -> np.ndarray:
+    """Extracts RGGB *Bayer* planes from an RGB image
+    as an array with each plane on a separate channel.
+    Args:
+        RGB: *RGB* colorspace array.
+    Note: only supports 'RGGB' arrangement and images
+        with even H and W dimensions at the moment,
+        so images are forced to expected dimensions.
     """
     RGB = make_img_even(RGB)
     shape = RGB.shape
@@ -125,8 +126,8 @@ def mosaic(RGB:np.ndarray) -> np.ndarray:
     return out
 
 
-def mosaic_CFA_Bayer(RGB, pattern:str='RGGB') -> np.ndarray:
-    """ Returns the *Bayer* color filter array (CFA) mosaic for a
+def mosaic_CFA_Bayer(RGB, pattern: str = "RGGB") -> np.ndarray:
+    """Returns the *Bayer* color filter array (CFA) mosaic for a
         given *RGB* colorspace array as a single channel image.
     Args:
         RGB: *RGB* colorspace array.
@@ -146,48 +147,49 @@ def mosaic_CFA_Bayer(RGB, pattern:str='RGGB') -> np.ndarray:
     return CFA
 
 
-def demosaic(bayer_images:np.ndarray, dmscfn='malvar') -> np.ndarray:
+def demosaic(bayer_images: np.ndarray, dmscfn="malvar") -> np.ndarray:
     """Demosaic method selector."""
-    if dmscfn == 'pixelshuffle':
+    if dmscfn == "pixelshuffle":
         return demosaic_pixelshuffle(bayer_images)
 
     return cfa_demosaic(bayer_images, fn=dmscfn)
 
 
-def cfa_demosaic(bayer_images:np.ndarray, fn:str='bilinear',
-    pattern:str='RGGB') -> np.ndarray:
-    """ Utiliy function to convert RGGB images with separate
-        channels to a CFA and apply the selected demosaic method.
+def cfa_demosaic(
+    bayer_images: np.ndarray, fn: str = "bilinear", pattern: str = "RGGB"
+) -> np.ndarray:
+    """Utiliy function to convert RGGB images with separate
+    channels to a CFA and apply the selected demosaic method.
     """
+
     def _fill(im, base):
-        base[0::2, 0::2] = im[:,:,0]
-        base[0::2, 1::2] = im[:,:,1]
-        base[1::2, 0::2] = im[:,:,2]
-        base[1::2, 1::2] = im[:,:,3]
+        base[0::2, 0::2] = im[:, :, 0]
+        base[0::2, 1::2] = im[:, :, 1]
+        base[1::2, 0::2] = im[:, :, 2]
+        base[1::2, 1::2] = im[:, :, 3]
         return base
 
     fn_dict = {
-        'bilinear': demosaic_CFA_bilinear,
-        'malvar': demosaic_CFA_malvar,
-        'menon': demosaic_CFA_menon,
-        }
+        "bilinear": demosaic_CFA_bilinear,
+        "malvar": demosaic_CFA_malvar,
+        "menon": demosaic_CFA_menon,
+    }
 
     dem_fn = fn_dict[fn]
 
     dem_list = []
     for i in bayer_images:
         h, w, _ = i.shape
-        empty = np.zeros((h*2, w*2), dtype=bayer_images.dtype)
+        empty = np.zeros((h * 2, w * 2), dtype=bayer_images.dtype)
         cfa = _fill(i, empty)
         dem_list.append(dem_fn(cfa, pattern))
-    
+
     dem_batch = merge_channels(dem_list, axis=0)
     return dem_batch
 
 
-def demosaic_CFA_bilinear(CFA:np.ndarray,
-    pattern:str='RGGB') -> np.ndarray:
-    """ Returns the demosaiced *RGB* colorspace array from
+def demosaic_CFA_bilinear(CFA: np.ndarray, pattern: str = "RGGB") -> np.ndarray:
+    """Returns the demosaiced *RGB* colorspace array from
         given *Bayer* CFA using bilinear interpolation.
     Args:
         CFA: *Bayer* CFA as single channel image.
@@ -205,15 +207,9 @@ def demosaic_CFA_bilinear(CFA:np.ndarray,
     CFA = np.asarray(CFA, dtype=DEFAULT_FLOAT_DTYPE)
     R_m, G_m, B_m = masks_CFA_Bayer(CFA.shape, pattern)
 
-    H_G = np.asarray(
-        [[0, 1, 0],
-         [1, 4, 1],
-         [0, 1, 0]]) / 4
+    H_G = np.asarray([[0, 1, 0], [1, 4, 1], [0, 1, 0]]) / 4
 
-    H_RB = np.asarray(
-        [[1, 2, 1],
-         [2, 4, 2],
-         [1, 2, 1]]) / 4
+    H_RB = np.asarray([[1, 2, 1], [2, 4, 2], [1, 2, 1]]) / 4
 
     R = convolve(CFA * R_m, H_RB)
     G = convolve(CFA * G_m, H_G)
@@ -224,8 +220,8 @@ def demosaic_CFA_bilinear(CFA:np.ndarray,
     return tstack([R, G, B])
 
 
-def demosaic_CFA_malvar(CFA:np.ndarray, pattern:str='RGGB') -> np.ndarray:
-    """ Returns the demosaiced *RGB* colorspace array from
+def demosaic_CFA_malvar(CFA: np.ndarray, pattern: str = "RGGB") -> np.ndarray:
+    """Returns the demosaiced *RGB* colorspace array from
     given *Bayer* CFA using *Malvar (2004)* demosaicing algorithm.
     Args:
         CFA: *Bayer* CFA as single channel image.
@@ -244,28 +240,46 @@ def demosaic_CFA_malvar(CFA:np.ndarray, pattern:str='RGGB') -> np.ndarray:
     CFA = np.asarray(CFA, dtype=DEFAULT_FLOAT_DTYPE)
     R_m, G_m, B_m = masks_CFA_Bayer(CFA.shape, pattern)
 
-    GR_GB = np.asarray(
-        [[0, 0, -1, 0, 0],
-         [0, 0, 2, 0, 0],
-         [-1, 2, 4, 2, -1],
-         [0, 0, 2, 0, 0],
-         [0, 0, -1, 0, 0]]) / 8
+    GR_GB = (
+        np.asarray(
+            [
+                [0, 0, -1, 0, 0],
+                [0, 0, 2, 0, 0],
+                [-1, 2, 4, 2, -1],
+                [0, 0, 2, 0, 0],
+                [0, 0, -1, 0, 0],
+            ]
+        )
+        / 8
+    )
 
-    Rg_RB_Bg_BR = np.asarray(
-        [[0, 0, 0.5, 0, 0],
-         [0, -1, 0, -1, 0],
-         [-1, 4, 5, 4, - 1],
-         [0, -1, 0, -1, 0],
-         [0, 0, 0.5, 0, 0]]) / 8
+    Rg_RB_Bg_BR = (
+        np.asarray(
+            [
+                [0, 0, 0.5, 0, 0],
+                [0, -1, 0, -1, 0],
+                [-1, 4, 5, 4, -1],
+                [0, -1, 0, -1, 0],
+                [0, 0, 0.5, 0, 0],
+            ]
+        )
+        / 8
+    )
 
     Rg_BR_Bg_RB = np.transpose(Rg_RB_Bg_BR)
 
-    Rb_BB_Br_RR = np.asarray(
-        [[0, 0, -1.5, 0, 0],
-         [0, 2, 0, 2, 0],
-         [-1.5, 0, 6, 0, -1.5],
-         [0, 2, 0, 2, 0],
-         [0, 0, -1.5, 0, 0]]) / 8
+    Rb_BB_Br_RR = (
+        np.asarray(
+            [
+                [0, 0, -1.5, 0, 0],
+                [0, 2, 0, 2, 0],
+                [-1.5, 0, 6, 0, -1.5],
+                [0, 2, 0, 2, 0],
+                [0, 0, -1.5, 0, 0],
+            ]
+        )
+        / 8
+    )
 
     R = CFA * R_m
     G = CFA * G_m
@@ -306,24 +320,26 @@ def demosaic_CFA_malvar(CFA:np.ndarray, pattern:str='RGGB') -> np.ndarray:
     return tstack([R, G, B])
 
 
-def _cnv_h(x:np.ndarray, y:np.ndarray) -> np.ndarray:
+def _cnv_h(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Helper function for horizontal convolution."""
     if scipy_available:
-        return convolve1d(x, y, mode='mirror')
+        return convolve1d(x, y, mode="mirror")
     else:
         raise ValueError("To use Menon method, scipy must be available")
 
-def _cnv_v(x:np.ndarray, y:np.ndarray) -> np.ndarray:
+
+def _cnv_v(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Helper function for vertical convolution."""
     if scipy_available:
-        return convolve1d(x, y, mode='mirror', axis=0)
+        return convolve1d(x, y, mode="mirror", axis=0)
     else:
         raise ValueError("To use Menon method, scipy must be available")
 
 
-def demosaic_CFA_menon(CFA:np.ndarray, pattern:str='RGGB',
-    refining_step:bool=True) -> np.ndarray:
-    """ Returns the demosaiced *RGB* colorspace array from given
+def demosaic_CFA_menon(
+    CFA: np.ndarray, pattern: str = "RGGB", refining_step: bool = True
+) -> np.ndarray:
+    """Returns the demosaiced *RGB* colorspace array from given
         *Bayer* CFA using DDFAPD demosaicing algorithm.
     Args:
         CFA: *Bayer* CFA as single channel image.
@@ -359,22 +375,23 @@ def demosaic_CFA_menon(CFA:np.ndarray, pattern:str='RGGB',
     C_V = np.where(R_m == 1, R - G_V, 0)
     C_V = np.where(B_m == 1, B - G_V, C_V)
 
-    D_H = np.abs(C_H - np.pad(C_H, ((0, 0),
-                                    (0, 2)), mode=str('reflect'))[:, 2:])
-    D_V = np.abs(C_V - np.pad(C_V, ((0, 2),
-                                    (0, 0)), mode=str('reflect'))[2:, :])
+    D_H = np.abs(C_H - np.pad(C_H, ((0, 0), (0, 2)), mode=str("reflect"))[:, 2:])
+    D_V = np.abs(C_V - np.pad(C_V, ((0, 2), (0, 0)), mode=str("reflect"))[2:, :])
 
     del h_0, h_1, CFA, C_V, C_H
 
     k = np.array(
-        [[0, 0, 1, 0, 1],
-         [0, 0, 0, 1, 0],
-         [0, 0, 3, 0, 3],
-         [0, 0, 0, 1, 0],
-         [0, 0, 1, 0, 1]])
+        [
+            [0, 0, 1, 0, 1],
+            [0, 0, 0, 1, 0],
+            [0, 0, 3, 0, 3],
+            [0, 0, 0, 1, 0],
+            [0, 0, 1, 0, 1],
+        ]
+    )
 
-    d_H = convolve(D_H, k, mode='constant')
-    d_V = convolve(D_V, np.transpose(k), mode='constant')
+    d_H = convolve(D_H, k, mode="constant")
+    d_V = convolve(D_V, np.transpose(k), mode="constant")
 
     del D_H, D_V
 
@@ -447,9 +464,10 @@ def demosaic_CFA_menon(CFA:np.ndarray, pattern:str='RGGB',
     return RGB
 
 
-def refining_step_menon(RGB: np.ndarray, RGB_m: np.ndarray,
-    M:np.ndarray) -> np.ndarray:
-    """ Performs the refining step on given *RGB* colorspace array.
+def refining_step_menon(
+    RGB: np.ndarray, RGB_m: np.ndarray, M: np.ndarray
+) -> np.ndarray:
+    """Performs the refining step on given *RGB* colorspace array.
     Args
         RGB: *RGB* colorspace array.
         RGB_m: *Bayer* CFA red, green and blue masks.
@@ -552,8 +570,9 @@ def refining_step_menon(RGB: np.ndarray, RGB_m: np.ndarray,
     return tstack([R, G, B])
 
 
-def resize_bimg(img:np.ndarray, shape) -> np.ndarray:
+def resize_bimg(img: np.ndarray, shape) -> np.ndarray:
     """Utility function to resize a batch of images"""
+
     @preserve_channel_dim
     def _resize_image(image, shape):
         return cv2.resize(image, dsize=shape, interpolation=cv2.INTER_LINEAR)
@@ -563,18 +582,19 @@ def resize_bimg(img:np.ndarray, shape) -> np.ndarray:
     return img_batch
 
 
-def nchw2nhwc(img:np.ndarray) -> np.ndarray:
+def nchw2nhwc(img: np.ndarray) -> np.ndarray:
     """Convert tensor from [N, C, H, W] to [N, H, W, C]"""
     return img.transpose([0, 2, 3, 1])
 
 
-def nhwc2nchw(img:np.ndarray) -> np.ndarray:
+def nhwc2nchw(img: np.ndarray) -> np.ndarray:
     """Convert tensor from [N, H, W, C] to [N, C, H, W]"""
     return img.transpose([0, 3, 1, 2])
 
 
-def space_to_depth(x:np.ndarray, block_size:int=2,
-    shape:str='NHWC', mode:str='tf'):
+def space_to_depth(
+    x: np.ndarray, block_size: int = 2, shape: str = "NHWC", mode: str = "tf"
+):
     """
     Inverted PixelShuffle.
     Args:
@@ -591,29 +611,30 @@ def space_to_depth(x:np.ndarray, block_size:int=2,
             where r refers to scale factor
     """
     # d = depth = channels
-    if mode == 'pt':
-        x = nhwc2nchw(x) if shape == 'NHWC' else x
+    if mode == "pt":
+        x = nhwc2nchw(x) if shape == "NHWC" else x
         b, d, h, w = x.shape
     else:
-        x = nchw2nhwc(x) if shape == 'NCHW' else x
+        x = nchw2nhwc(x) if shape == "NCHW" else x
         b, h, w, d = x.shape
 
     if h % block_size != 0 or w % block_size != 0:
-        raise ValueError('Height and width of tensor must '
-                         'be divisible by block_size.')
+        raise ValueError(
+            "Height and width of tensor must " "be divisible by block_size."
+        )
 
     new_d = -1  # d * (block_size**2)
     new_h = h // block_size
     new_w = w // block_size
 
-    if mode == 'pt':
+    if mode == "pt":
         # (N, C, H//bs, bs, W//bs, bs)
         x = x.reshape([b, d, new_h, block_size, new_w, block_size])
         # (N, bs, bs, C, H//bs, W//bs)
         x = np.ascontiguousarray(x.transpose([0, 1, 3, 5, 2, 4]))
         # (N, C*bs^2, H//bs, W//bs)
         x = x.reshape([b, new_d, new_h, new_w])
-        x = nchw2nhwc(x) if shape == 'NHWC' else x
+        x = nchw2nhwc(x) if shape == "NHWC" else x
         return x
 
     # (N, H//bs, bs, W//bs, bs, C)
@@ -622,12 +643,13 @@ def space_to_depth(x:np.ndarray, block_size:int=2,
     x = np.ascontiguousarray(x.transpose([0, 1, 3, 2, 4, 5]))
     # (N, H//bs, W//bs, C*bs^2)
     x = x.reshape([b, new_h, new_w, new_d])
-    x = nhwc2nchw(x) if shape == 'NCHW' else x
+    x = nhwc2nchw(x) if shape == "NCHW" else x
     return x
 
 
-def depth_to_space(x:np.ndarray, block_size:int=2,
-    shape:str='NHWC', mode:str='tf'):
+def depth_to_space(
+    x: np.ndarray, block_size: int = 2, shape: str = "NHWC", mode: str = "tf"
+):
     """
     PixelShuffle.
     Args:
@@ -644,29 +666,30 @@ def depth_to_space(x:np.ndarray, block_size:int=2,
             where r refers to scale factor
     """
     # d = depth = channels
-    if mode == 'pt':
-        x = nhwc2nchw(x) if shape == 'NHWC' else x
+    if mode == "pt":
+        x = nhwc2nchw(x) if shape == "NHWC" else x
         b, d, h, w = x.shape
     else:
-        x = nchw2nhwc(x) if shape == 'NCHW' else x
+        x = nchw2nhwc(x) if shape == "NCHW" else x
         b, h, w, d = x.shape
 
-    if d % (block_size ** 2) != 0:
-        raise ValueError('The tensor channels must be divisible by '
-                         '(block_size ** 2).')
+    if d % (block_size**2) != 0:
+        raise ValueError(
+            "The tensor channels must be divisible by " "(block_size ** 2)."
+        )
 
     new_d = -1  # d // (block_size ** 2)
     new_h = h * block_size
     new_w = w * block_size
 
-    if mode == 'pt':
+    if mode == "pt":
         # (N, C//bs^2, bs, bs, H, W)
         x = x.reshape([b, new_d, block_size, block_size, h, w])
         # (N, C//bs^2, H, bs, W, bs)
         x = np.ascontiguousarray(x.transpose([0, 1, 4, 2, 5, 3]))
         # (N, C//bs^2, H*bs, W*bs)
         x = x.reshape([b, new_d, new_h, new_w])
-        x = nchw2nhwc(x) if shape == 'NHWC' else x
+        x = nchw2nhwc(x) if shape == "NHWC" else x
         return x
 
     # (N, H, W, bs, bs, C//bs^2)
@@ -675,28 +698,29 @@ def depth_to_space(x:np.ndarray, block_size:int=2,
     x = np.ascontiguousarray(x.transpose([0, 1, 3, 2, 4, 5]))
     # (N, H*bs, W*bs, C//bs^2)
     x = x.reshape([b, new_h, new_w, new_d])
-    x = nhwc2nchw(x) if shape == 'NCHW' else x
+    x = nhwc2nchw(x) if shape == "NCHW" else x
     return x
 
 
-def demosaic_pixelshuffle(bayer_images:np.ndarray,
-    tshape:str='NHWC', psmode:str='tf') -> np.ndarray:
-    """ Bilinearly demosaics a batch of RGGB Bayer images,
-        using PixelShuffle (depth_to_space) and it's inverse
-        (space_to_depth) to demosaic.
-        Args:
-            bayer_images: array of *Bayer* images with separate
-                RGGB channels. Supports batches.
-            tshape: tensor shape, in: 'NHWC', 'NCHW'
-            psmode: PixelShuffle mode, either tensorflow ('tf') or
-                pytorch ('pt'). TF follows the OpenCV convention
-                'NHWC', but results are equivalent.
-        References:
-            Brooks, Tim and Mildenhall, Ben and Xue, Tianfan and Chen,
-            Jiawen and Sharlet, Dillon and Barron, Jonathan T. (2019)
-            Unprocessing Images for Learned Raw Denoising.
-            IEEE Conference on Computer Vision and Pattern Recognition (CVPR)
-            https://www.timothybrooks.com/tech/unprocessing/
+def demosaic_pixelshuffle(
+    bayer_images: np.ndarray, tshape: str = "NHWC", psmode: str = "tf"
+) -> np.ndarray:
+    """Bilinearly demosaics a batch of RGGB Bayer images,
+    using PixelShuffle (depth_to_space) and it's inverse
+    (space_to_depth) to demosaic.
+    Args:
+        bayer_images: array of *Bayer* images with separate
+            RGGB channels. Supports batches.
+        tshape: tensor shape, in: 'NHWC', 'NCHW'
+        psmode: PixelShuffle mode, either tensorflow ('tf') or
+            pytorch ('pt'). TF follows the OpenCV convention
+            'NHWC', but results are equivalent.
+    References:
+        Brooks, Tim and Mildenhall, Ben and Xue, Tianfan and Chen,
+        Jiawen and Sharlet, Dillon and Barron, Jonathan T. (2019)
+        Unprocessing Images for Learned Raw Denoising.
+        IEEE Conference on Computer Vision and Pattern Recognition (CVPR)
+        https://www.timothybrooks.com/tech/unprocessing/
     """
     shape = bayer_images.shape
     shape = (shape[1] * 2, shape[2] * 2)
@@ -713,15 +737,13 @@ def demosaic_pixelshuffle(bayer_images:np.ndarray,
     green_red = np.fliplr(green_red)  # flip left-right
     green_red = resize_bimg(green_red, shape)
     green_red = np.fliplr(green_red)  # flip left-right
-    green_red = space_to_depth(
-        green_red, 2, shape=tshape, mode=psmode)
+    green_red = space_to_depth(green_red, 2, shape=tshape, mode=psmode)
 
     green_blue = bayer_images[..., 2:3]
     green_blue = np.flipud(green_blue)  # flip up-down
     green_blue = resize_bimg(green_blue, shape)
     green_blue = np.flipud(green_blue)  # flip up-down
-    green_blue = space_to_depth(
-        green_blue, 2, shape=tshape, mode=psmode)
+    green_blue = space_to_depth(green_blue, 2, shape=tshape, mode=psmode)
 
     green_at_red = (green_red[..., 0] + green_blue[..., 0]) / 2
     green_at_green_red = green_red[..., 1]
@@ -729,10 +751,12 @@ def demosaic_pixelshuffle(bayer_images:np.ndarray,
     green_at_blue = (green_red[..., 3] + green_blue[..., 3]) / 2
 
     green_planes = [
-        green_at_red, green_at_green_red, green_at_green_blue, green_at_blue
+        green_at_red,
+        green_at_green_red,
+        green_at_green_blue,
+        green_at_blue,
     ]
-    green = depth_to_space(
-        merge_channels(green_planes), 2, shape=tshape, mode=psmode)
+    green = depth_to_space(merge_channels(green_planes), 2, shape=tshape, mode=psmode)
 
     blue = bayer_images[..., 3:4]
     blue = np.flipud(np.fliplr(blue))
@@ -748,62 +772,90 @@ def demosaic_pixelshuffle(bayer_images:np.ndarray,
 ######################
 
 
-def get_rgb2xyz_array(kind:str='D65') -> np.ndarray:
-    if kind=='D50':
+def get_rgb2xyz_array(kind: str = "D65") -> np.ndarray:
+    if kind == "D50":
         xyz_array = np.array(
-            [[0.4360747, 0.3850649, 0.1430804],
-            [0.2225045, 0.7168786, 0.0606169],
-            [0.0139322, 0.0971045, 0.7141733]])
-    elif kind=='D65a':
+            [
+                [0.4360747, 0.3850649, 0.1430804],
+                [0.2225045, 0.7168786, 0.0606169],
+                [0.0139322, 0.0971045, 0.7141733],
+            ]
+        )
+    elif kind == "D65a":
         xyz_array = np.array(
-            [[0.412391, 0.357584, 0.180481],
-             [0.212639, 0.715169, 0.072192],
-             [0.019331, 0.119195, 0.950532]])
+            [
+                [0.412391, 0.357584, 0.180481],
+                [0.212639, 0.715169, 0.072192],
+                [0.019331, 0.119195, 0.950532],
+            ]
+        )
     else:  # D65
         xyz_array = np.array(
-            [[0.4124564, 0.3575761, 0.1804375],
-             [0.2126729, 0.7151522, 0.0721750],
-             [0.0193339, 0.1191920, 0.9503041]])
+            [
+                [0.4124564, 0.3575761, 0.1804375],
+                [0.2126729, 0.7151522, 0.0721750],
+                [0.0193339, 0.1191920, 0.9503041],
+            ]
+        )
     return xyz_array
 
 
-def get_xyz2rgb_array(kind:str='D65') -> np.ndarray:
-    if kind=='D50':
+def get_xyz2rgb_array(kind: str = "D65") -> np.ndarray:
+    if kind == "D50":
         xyz_array = np.array(
-            [[3.1338561, -1.6168667, -0.4906146],
-            [-0.9787684, 1.9161415, 0.0334540],
-            [0.0719453, -0.2289914, 1.4052427]])
-    elif kind=='D65a':
+            [
+                [3.1338561, -1.6168667, -0.4906146],
+                [-0.9787684, 1.9161415, 0.0334540],
+                [0.0719453, -0.2289914, 1.4052427],
+            ]
+        )
+    elif kind == "D65a":
         xyz_array = np.array(
-            [[3.240970, -1.537383, -0.498611],
-             [-0.969244, 1.875968, 0.041555],
-             [0.055630, -0.203977, 1.056972]])
+            [
+                [3.240970, -1.537383, -0.498611],
+                [-0.969244, 1.875968, 0.041555],
+                [0.055630, -0.203977, 1.056972],
+            ]
+        )
     else:  # D65
         xyz_array = np.array(
-            [[3.2404542, -1.5371385, -0.4985314],
-             [-0.9692660, 1.8760108, 0.0415560],
-             [0.0556434, -0.2040259, 1.0572252]])
+            [
+                [3.2404542, -1.5371385, -0.4985314],
+                [-0.9692660, 1.8760108, 0.0415560],
+                [0.0556434, -0.2040259, 1.0572252],
+            ]
+        )
     return xyz_array
 
 
-def random_ccm(xyz_arr:str='D65') -> np.ndarray:
+def random_ccm(xyz_arr: str = "D65") -> np.ndarray:
     """Generates random RGB -> Camera color correction matrices.
     Ref:
         https://doi.org/10.1117/1.OE.59.11.110801
     """
     # takes a random convex combination of XYZ -> Camera CCMs
-    xyz2cams = [[[1.0234, -0.2969, -0.2266],
-                [-0.5625, 1.6328, -0.0469],
-                [-0.0703, 0.2188, 0.6406]],
-                [[0.4913, -0.0541, -0.0202],
-                [-0.613, 1.3513, 0.2906],
-                [-0.1564, 0.2151, 0.7183]],
-                [[0.838, -0.263, -0.0639],
-                [-0.2887, 1.0725, 0.2496],
-                [-0.0627, 0.1427, 0.5438]],
-                [[0.6596, -0.2079, -0.0562],
-                [-0.4782, 1.3016, 0.1933],
-                [-0.097, 0.1581, 0.5181]]]
+    xyz2cams = [
+        [
+            [1.0234, -0.2969, -0.2266],
+            [-0.5625, 1.6328, -0.0469],
+            [-0.0703, 0.2188, 0.6406],
+        ],
+        [
+            [0.4913, -0.0541, -0.0202],
+            [-0.613, 1.3513, 0.2906],
+            [-0.1564, 0.2151, 0.7183],
+        ],
+        [
+            [0.838, -0.263, -0.0639],
+            [-0.2887, 1.0725, 0.2496],
+            [-0.0627, 0.1427, 0.5438],
+        ],
+        [
+            [0.6596, -0.2079, -0.0562],
+            [-0.4782, 1.3016, 0.1933],
+            [-0.097, 0.1581, 0.5181],
+        ],
+    ]
     num_ccms = len(xyz2cams)
     xyz2cams = np.array(xyz2cams, dtype=DEFAULT_FLOAT_DTYPE)
     weights = np.random.uniform(1e-8, 1e8, size=(num_ccms, 1, 1))
@@ -830,32 +882,32 @@ def random_gains(rg_range=(1.9, 2.4), bg_range=(1.5, 1.9)) -> tuple:
     return rgb_gain, red_gain, blue_gain
 
 
-def inverse_smoothstep(image:np.ndarray) -> np.ndarray:
+def inverse_smoothstep(image: np.ndarray) -> np.ndarray:
     """Approximately inverts a global tone mapping curve."""
     image = np.clip(image, 0.0, 1.0)
-    out = 0.5 - np.sin(np.arcsin(1.0 - 2.0 * image) / 3.0)  
+    out = 0.5 - np.sin(np.arcsin(1.0 - 2.0 * image) / 3.0)
     return out
 
 
-def gamma_expansion(image:np.ndarray) -> np.ndarray:
+def gamma_expansion(image: np.ndarray) -> np.ndarray:
     """Converts from gamma to linear space."""
     # clamps to prevent numerical instability of gradients near zero
     return np.maximum(image, 1e-8) ** 2.2
 
 
-def apply_ccm(image:np.ndarray, ccm:np.ndarray) -> np.ndarray:
-    """Applies a color correction matrix."""  
+def apply_ccm(image: np.ndarray, ccm: np.ndarray) -> np.ndarray:
+    """Applies a color correction matrix."""
     shape = image.shape
     image = np.reshape(image, [-1, 3])
     image = np.tensordot(image, ccm, axes=[[-1], [-1]])
     return np.reshape(image, shape)
 
 
-def safe_invert_gains(image:np.ndarray, rgb_gain:float, red_gain:float,
-    blue_gain:float) -> np.ndarray:
+def safe_invert_gains(
+    image: np.ndarray, rgb_gain: float, red_gain: float, blue_gain: float
+) -> np.ndarray:
     """Inverts gains while safely handling saturated pixels."""
-    gains = merge_channels(
-        [1.0 / red_gain, 1.0, 1.0 / blue_gain], axis=0) / rgb_gain
+    gains = merge_channels([1.0 / red_gain, 1.0, 1.0 / blue_gain], axis=0) / rgb_gain
     gains = gains[np.newaxis, np.newaxis, :]
 
     # prevents dimming of saturated pixels by smoothly masking gains near white
@@ -866,8 +918,12 @@ def safe_invert_gains(image:np.ndarray, rgb_gain:float, red_gain:float,
     return image * safe_gains
 
 
-def unprocess(image:np.ndarray, xyz_arr:str='D50',
-    rg_range:tuple=(1.2, 2.4), bg_range:tuple=(1.2, 2.4)) -> tuple:
+def unprocess(
+    image: np.ndarray,
+    xyz_arr: str = "D50",
+    rg_range: tuple = (1.2, 2.4),
+    bg_range: tuple = (1.2, 2.4),
+) -> tuple:
     """Unprocesses an image from sRGB to realistic raw data."""
 
     # randomly creates image metadata
@@ -889,17 +945,17 @@ def unprocess(image:np.ndarray, xyz_arr:str='D50',
     image = mosaic(image)
 
     metadata = {
-        'cam2rgb': cam2rgb,
-        'rgb_gain': rgb_gain,
-        'red_gain': red_gain,
-        'blue_gain': blue_gain,
+        "cam2rgb": cam2rgb,
+        "rgb_gain": rgb_gain,
+        "red_gain": red_gain,
+        "blue_gain": blue_gain,
     }
     return image, metadata
 
 
 def random_noise_levels() -> tuple:
-    """ Generates random noise levels from a log-log 
-        linear distribution.
+    """Generates random noise levels from a log-log
+    linear distribution.
     """
     log_min_shot_noise = np.log(0.0001)
     log_max_shot_noise = np.log(0.012)
@@ -912,10 +968,9 @@ def random_noise_levels() -> tuple:
     return shot_noise, read_noise
 
 
-def add_noise(image:np.ndarray, shot_noise=0.01,
-    read_noise=0.0005) -> np.ndarray:
-    """ Adds random shot (proportional to image) and read
-        (independent) noise.
+def add_noise(image: np.ndarray, shot_noise=0.01, read_noise=0.0005) -> np.ndarray:
+    """Adds random shot (proportional to image) and read
+    (independent) noise.
     """
     variance = image * shot_noise + read_noise
     noise = np.random.normal(scale=np.sqrt(variance), size=image.shape)
@@ -927,8 +982,9 @@ def add_noise(image:np.ndarray, shot_noise=0.01,
 ######################
 
 
-def apply_gains(bayer_images:np.ndarray, red_gains:float,
-    blue_gains:float) -> np.ndarray:
+def apply_gains(
+    bayer_images: np.ndarray, red_gains: float, blue_gains: float
+) -> np.ndarray:
     """Applies white balance gains to a batch of Bayer images."""
     green_gains = np.ones_like(red_gains)
     gains = merge_channels([red_gains, green_gains, green_gains, blue_gains])
@@ -936,27 +992,32 @@ def apply_gains(bayer_images:np.ndarray, red_gains:float,
     return bayer_images * gains
 
 
-def apply_ccms(images:np.ndarray, ccms:np.ndarray) -> np.ndarray:
+def apply_ccms(images: np.ndarray, ccms: np.ndarray) -> np.ndarray:
     """Applies color correction matrices."""
     images = images[:, :, :, np.newaxis, :]
     ccms = ccms[:, np.newaxis, np.newaxis, :, :]
     return np.sum(images * ccms, axis=-1)
 
 
-def gamma_compression(images:np.ndarray, gamma:float=2.2) -> np.ndarray:
+def gamma_compression(images: np.ndarray, gamma: float = 2.2) -> np.ndarray:
     """Converts from linear to gamma space."""
     # clamps to prevent numerical instability of gradients near zero
     return np.maximum(images, 1e-8) ** (1.0 / gamma)
 
 
-def smoothstep(image:np.ndarray) -> np.ndarray:
+def smoothstep(image: np.ndarray) -> np.ndarray:
     """A global tone mapping curve."""
     image = np.clip(image, 0.0, 1.0)
     return 3.0 * image**2 - 2.0 * image**3
 
 
-def process(bayer_images:np.ndarray, red_gains:float, blue_gains:float,
-    cam2rgbs:np.ndarray, dmscfn:str='malvar') -> np.ndarray:
+def process(
+    bayer_images: np.ndarray,
+    red_gains: float,
+    blue_gains: float,
+    cam2rgbs: np.ndarray,
+    dmscfn: str = "malvar",
+) -> np.ndarray:
     """Processes a batch of Bayer RGGB images into sRGB images."""
     # white balance
     bayer_images = apply_gains(bayer_images, red_gains, blue_gains)

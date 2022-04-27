@@ -21,34 +21,55 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 
+
 class DepthWiseSeperableConv(nn.Module):
     def __init__(self, in_dim, out_dim, *args, **kwargs):
         super().__init__()
-        if 'groups' in kwargs:
+        if "groups" in kwargs:
             # ignoring groups for Depthwise Sep Conv
-            del kwargs['groups']
-        
+            del kwargs["groups"]
+
         self.depthwise = nn.Conv2d(in_dim, in_dim, *args, groups=in_dim, **kwargs)
         self.pointwise = nn.Conv2d(in_dim, out_dim, kernel_size=1)
-        
+
     def forward(self, x):
         out = self.depthwise(x)
         out = self.pointwise(out)
         return out
 
+
 class MultidilatedConv(nn.Module):
-    def __init__(self, in_dim, out_dim, kernel_size, dilation_num=3, comb_mode='sum', equal_dim=True,
-                 shared_weights=False, padding=1, min_dilation=1, shuffle_in_channels=False, use_depthwise=False, **kwargs):
+    def __init__(
+        self,
+        in_dim,
+        out_dim,
+        kernel_size,
+        dilation_num=3,
+        comb_mode="sum",
+        equal_dim=True,
+        shared_weights=False,
+        padding=1,
+        min_dilation=1,
+        shuffle_in_channels=False,
+        use_depthwise=False,
+        **kwargs,
+    ):
         super().__init__()
         convs = []
         self.equal_dim = equal_dim
-        assert comb_mode in ('cat_out', 'sum', 'cat_in', 'cat_both'), comb_mode
-        if comb_mode in ('cat_out', 'cat_both'):
+        assert comb_mode in ("cat_out", "sum", "cat_in", "cat_both"), comb_mode
+        if comb_mode in ("cat_out", "cat_both"):
             self.cat_out = True
             if equal_dim:
                 assert out_dim % dilation_num == 0
                 out_dims = [out_dim // dilation_num] * dilation_num
-                self.index = sum([[i + j * (out_dims[0]) for j in range(dilation_num)] for i in range(out_dims[0])], [])
+                self.index = sum(
+                    [
+                        [i + j * (out_dims[0]) for j in range(dilation_num)]
+                        for i in range(out_dims[0])
+                    ],
+                    [],
+                )
             else:
                 out_dims = [out_dim // 2 ** (i + 1) for i in range(dilation_num - 1)]
                 out_dims.append(out_dim - sum(out_dims))
@@ -60,13 +81,13 @@ class MultidilatedConv(nn.Module):
                         index += list(range(starts[j], starts[j] + lengths[j]))
                         starts[j] += lengths[j]
                 self.index = index
-                assert(len(index) == out_dim)
+                assert len(index) == out_dim
             self.out_dims = out_dims
         else:
             self.cat_out = False
             self.out_dims = [out_dim] * dilation_num
 
-        if comb_mode in ('cat_in', 'cat_both'):
+        if comb_mode in ("cat_in", "cat_both"):
             if equal_dim:
                 assert in_dim % dilation_num == 0
                 in_dims = [in_dim // dilation_num] * dilation_num
@@ -86,9 +107,16 @@ class MultidilatedConv(nn.Module):
                 cur_padding = padding * dilation
             else:
                 cur_padding = padding[i]
-            convs.append(conv_type(
-                self.in_dims[i], self.out_dims[i], kernel_size, padding=cur_padding, dilation=dilation, **kwargs
-            ))
+            convs.append(
+                conv_type(
+                    self.in_dims[i],
+                    self.out_dims[i],
+                    kernel_size,
+                    padding=cur_padding,
+                    dilation=dilation,
+                    **kwargs,
+                )
+            )
             if i > 0 and shared_weights:
                 convs[-1].weight = convs[0].weight
                 convs[-1].bias = convs[0].bias
@@ -101,7 +129,9 @@ class MultidilatedConv(nn.Module):
             in_channels_permute = list(range(in_dim))
             random.shuffle(in_channels_permute)
             # save as buffer so it is saved and loaded with checkpoint
-            self.register_buffer('in_channels_permute', torch.tensor(in_channels_permute))
+            self.register_buffer(
+                "in_channels_permute", torch.tensor(in_channels_permute)
+            )
 
     def forward(self, x):
         if self.shuffle_in_channels:
@@ -115,7 +145,7 @@ class MultidilatedConv(nn.Module):
                 new_x = []
                 start = 0
                 for dim in self.in_dims:
-                    new_x.append(x[:, start:start+dim])
+                    new_x.append(x[:, start : start + dim])
                     start += dim
                 x = new_x
         for i, conv in enumerate(self.convs):
@@ -141,36 +171,36 @@ class BaseDiscriminator(nn.Module):
         raise NotImplemented()
 
 
-def get_conv_block_ctor(kind='default'):
+def get_conv_block_ctor(kind="default"):
     if not isinstance(kind, str):
         return kind
-    if kind == 'default':
+    if kind == "default":
         return nn.Conv2d
-    if kind == 'depthwise':
-        return DepthWiseSeperableConv   
-    if kind == 'multidilated':
+    if kind == "depthwise":
+        return DepthWiseSeperableConv
+    if kind == "multidilated":
         return MultidilatedConv
-    raise ValueError(f'Unknown convolutional block kind {kind}')
+    raise ValueError(f"Unknown convolutional block kind {kind}")
 
 
-def get_norm_layer(kind='bn'):
+def get_norm_layer(kind="bn"):
     if not isinstance(kind, str):
         return kind
-    if kind == 'bn':
+    if kind == "bn":
         return nn.BatchNorm2d
-    if kind == 'in':
+    if kind == "in":
         return nn.InstanceNorm2d
-    raise ValueError(f'Unknown norm block kind {kind}')
+    raise ValueError(f"Unknown norm block kind {kind}")
 
 
-def get_activation(kind='tanh'):
-    if kind == 'tanh':
+def get_activation(kind="tanh"):
+    if kind == "tanh":
         return nn.Tanh()
-    if kind == 'sigmoid':
+    if kind == "sigmoid":
         return nn.Sigmoid()
     if kind is False:
         return nn.Identity()
-    raise ValueError(f'Unknown activation kind {kind}')
+    raise ValueError(f"Unknown activation kind {kind}")
 
 
 class SimpleMultiStepGenerator(nn.Module):
@@ -187,20 +217,37 @@ class SimpleMultiStepGenerator(nn.Module):
             cur_in = torch.cat((cur_in, cur_out), dim=1)
         return torch.cat(outs[::-1], dim=1)
 
+
 def deconv_factory(kind, ngf, mult, norm_layer, activation, max_features):
-    if kind == 'convtranspose':
-        return [nn.ConvTranspose2d(min(max_features, ngf * mult), 
-                    min(max_features, int(ngf * mult / 2)), 
-                    kernel_size=3, stride=2, padding=1, output_padding=1),
-                    norm_layer(min(max_features, int(ngf * mult / 2))), activation]
-    elif kind == 'bilinear':
-        return [nn.Upsample(scale_factor=2, mode='bilinear'),
-                DepthWiseSeperableConv(min(max_features, ngf * mult), 
-                    min(max_features, int(ngf * mult / 2)), 
-                    kernel_size=3, stride=1, padding=1), 
-                norm_layer(min(max_features, int(ngf * mult / 2))), activation]
+    if kind == "convtranspose":
+        return [
+            nn.ConvTranspose2d(
+                min(max_features, ngf * mult),
+                min(max_features, int(ngf * mult / 2)),
+                kernel_size=3,
+                stride=2,
+                padding=1,
+                output_padding=1,
+            ),
+            norm_layer(min(max_features, int(ngf * mult / 2))),
+            activation,
+        ]
+    elif kind == "bilinear":
+        return [
+            nn.Upsample(scale_factor=2, mode="bilinear"),
+            DepthWiseSeperableConv(
+                min(max_features, ngf * mult),
+                min(max_features, int(ngf * mult / 2)),
+                kernel_size=3,
+                stride=1,
+                padding=1,
+            ),
+            norm_layer(min(max_features, int(ngf * mult / 2))),
+            activation,
+        ]
     else:
         raise Exception(f"Invalid deconv kind: {kind}")
+
 
 class LearnableSpatialTransformWrapper(nn.Module):
     def __init__(self, impl, pad_coef=0.5, angle_init_range=80, train_angle=True):
@@ -217,14 +264,16 @@ class LearnableSpatialTransformWrapper(nn.Module):
         elif isinstance(x, tuple):
             x_trans = tuple(self.transform(elem) for elem in x)
             y_trans = self.impl(x_trans)
-            return tuple(self.inverse_transform(elem, orig_x) for elem, orig_x in zip(y_trans, x))
+            return tuple(
+                self.inverse_transform(elem, orig_x) for elem, orig_x in zip(y_trans, x)
+            )
         else:
-            raise ValueError(f'Unexpected input type {type(x)}')
+            raise ValueError(f"Unexpected input type {type(x)}")
 
     def transform(self, x):
         height, width = x.shape[2:]
         pad_h, pad_w = int(height * self.pad_coef), int(width * self.pad_coef)
-        x_padded = F.pad(x, [pad_w, pad_w, pad_h, pad_h], mode='reflect')
+        x_padded = F.pad(x, [pad_w, pad_w, pad_h, pad_h], mode="reflect")
         x_padded_rotated = rotate(x_padded, angle=self.angle.to(x_padded))
         return x_padded_rotated
 
@@ -246,7 +295,7 @@ class SELayer(nn.Module):
             nn.Linear(channel, channel // reduction, bias=False),
             nn.ReLU(inplace=True),
             nn.Linear(channel // reduction, channel, bias=False),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
 
     def forward(self, x):
@@ -256,8 +305,8 @@ class SELayer(nn.Module):
         res = x * y.expand_as(x)
         return res
 
-class FFCSE_block(nn.Module):
 
+class FFCSE_block(nn.Module):
     def __init__(self, channels, ratio_g):
         super(FFCSE_block, self).__init__()
         in_cg = int(channels * ratio_g)
@@ -265,13 +314,18 @@ class FFCSE_block(nn.Module):
         r = 16
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.conv1 = nn.Conv2d(channels, channels // r,
-                               kernel_size=1, bias=True)
+        self.conv1 = nn.Conv2d(channels, channels // r, kernel_size=1, bias=True)
         self.relu1 = nn.ReLU(inplace=True)
-        self.conv_a2l = None if in_cl == 0 else nn.Conv2d(
-            channels // r, in_cl, kernel_size=1, bias=True)
-        self.conv_a2g = None if in_cg == 0 else nn.Conv2d(
-            channels // r, in_cg, kernel_size=1, bias=True)
+        self.conv_a2l = (
+            None
+            if in_cl == 0
+            else nn.Conv2d(channels // r, in_cl, kernel_size=1, bias=True)
+        )
+        self.conv_a2g = (
+            None
+            if in_cg == 0
+            else nn.Conv2d(channels // r, in_cg, kernel_size=1, bias=True)
+        )
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -282,23 +336,38 @@ class FFCSE_block(nn.Module):
         x = self.avgpool(x)
         x = self.relu1(self.conv1(x))
 
-        x_l = 0 if self.conv_a2l is None else id_l * \
-            self.sigmoid(self.conv_a2l(x))
-        x_g = 0 if self.conv_a2g is None else id_g * \
-            self.sigmoid(self.conv_a2g(x))
+        x_l = 0 if self.conv_a2l is None else id_l * self.sigmoid(self.conv_a2l(x))
+        x_g = 0 if self.conv_a2g is None else id_g * self.sigmoid(self.conv_a2g(x))
         return x_l, x_g
 
-class FourierUnit(nn.Module):
 
-    def __init__(self, in_channels, out_channels, groups=1, spatial_scale_factor=None, spatial_scale_mode='bilinear',
-                 spectral_pos_encoding=False, use_se=False, se_kwargs=None, ffc3d=False, fft_norm='ortho'):
+class FourierUnit(nn.Module):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        groups=1,
+        spatial_scale_factor=None,
+        spatial_scale_mode="bilinear",
+        spectral_pos_encoding=False,
+        use_se=False,
+        se_kwargs=None,
+        ffc3d=False,
+        fft_norm="ortho",
+    ):
         # bn_layer not used
         super(FourierUnit, self).__init__()
         self.groups = groups
 
-        self.conv_layer = torch.nn.Conv2d(in_channels=in_channels * 2 + (2 if spectral_pos_encoding else 0),
-                                          out_channels=out_channels * 2,
-                                          kernel_size=1, stride=1, padding=0, groups=self.groups, bias=False)
+        self.conv_layer = torch.nn.Conv2d(
+            in_channels=in_channels * 2 + (2 if spectral_pos_encoding else 0),
+            out_channels=out_channels * 2,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            groups=self.groups,
+            bias=False,
+        )
         self.bn = torch.nn.BatchNorm2d(out_channels * 2)
         self.relu = torch.nn.ReLU(inplace=True)
 
@@ -318,66 +387,113 @@ class FourierUnit(nn.Module):
     def forward(self, x):
         half_check = False
         if x.type() == "torch.cuda.HalfTensor":
-          # half only works on gpu anyway
-          half_check = True
+            # half only works on gpu anyway
+            half_check = True
 
         batch = x.shape[0]
 
         if self.spatial_scale_factor is not None:
             orig_size = x.shape[-2:]
-            x = F.interpolate(x, scale_factor=self.spatial_scale_factor, mode=self.spatial_scale_mode, align_corners=False)
+            x = F.interpolate(
+                x,
+                scale_factor=self.spatial_scale_factor,
+                mode=self.spatial_scale_mode,
+                align_corners=False,
+            )
 
         r_size = x.size()
         # (batch, c, h, w/2+1, 2)
         fft_dim = (-3, -2, -1) if self.ffc3d else (-2, -1)
         if half_check == True:
-          ffted = torch.fft.rfftn(x.float(), dim=fft_dim, norm=self.fft_norm) #.type(torch.cuda.HalfTensor)
+            ffted = torch.fft.rfftn(
+                x.float(), dim=fft_dim, norm=self.fft_norm
+            )  # .type(torch.cuda.HalfTensor)
         else:
-          ffted = torch.fft.rfftn(x, dim=fft_dim, norm=self.fft_norm)
+            ffted = torch.fft.rfftn(x, dim=fft_dim, norm=self.fft_norm)
 
         ffted = torch.stack((ffted.real, ffted.imag), dim=-1)
         ffted = ffted.permute(0, 1, 4, 2, 3).contiguous()  # (batch, c, 2, h, w/2+1)
-        ffted = ffted.view((batch, -1,) + ffted.size()[3:])
+        ffted = ffted.view(
+            (
+                batch,
+                -1,
+            )
+            + ffted.size()[3:]
+        )
 
         if self.spectral_pos_encoding:
             height, width = ffted.shape[-2:]
-            coords_vert = torch.linspace(0, 1, height)[None, None, :, None].expand(batch, 1, height, width).to(ffted)
-            coords_hor = torch.linspace(0, 1, width)[None, None, None, :].expand(batch, 1, height, width).to(ffted)
+            coords_vert = (
+                torch.linspace(0, 1, height)[None, None, :, None]
+                .expand(batch, 1, height, width)
+                .to(ffted)
+            )
+            coords_hor = (
+                torch.linspace(0, 1, width)[None, None, None, :]
+                .expand(batch, 1, height, width)
+                .to(ffted)
+            )
             ffted = torch.cat((coords_vert, coords_hor, ffted), dim=1)
 
         if self.use_se:
             ffted = self.se(ffted)
 
         if half_check == True:
-          ffted = self.conv_layer(ffted.half())  # (batch, c*2, h, w/2+1)
+            ffted = self.conv_layer(ffted.half())  # (batch, c*2, h, w/2+1)
         else:
-          ffted = self.conv_layer(ffted) #.type(torch.cuda.FloatTensor)  # (batch, c*2, h, w/2+1)
+            ffted = self.conv_layer(
+                ffted
+            )  # .type(torch.cuda.FloatTensor)  # (batch, c*2, h, w/2+1)
 
         ffted = self.relu(self.bn(ffted))
         # forcing to be always float
         ffted = ffted.float()
 
-        ffted = ffted.view((batch, -1, 2,) + ffted.size()[2:]).permute(
-            0, 1, 3, 4, 2).contiguous()  # (batch,c, t, h, w/2+1, 2)
+        ffted = (
+            ffted.view(
+                (
+                    batch,
+                    -1,
+                    2,
+                )
+                + ffted.size()[2:]
+            )
+            .permute(0, 1, 3, 4, 2)
+            .contiguous()
+        )  # (batch,c, t, h, w/2+1, 2)
 
         ffted = torch.complex(ffted[..., 0], ffted[..., 1])
 
         ifft_shape_slice = x.shape[-3:] if self.ffc3d else x.shape[-2:]
-        output = torch.fft.irfftn(ffted, s=ifft_shape_slice, dim=fft_dim, norm=self.fft_norm)
+        output = torch.fft.irfftn(
+            ffted, s=ifft_shape_slice, dim=fft_dim, norm=self.fft_norm
+        )
 
         if half_check == True:
-          output = output.half()
+            output = output.half()
 
         if self.spatial_scale_factor is not None:
-          output = F.interpolate(output, size=orig_size, mode=self.spatial_scale_mode, align_corners=False)
+            output = F.interpolate(
+                output,
+                size=orig_size,
+                mode=self.spatial_scale_mode,
+                align_corners=False,
+            )
 
         return output
 
 
-
 class SpectralTransform(nn.Module):
-
-    def __init__(self, in_channels, out_channels, stride=1, groups=1, enable_lfu=True, separable_fu=False, **fu_kwargs):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        stride=1,
+        groups=1,
+        enable_lfu=True,
+        separable_fu=False,
+        **fu_kwargs,
+    ):
         # bn_layer not used
         super(SpectralTransform, self).__init__()
         self.enable_lfu = enable_lfu
@@ -388,19 +504,19 @@ class SpectralTransform(nn.Module):
 
         self.stride = stride
         self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels //
-                      2, kernel_size=1, groups=groups, bias=False),
+            nn.Conv2d(
+                in_channels, out_channels // 2, kernel_size=1, groups=groups, bias=False
+            ),
             nn.BatchNorm2d(out_channels // 2),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
         fu_class = SeparableFourierUnit if separable_fu else FourierUnit
-        self.fu = fu_class(
-            out_channels // 2, out_channels // 2, groups, **fu_kwargs)
+        self.fu = fu_class(out_channels // 2, out_channels // 2, groups, **fu_kwargs)
         if self.enable_lfu:
-            self.lfu = fu_class(
-                out_channels // 2, out_channels // 2, groups)
+            self.lfu = fu_class(out_channels // 2, out_channels // 2, groups)
         self.conv2 = torch.nn.Conv2d(
-            out_channels // 2, out_channels, kernel_size=1, groups=groups, bias=False)
+            out_channels // 2, out_channels, kernel_size=1, groups=groups, bias=False
+        )
 
     def forward(self, x):
 
@@ -412,10 +528,10 @@ class SpectralTransform(nn.Module):
             n, c, h, w = x.shape
             split_no = 2
             split_s = h // split_no
-            xs = torch.cat(torch.split(
-                x[:, :c // 4], split_s, dim=-2), dim=1).contiguous()
-            xs = torch.cat(torch.split(xs, split_s, dim=-1),
-                           dim=1).contiguous()
+            xs = torch.cat(
+                torch.split(x[:, : c // 4], split_s, dim=-2), dim=1
+            ).contiguous()
+            xs = torch.cat(torch.split(xs, split_s, dim=-1), dim=1).contiguous()
             xs = self.lfu(xs)
             xs = xs.repeat(1, 1, split_no, split_no).contiguous()
         else:
@@ -427,11 +543,23 @@ class SpectralTransform(nn.Module):
 
 
 class FFC(nn.Module):
-
-    def __init__(self, in_channels, out_channels, kernel_size,
-                 ratio_gin, ratio_gout, stride=1, padding=0,
-                 dilation=1, groups=1, bias=False, enable_lfu=True,
-                 padding_type='reflect', gated=False, **spectral_kwargs):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        ratio_gin,
+        ratio_gout,
+        stride=1,
+        padding=0,
+        dilation=1,
+        groups=1,
+        bias=False,
+        enable_lfu=True,
+        padding_type="reflect",
+        gated=False,
+        **spectral_kwargs,
+    ):
         super(FFC, self).__init__()
 
         assert stride == 1 or stride == 2, "Stride should be 1 or 2."
@@ -441,28 +569,63 @@ class FFC(nn.Module):
         in_cl = in_channels - in_cg
         out_cg = int(out_channels * ratio_gout)
         out_cl = out_channels - out_cg
-        #groups_g = 1 if groups == 1 else int(groups * ratio_gout)
-        #groups_l = 1 if groups == 1 else groups - groups_g
+        # groups_g = 1 if groups == 1 else int(groups * ratio_gout)
+        # groups_l = 1 if groups == 1 else groups - groups_g
 
         self.ratio_gin = ratio_gin
         self.ratio_gout = ratio_gout
         self.global_in_num = in_cg
 
         module = nn.Identity if in_cl == 0 or out_cl == 0 else nn.Conv2d
-        self.convl2l = module(in_cl, out_cl, kernel_size,
-                              stride, padding, dilation, groups, bias, padding_mode=padding_type)
+        self.convl2l = module(
+            in_cl,
+            out_cl,
+            kernel_size,
+            stride,
+            padding,
+            dilation,
+            groups,
+            bias,
+            padding_mode=padding_type,
+        )
         module = nn.Identity if in_cl == 0 or out_cg == 0 else nn.Conv2d
-        self.convl2g = module(in_cl, out_cg, kernel_size,
-                              stride, padding, dilation, groups, bias, padding_mode=padding_type)
+        self.convl2g = module(
+            in_cl,
+            out_cg,
+            kernel_size,
+            stride,
+            padding,
+            dilation,
+            groups,
+            bias,
+            padding_mode=padding_type,
+        )
         module = nn.Identity if in_cg == 0 or out_cl == 0 else nn.Conv2d
-        self.convg2l = module(in_cg, out_cl, kernel_size,
-                              stride, padding, dilation, groups, bias, padding_mode=padding_type)
+        self.convg2l = module(
+            in_cg,
+            out_cl,
+            kernel_size,
+            stride,
+            padding,
+            dilation,
+            groups,
+            bias,
+            padding_mode=padding_type,
+        )
         module = nn.Identity if in_cg == 0 or out_cg == 0 else SpectralTransform
         self.convg2g = module(
-            in_cg, out_cg, stride, 1 if groups == 1 else groups // 2, enable_lfu, **spectral_kwargs)
+            in_cg,
+            out_cg,
+            stride,
+            1 if groups == 1 else groups // 2,
+            enable_lfu,
+            **spectral_kwargs,
+        )
 
         self.gated = gated
-        module = nn.Identity if in_cg == 0 or out_cl == 0 or not self.gated else nn.Conv2d
+        module = (
+            nn.Identity if in_cg == 0 or out_cl == 0 or not self.gated else nn.Conv2d
+        )
         self.gate = module(in_channels, 2, 1)
 
     def forward(self, x):
@@ -489,17 +652,40 @@ class FFC(nn.Module):
 
 
 class FFC_BN_ACT(nn.Module):
-
-    def __init__(self, in_channels, out_channels,
-                 kernel_size, ratio_gin, ratio_gout,
-                 stride=1, padding=0, dilation=1, groups=1, bias=False,
-                 norm_layer=nn.BatchNorm2d, activation_layer=nn.Identity,
-                 padding_type='reflect',
-                 enable_lfu=True, **kwargs):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        ratio_gin,
+        ratio_gout,
+        stride=1,
+        padding=0,
+        dilation=1,
+        groups=1,
+        bias=False,
+        norm_layer=nn.BatchNorm2d,
+        activation_layer=nn.Identity,
+        padding_type="reflect",
+        enable_lfu=True,
+        **kwargs,
+    ):
         super(FFC_BN_ACT, self).__init__()
-        self.ffc = FFC(in_channels, out_channels, kernel_size,
-                       ratio_gin, ratio_gout, stride, padding, dilation,
-                       groups, bias, enable_lfu, padding_type=padding_type, **kwargs)
+        self.ffc = FFC(
+            in_channels,
+            out_channels,
+            kernel_size,
+            ratio_gin,
+            ratio_gout,
+            stride,
+            padding,
+            dilation,
+            groups,
+            bias,
+            enable_lfu,
+            padding_type=padding_type,
+            **kwargs,
+        )
         lnorm = nn.Identity if ratio_gout == 1 else norm_layer
         gnorm = nn.Identity if ratio_gout == 0 else norm_layer
         global_channels = int(out_channels * ratio_gout)
@@ -519,27 +705,55 @@ class FFC_BN_ACT(nn.Module):
 
 
 class FFCResnetBlock(nn.Module):
-    def __init__(self, dim, padding_type, norm_layer, activation_layer=nn.ReLU, dilation=1,
-                 spatial_transform_kwargs=None, inline=False, **conv_kwargs):
+    def __init__(
+        self,
+        dim,
+        padding_type,
+        norm_layer,
+        activation_layer=nn.ReLU,
+        dilation=1,
+        spatial_transform_kwargs=None,
+        inline=False,
+        **conv_kwargs,
+    ):
         super().__init__()
-        self.conv1 = FFC_BN_ACT(dim, dim, kernel_size=3, padding=dilation, dilation=dilation,
-                                norm_layer=norm_layer,
-                                activation_layer=activation_layer,
-                                padding_type=padding_type,
-                                **conv_kwargs)
-        self.conv2 = FFC_BN_ACT(dim, dim, kernel_size=3, padding=dilation, dilation=dilation,
-                                norm_layer=norm_layer,
-                                activation_layer=activation_layer,
-                                padding_type=padding_type,
-                                **conv_kwargs)
+        self.conv1 = FFC_BN_ACT(
+            dim,
+            dim,
+            kernel_size=3,
+            padding=dilation,
+            dilation=dilation,
+            norm_layer=norm_layer,
+            activation_layer=activation_layer,
+            padding_type=padding_type,
+            **conv_kwargs,
+        )
+        self.conv2 = FFC_BN_ACT(
+            dim,
+            dim,
+            kernel_size=3,
+            padding=dilation,
+            dilation=dilation,
+            norm_layer=norm_layer,
+            activation_layer=activation_layer,
+            padding_type=padding_type,
+            **conv_kwargs,
+        )
         if spatial_transform_kwargs is not None:
-            self.conv1 = LearnableSpatialTransformWrapper(self.conv1, **spatial_transform_kwargs)
-            self.conv2 = LearnableSpatialTransformWrapper(self.conv2, **spatial_transform_kwargs)
+            self.conv1 = LearnableSpatialTransformWrapper(
+                self.conv1, **spatial_transform_kwargs
+            )
+            self.conv2 = LearnableSpatialTransformWrapper(
+                self.conv2, **spatial_transform_kwargs
+            )
         self.inline = inline
 
     def forward(self, x):
         if self.inline:
-            x_l, x_g = x[:, :-self.conv1.ffc.global_in_num], x[:, -self.conv1.ffc.global_in_num:]
+            x_l, x_g = (
+                x[:, : -self.conv1.ffc.global_in_num],
+                x[:, -self.conv1.ffc.global_in_num :],
+            )
         else:
             x_l, x_g = x if type(x) is tuple else (x, 0)
 
@@ -566,13 +780,29 @@ class ConcatTupleLayer(nn.Module):
 
 
 class FFCResNetGenerator(nn.Module):
-    def __init__(self, input_nc, output_nc, ngf=64, n_downsampling=3, n_blocks=18, norm_layer=nn.BatchNorm2d,
-                 padding_type='reflect', activation_layer=nn.ReLU,
-                 up_norm_layer=nn.BatchNorm2d, up_activation=nn.ReLU(True),
-                 init_conv_kwargs={}, downsample_conv_kwargs={}, resnet_conv_kwargs={},
-                 spatial_transform_layers=None, spatial_transform_kwargs={},
-                 add_out_act=True, max_features=1024, out_ffc=False, out_ffc_kwargs={}):
-        assert (n_blocks >= 0)
+    def __init__(
+        self,
+        input_nc,
+        output_nc,
+        ngf=64,
+        n_downsampling=3,
+        n_blocks=18,
+        norm_layer=nn.BatchNorm2d,
+        padding_type="reflect",
+        activation_layer=nn.ReLU,
+        up_norm_layer=nn.BatchNorm2d,
+        up_activation=nn.ReLU(True),
+        init_conv_kwargs={},
+        downsample_conv_kwargs={},
+        resnet_conv_kwargs={},
+        spatial_transform_layers=None,
+        spatial_transform_kwargs={},
+        add_out_act=True,
+        max_features=1024,
+        out_ffc=False,
+        out_ffc_kwargs={},
+    ):
+        assert n_blocks >= 0
         super().__init__()
         """
         init_conv_kwargs = {'ratio_gin': 0, 'ratio_gout': 0, 'enable_lfu': False}
@@ -594,40 +824,66 @@ class FFCResNetGenerator(nn.Module):
         ReLU(inplace=True) 
         None sigmoid 1024 False
         """
-        init_conv_kwargs = {'ratio_gin': 0, 'ratio_gout': 0, 'enable_lfu': False}
-        downsample_conv_kwargs = {'ratio_gin': 0, 'ratio_gout': 0, 'enable_lfu': False}
-        resnet_conv_kwargs = {'ratio_gin': 0.75, 'ratio_gout': 0.75, 'enable_lfu': False}
+        init_conv_kwargs = {"ratio_gin": 0, "ratio_gout": 0, "enable_lfu": False}
+        downsample_conv_kwargs = {"ratio_gin": 0, "ratio_gout": 0, "enable_lfu": False}
+        resnet_conv_kwargs = {
+            "ratio_gin": 0.75,
+            "ratio_gout": 0.75,
+            "enable_lfu": False,
+        }
         spatial_transform_kwargs = {}
         out_ffc_kwargs = {}
 
-        model = [nn.ReflectionPad2d(3),
-                 FFC_BN_ACT(input_nc, ngf, kernel_size=7, padding=0, norm_layer=norm_layer,
-                            activation_layer=activation_layer, **init_conv_kwargs)]
+        model = [
+            nn.ReflectionPad2d(3),
+            FFC_BN_ACT(
+                input_nc,
+                ngf,
+                kernel_size=7,
+                padding=0,
+                norm_layer=norm_layer,
+                activation_layer=activation_layer,
+                **init_conv_kwargs,
+            ),
+        ]
 
         ### downsample
         for i in range(n_downsampling):
-            mult = 2 ** i
+            mult = 2**i
             if i == n_downsampling - 1:
                 cur_conv_kwargs = dict(downsample_conv_kwargs)
-                cur_conv_kwargs['ratio_gout'] = resnet_conv_kwargs.get('ratio_gin', 0)
+                cur_conv_kwargs["ratio_gout"] = resnet_conv_kwargs.get("ratio_gin", 0)
             else:
                 cur_conv_kwargs = downsample_conv_kwargs
-            model += [FFC_BN_ACT(min(max_features, ngf * mult),
-                                 min(max_features, ngf * mult * 2),
-                                 kernel_size=3, stride=2, padding=1,
-                                 norm_layer=norm_layer,
-                                 activation_layer=activation_layer,
-                                 **cur_conv_kwargs)]
+            model += [
+                FFC_BN_ACT(
+                    min(max_features, ngf * mult),
+                    min(max_features, ngf * mult * 2),
+                    kernel_size=3,
+                    stride=2,
+                    padding=1,
+                    norm_layer=norm_layer,
+                    activation_layer=activation_layer,
+                    **cur_conv_kwargs,
+                )
+            ]
 
-        mult = 2 ** n_downsampling
+        mult = 2**n_downsampling
         feats_num_bottleneck = min(max_features, ngf * mult)
 
         ### resnet blocks
         for i in range(n_blocks):
-            cur_resblock = FFCResnetBlock(feats_num_bottleneck, padding_type=padding_type, activation_layer=activation_layer,
-                                          norm_layer=norm_layer, **resnet_conv_kwargs)
+            cur_resblock = FFCResnetBlock(
+                feats_num_bottleneck,
+                padding_type=padding_type,
+                activation_layer=activation_layer,
+                norm_layer=norm_layer,
+                **resnet_conv_kwargs,
+            )
             if spatial_transform_layers is not None and i in spatial_transform_layers:
-                cur_resblock = LearnableSpatialTransformWrapper(cur_resblock, **spatial_transform_kwargs)
+                cur_resblock = LearnableSpatialTransformWrapper(
+                    cur_resblock, **spatial_transform_kwargs
+                )
             model += [cur_resblock]
 
         model += [ConcatTupleLayer()]
@@ -635,41 +891,78 @@ class FFCResNetGenerator(nn.Module):
         ### upsample
         for i in range(n_downsampling):
             mult = 2 ** (n_downsampling - i)
-            model += [nn.ConvTranspose2d(min(max_features, ngf * mult),
-                                         min(max_features, int(ngf * mult / 2)),
-                                         kernel_size=3, stride=2, padding=1, output_padding=1),
-                      up_norm_layer(min(max_features, int(ngf * mult / 2))),
-                      up_activation]
+            model += [
+                nn.ConvTranspose2d(
+                    min(max_features, ngf * mult),
+                    min(max_features, int(ngf * mult / 2)),
+                    kernel_size=3,
+                    stride=2,
+                    padding=1,
+                    output_padding=1,
+                ),
+                up_norm_layer(min(max_features, int(ngf * mult / 2))),
+                up_activation,
+            ]
 
         if out_ffc:
-            model += [FFCResnetBlock(ngf, padding_type=padding_type, activation_layer=activation_layer,
-                                     norm_layer=norm_layer, inline=True, **out_ffc_kwargs)]
+            model += [
+                FFCResnetBlock(
+                    ngf,
+                    padding_type=padding_type,
+                    activation_layer=activation_layer,
+                    norm_layer=norm_layer,
+                    inline=True,
+                    **out_ffc_kwargs,
+                )
+            ]
 
-        model += [nn.ReflectionPad2d(3),
-                  nn.Conv2d(ngf, output_nc, kernel_size=7, padding=0)]
+        model += [
+            nn.ReflectionPad2d(3),
+            nn.Conv2d(ngf, output_nc, kernel_size=7, padding=0),
+        ]
         if add_out_act:
-            model.append(get_activation('tanh' if add_out_act is True else add_out_act))
+            model.append(get_activation("tanh" if add_out_act is True else add_out_act))
         self.model = nn.Sequential(*model)
 
     def forward(self, image, mask):
         return self.model(torch.cat([image, mask], dim=1))
 
+
 class FFCNLayerDiscriminator(BaseDiscriminator):
-    def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d, max_features=512,
-                 init_conv_kwargs={}, conv_kwargs={}):
+    def __init__(
+        self,
+        input_nc,
+        ndf=64,
+        n_layers=3,
+        norm_layer=nn.BatchNorm2d,
+        max_features=512,
+        init_conv_kwargs={},
+        conv_kwargs={},
+    ):
         super().__init__()
         self.n_layers = n_layers
 
-        init_conv_kwargs = {'ratio_gin': 0, 'ratio_gout': 0, 'enable_lfu': False}
-        conv_kwargs = {'ratio_gin': 0, 'ratio_gout': 0, 'enable_lfu': False}
+        init_conv_kwargs = {"ratio_gin": 0, "ratio_gout": 0, "enable_lfu": False}
+        conv_kwargs = {"ratio_gin": 0, "ratio_gout": 0, "enable_lfu": False}
 
         def _act_ctor(inplace=True):
             return nn.LeakyReLU(negative_slope=0.2, inplace=inplace)
 
         kw = 3
-        padw = int(np.ceil((kw-1.0)/2))
-        sequence = [[FFC_BN_ACT(input_nc, ndf, kernel_size=kw, padding=padw, norm_layer=norm_layer,
-                                activation_layer=_act_ctor, **init_conv_kwargs)]]
+        padw = int(np.ceil((kw - 1.0) / 2))
+        sequence = [
+            [
+                FFC_BN_ACT(
+                    input_nc,
+                    ndf,
+                    kernel_size=kw,
+                    padding=padw,
+                    norm_layer=norm_layer,
+                    activation_layer=_act_ctor,
+                    **init_conv_kwargs,
+                )
+            ]
+        ]
 
         nf = ndf
         for n in range(1, n_layers):
@@ -677,11 +970,16 @@ class FFCNLayerDiscriminator(BaseDiscriminator):
             nf = min(nf * 2, max_features)
 
             cur_model = [
-                FFC_BN_ACT(nf_prev, nf,
-                           kernel_size=kw, stride=2, padding=padw,
-                           norm_layer=norm_layer,
-                           activation_layer=_act_ctor,
-                           **conv_kwargs)
+                FFC_BN_ACT(
+                    nf_prev,
+                    nf,
+                    kernel_size=kw,
+                    stride=2,
+                    padding=padw,
+                    norm_layer=norm_layer,
+                    activation_layer=_act_ctor,
+                    **conv_kwargs,
+                )
             ]
             sequence.append(cur_model)
 
@@ -689,24 +987,31 @@ class FFCNLayerDiscriminator(BaseDiscriminator):
         nf = min(nf * 2, 512)
 
         cur_model = [
-            FFC_BN_ACT(nf_prev, nf,
-                       kernel_size=kw, stride=1, padding=padw,
-                       norm_layer=norm_layer,
-                       activation_layer=lambda *args, **kwargs: nn.LeakyReLU(*args, negative_slope=0.2, **kwargs),
-                       **conv_kwargs),
-            ConcatTupleLayer()
+            FFC_BN_ACT(
+                nf_prev,
+                nf,
+                kernel_size=kw,
+                stride=1,
+                padding=padw,
+                norm_layer=norm_layer,
+                activation_layer=lambda *args, **kwargs: nn.LeakyReLU(
+                    *args, negative_slope=0.2, **kwargs
+                ),
+                **conv_kwargs,
+            ),
+            ConcatTupleLayer(),
         ]
         sequence.append(cur_model)
 
         sequence += [[nn.Conv2d(nf, 1, kernel_size=kw, stride=1, padding=padw)]]
 
         for n in range(len(sequence)):
-            setattr(self, 'model'+str(n), nn.Sequential(*sequence[n]))
+            setattr(self, "model" + str(n), nn.Sequential(*sequence[n]))
 
     def get_all_activations(self, x):
         res = [x]
         for n in range(self.n_layers + 2):
-            model = getattr(self, 'model' + str(n))
+            model = getattr(self, "model" + str(n))
             res.append(model(res[-1]))
         return res[1:]
 
@@ -720,6 +1025,6 @@ class FFCNLayerDiscriminator(BaseDiscriminator):
                 else:
                     out = out[0]
             feats.append(out)
-        #return act[-1].mean().unsqueeze(0).unsqueeze(0), feats
-        #return act[-1]
-        return torch.mean(act[-1], [1,2,3]).unsqueeze(0).permute(1, 0), feats
+        # return act[-1].mean().unsqueeze(0).unsqueeze(0), feats
+        # return act[-1]
+        return torch.mean(act[-1], [1, 2, 3]).unsqueeze(0).permute(1, 0), feats

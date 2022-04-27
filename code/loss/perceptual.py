@@ -5,7 +5,8 @@ https://github.com/victorca25/BasicSR/blob/dev2/codes/models/modules/architectur
 import math
 import torch
 import torch.nn as nn
-#import torchvision
+
+# import torchvision
 import torchvision.models.vgg as vgg
 import torchvision.models.resnet as resnet
 
@@ -24,12 +25,15 @@ class VGGFeatureExtractor(nn.Module):
     https://arxiv.org/abs/1603.08155
     https://github.com/dxyang/StyleTransfer/blob/master/utils.py
     """
-    def __init__(self,
-                 feature_layer=34,
-                 use_bn=False,
-                 use_input_norm=True,
-                 device=torch.device('cpu'),
-                 z_norm=False): #Note: PPON uses cuda instead of CPU
+
+    def __init__(
+        self,
+        feature_layer=34,
+        use_bn=False,
+        use_input_norm=True,
+        device=torch.device("cpu"),
+        z_norm=False,
+    ):  # Note: PPON uses cuda instead of CPU
         super(VGGFeatureExtractor, self).__init__()
         if use_bn:
             model = vgg.vgg19_bn(pretrained=True)
@@ -37,15 +41,25 @@ class VGGFeatureExtractor(nn.Module):
             model = vgg.vgg19(pretrained=True)
         self.use_input_norm = use_input_norm
         if self.use_input_norm:
-            if z_norm: # if input in range [-1,1]
-                mean = torch.Tensor([0.485-1, 0.456-1, 0.406-1]).view(1, 3, 1, 1).to(device)
-                std = torch.Tensor([0.229*2, 0.224*2, 0.225*2]).view(1, 3, 1, 1).to(device)
-            else: # input in range [0,1]
+            if z_norm:  # if input in range [-1,1]
+                mean = (
+                    torch.Tensor([0.485 - 1, 0.456 - 1, 0.406 - 1])
+                    .view(1, 3, 1, 1)
+                    .to(device)
+                )
+                std = (
+                    torch.Tensor([0.229 * 2, 0.224 * 2, 0.225 * 2])
+                    .view(1, 3, 1, 1)
+                    .to(device)
+                )
+            else:  # input in range [0,1]
                 mean = torch.Tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(device)
                 std = torch.Tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(device)
-            self.register_buffer('mean', mean)
-            self.register_buffer('std', std)
-        self.features = nn.Sequential(*list(model.features.children())[:(feature_layer + 1)])
+            self.register_buffer("mean", mean)
+            self.register_buffer("std", std)
+        self.features = nn.Sequential(
+            *list(model.features.children())[: (feature_layer + 1)]
+        )
         # No need to BP to variable
         for k, v in self.features.named_parameters():
             v.requires_grad = False
@@ -59,33 +73,111 @@ class VGGFeatureExtractor(nn.Module):
 
 # VGG 19 layers to listen to
 vgg_layer19 = {
-    'conv_1_1': 0, 'conv_1_2': 2, 'pool_1': 4, 'conv_2_1': 5, 'conv_2_2': 7, 'pool_2': 9, 'conv_3_1': 10, 'conv_3_2': 12, 'conv_3_3': 14, 'conv_3_4': 16, 'pool_3': 18, 'conv_4_1': 19, 'conv_4_2': 21, 'conv_4_3': 23, 'conv_4_4': 25, 'pool_4': 27, 'conv_5_1': 28, 'conv_5_2': 30, 'conv_5_3': 32, 'conv_5_4': 34, 'pool_5': 36
+    "conv_1_1": 0,
+    "conv_1_2": 2,
+    "pool_1": 4,
+    "conv_2_1": 5,
+    "conv_2_2": 7,
+    "pool_2": 9,
+    "conv_3_1": 10,
+    "conv_3_2": 12,
+    "conv_3_3": 14,
+    "conv_3_4": 16,
+    "pool_3": 18,
+    "conv_4_1": 19,
+    "conv_4_2": 21,
+    "conv_4_3": 23,
+    "conv_4_4": 25,
+    "pool_4": 27,
+    "conv_5_1": 28,
+    "conv_5_2": 30,
+    "conv_5_3": 32,
+    "conv_5_4": 34,
+    "pool_5": 36,
 }
 vgg_layer_inv19 = {
-    0: 'conv_1_1', 2: 'conv_1_2', 4: 'pool_1', 5: 'conv_2_1', 7: 'conv_2_2', 9: 'pool_2', 10: 'conv_3_1', 12: 'conv_3_2', 14: 'conv_3_3', 16: 'conv_3_4', 18: 'pool_3', 19: 'conv_4_1', 21: 'conv_4_2', 23: 'conv_4_3', 25: 'conv_4_4', 27: 'pool_4', 28: 'conv_5_1', 30: 'conv_5_2', 32: 'conv_5_3', 34: 'conv_5_4', 36: 'pool_5'
+    0: "conv_1_1",
+    2: "conv_1_2",
+    4: "pool_1",
+    5: "conv_2_1",
+    7: "conv_2_2",
+    9: "pool_2",
+    10: "conv_3_1",
+    12: "conv_3_2",
+    14: "conv_3_3",
+    16: "conv_3_4",
+    18: "pool_3",
+    19: "conv_4_1",
+    21: "conv_4_2",
+    23: "conv_4_3",
+    25: "conv_4_4",
+    27: "pool_4",
+    28: "conv_5_1",
+    30: "conv_5_2",
+    32: "conv_5_3",
+    34: "conv_5_4",
+    36: "pool_5",
 }
 # VGG 16 layers to listen to
 vgg_layer16 = {
-    'conv_1_1': 0, 'conv_1_2': 2, 'pool_1': 4, 'conv_2_1': 5, 'conv_2_2': 7, 'pool_2': 9, 'conv_3_1': 10, 'conv_3_2': 12, 'conv_3_3': 14, 'pool_3': 16, 'conv_4_1': 17, 'conv_4_2': 19, 'conv_4_3': 21, 'pool_4': 23, 'conv_5_1': 24, 'conv_5_2': 26, 'conv_5_3': 28, 'pool_5': 30
+    "conv_1_1": 0,
+    "conv_1_2": 2,
+    "pool_1": 4,
+    "conv_2_1": 5,
+    "conv_2_2": 7,
+    "pool_2": 9,
+    "conv_3_1": 10,
+    "conv_3_2": 12,
+    "conv_3_3": 14,
+    "pool_3": 16,
+    "conv_4_1": 17,
+    "conv_4_2": 19,
+    "conv_4_3": 21,
+    "pool_4": 23,
+    "conv_5_1": 24,
+    "conv_5_2": 26,
+    "conv_5_3": 28,
+    "pool_5": 30,
 }
 vgg_layer_inv16 = {
-    0: 'conv_1_1', 2: 'conv_1_2', 4: 'pool_1', 5: 'conv_2_1', 7: 'conv_2_2', 9: 'pool_2', 10: 'conv_3_1', 12: 'conv_3_2', 14: 'conv_3_3', 16: 'pool_3', 17: 'conv_4_1', 19: 'conv_4_2', 21: 'conv_4_3', 23: 'pool_4', 24: 'conv_5_1', 26: 'conv_5_2', 28: 'conv_5_3', 30: 'pool_5'
+    0: "conv_1_1",
+    2: "conv_1_2",
+    4: "pool_1",
+    5: "conv_2_1",
+    7: "conv_2_2",
+    9: "pool_2",
+    10: "conv_3_1",
+    12: "conv_3_2",
+    14: "conv_3_3",
+    16: "pool_3",
+    17: "conv_4_1",
+    19: "conv_4_2",
+    21: "conv_4_3",
+    23: "pool_4",
+    24: "conv_5_1",
+    26: "conv_5_2",
+    28: "conv_5_3",
+    30: "pool_5",
 }
+
 
 class VGG_Model(nn.Module):
     """
-        A VGG model with listerners in the layers.
-        Will return a dictionary of outputs that correspond to the
-        layers set in "listen_list".
+    A VGG model with listerners in the layers.
+    Will return a dictionary of outputs that correspond to the
+    layers set in "listen_list".
     """
-    def __init__(self, listen_list=None, net='vgg19', use_input_norm=True, z_norm=False):
+
+    def __init__(
+        self, listen_list=None, net="vgg19", use_input_norm=True, z_norm=False
+    ):
         super(VGG_Model, self).__init__()
-        #vgg = vgg16(pretrained=True)
-        if net == 'vgg19':
+        # vgg = vgg16(pretrained=True)
+        if net == "vgg19":
             vgg_net = vgg.vgg19(pretrained=True)
             vgg_layer = vgg_layer19
             self.vgg_layer_inv = vgg_layer_inv19
-        elif net == 'vgg16':
+        elif net == "vgg16":
             vgg_net = vgg.vgg16(pretrained=True)
             vgg_layer = vgg_layer16
             self.vgg_layer_inv = vgg_layer_inv16
@@ -93,18 +185,22 @@ class VGG_Model(nn.Module):
         self.use_input_norm = use_input_norm
         # image normalization
         if self.use_input_norm:
-            if z_norm: # if input in range [-1,1]
+            if z_norm:  # if input in range [-1,1]
                 mean = torch.tensor(
-                    [[[0.485-1]], [[0.456-1]], [[0.406-1]]], requires_grad=False)
+                    [[[0.485 - 1]], [[0.456 - 1]], [[0.406 - 1]]], requires_grad=False
+                )
                 std = torch.tensor(
-                    [[[0.229*2]], [[0.224*2]], [[0.225*2]]], requires_grad=False)
-            else: # input in range [0,1]
+                    [[[0.229 * 2]], [[0.224 * 2]], [[0.225 * 2]]], requires_grad=False
+                )
+            else:  # input in range [0,1]
                 mean = torch.tensor(
-                    [[[0.485]], [[0.456]], [[0.406]]], requires_grad=False)
+                    [[[0.485]], [[0.456]], [[0.406]]], requires_grad=False
+                )
                 std = torch.tensor(
-                    [[[0.229]], [[0.224]], [[0.225]]], requires_grad=False)
-            self.register_buffer('mean', mean)
-            self.register_buffer('std', std)
+                    [[[0.229]], [[0.224]], [[0.225]]], requires_grad=False
+                )
+            self.register_buffer("mean", mean)
+            self.register_buffer("std", std)
 
         vgg_dict = vgg_net.state_dict()
         vgg_f_dict = self.vgg_model.state_dict()
@@ -132,23 +228,29 @@ class VGG_Model(nn.Module):
         return self.features
 
 
-
-
 # Assume input range is [0, 1]
 class ResNet101FeatureExtractor(nn.Module):
-    def __init__(self, use_input_norm=True, device=torch.device('cpu'), z_norm=False):
+    def __init__(self, use_input_norm=True, device=torch.device("cpu"), z_norm=False):
         super(ResNet101FeatureExtractor, self).__init__()
         model = resnet.resnet101(pretrained=True)
         self.use_input_norm = use_input_norm
         if self.use_input_norm:
-            if z_norm: # if input in range [-1,1]
-                mean = torch.Tensor([0.485-1, 0.456-1, 0.406-1]).view(1, 3, 1, 1).to(device)
-                std = torch.Tensor([0.229*2, 0.224*2, 0.225*2]).view(1, 3, 1, 1).to(device)
-            else: # input in range [0,1]
+            if z_norm:  # if input in range [-1,1]
+                mean = (
+                    torch.Tensor([0.485 - 1, 0.456 - 1, 0.406 - 1])
+                    .view(1, 3, 1, 1)
+                    .to(device)
+                )
+                std = (
+                    torch.Tensor([0.229 * 2, 0.224 * 2, 0.225 * 2])
+                    .view(1, 3, 1, 1)
+                    .to(device)
+                )
+            else:  # input in range [0,1]
                 mean = torch.Tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(device)
                 std = torch.Tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(device)
-            self.register_buffer('mean', mean)
-            self.register_buffer('std', std)
+            self.register_buffer("mean", mean)
+            self.register_buffer("std", std)
         self.features = nn.Sequential(*list(model.children())[:8])
         # No need to BP to variable
         for k, v in self.features.named_parameters():
@@ -206,13 +308,19 @@ class MINCNet(nn.Module):
 
 # Assume input range is [0, 1]
 class MINCFeatureExtractor(nn.Module):
-    def __init__(self, feature_layer=34, use_bn=False, use_input_norm=True, \
-                device=torch.device('cpu')):
+    def __init__(
+        self,
+        feature_layer=34,
+        use_bn=False,
+        use_input_norm=True,
+        device=torch.device("cpu"),
+    ):
         super(MINCFeatureExtractor, self).__init__()
 
         self.features = MINCNet()
         self.features.load_state_dict(
-            torch.load('../experiments/pretrained_models/VGG16minc_53.pth'), strict=True)
+            torch.load("../experiments/pretrained_models/VGG16minc_53.pth"), strict=True
+        )
         self.features.eval()
         # No need to BP to variable
         for k, v in self.features.named_parameters():

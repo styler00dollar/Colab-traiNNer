@@ -10,17 +10,18 @@ arXiv preprint arXiv:2104.00298.
 import from https://github.com/d-li14/mobilenetv2.pytorch
 """
 import yaml
+
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
-if cfg['network_D']['conv'] == "fft":
-  from .lama_arch import FourierUnit
+if cfg["network_D"]["conv"] == "fft":
+    from .lama_arch import FourierUnit
 
 import torch
 import torch.nn as nn
 import math
 
-__all__ = ['effnetv2_s', 'effnetv2_m', 'effnetv2_l', 'effnetv2_xl']
+__all__ = ["effnetv2_s", "effnetv2_m", "effnetv2_l", "effnetv2_xl"]
 
 
 def _make_divisible(v, divisor, min_value=None):
@@ -44,7 +45,7 @@ def _make_divisible(v, divisor, min_value=None):
 
 
 # SiLU (Swish) activation function
-if hasattr(nn, 'SiLU'):
+if hasattr(nn, "SiLU"):
     SiLU = nn.SiLU
 else:
     # For compatibility with old PyTorch versions
@@ -52,16 +53,16 @@ else:
         def forward(self, x):
             return x * torch.sigmoid(x)
 
- 
+
 class SELayer(nn.Module):
     def __init__(self, inp, oup, reduction=4):
         super(SELayer, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Sequential(
-                nn.Linear(oup, _make_divisible(inp // reduction, 8)),
-                SiLU(),
-                nn.Linear(_make_divisible(inp // reduction, 8), oup),
-                nn.Sigmoid()
+            nn.Linear(oup, _make_divisible(inp // reduction, 8)),
+            SiLU(),
+            nn.Linear(_make_divisible(inp // reduction, 8), oup),
+            nn.Sigmoid(),
         )
 
     def forward(self, x):
@@ -72,33 +73,21 @@ class SELayer(nn.Module):
 
 
 def conv_3x3_bn(inp, oup, stride):
-    if cfg['network_D']['conv'] == "fft":
-      return nn.Sequential(
-          FourierUnit(inp, oup),
-          nn.BatchNorm2d(oup),
-          SiLU()
-      )
-    elif cfg['network_D']['conv'] == "conv2d":
-      return nn.Sequential(
-          nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
-          nn.BatchNorm2d(oup),
-          SiLU()
-      )
+    if cfg["network_D"]["conv"] == "fft":
+        return nn.Sequential(FourierUnit(inp, oup), nn.BatchNorm2d(oup), SiLU())
+    elif cfg["network_D"]["conv"] == "conv2d":
+        return nn.Sequential(
+            nn.Conv2d(inp, oup, 3, stride, 1, bias=False), nn.BatchNorm2d(oup), SiLU()
+        )
 
 
 def conv_1x1_bn(inp, oup):
-    if cfg['network_D']['conv'] == "fft":
-      return nn.Sequential(
-          FourierUnit(inp, oup),
-          nn.BatchNorm2d(oup),
-          SiLU()
-      )
-    elif cfg['network_D']['conv'] == "conv2d":
-      return nn.Sequential(
-          nn.Conv2d(inp, oup, 1, 1, 0, bias=False),
-          nn.BatchNorm2d(oup),
-          SiLU()
-      )
+    if cfg["network_D"]["conv"] == "fft":
+        return nn.Sequential(FourierUnit(inp, oup), nn.BatchNorm2d(oup), SiLU())
+    elif cfg["network_D"]["conv"] == "conv2d":
+        return nn.Sequential(
+            nn.Conv2d(inp, oup, 1, 1, 0, bias=False), nn.BatchNorm2d(oup), SiLU()
+        )
 
 
 class MBConv(nn.Module):
@@ -133,7 +122,9 @@ class MBConv(nn.Module):
                 nn.BatchNorm2d(hidden_dim),
                 SiLU(),
                 # dw
-                nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=False),
+                nn.Conv2d(
+                    hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=False
+                ),
                 nn.BatchNorm2d(hidden_dim),
                 SiLU(),
                 SELayer(inp, hidden_dim),
@@ -165,7 +156,6 @@ class MBConv(nn.Module):
                 nn.BatchNorm2d(oup),
             )
 
-
     def forward(self, x):
         if self.identity:
             return x + self.conv(x)
@@ -174,7 +164,7 @@ class MBConv(nn.Module):
 
 
 class EffNetV2(nn.Module):
-    def __init__(self, cfgs, num_classes=1, width_mult=1.):
+    def __init__(self, cfgs, num_classes=1, width_mult=1.0):
         super(EffNetV2, self).__init__()
         self.cfgs = cfgs
 
@@ -186,16 +176,20 @@ class EffNetV2(nn.Module):
         for t, c, n, s, use_se in self.cfgs:
             output_channel = _make_divisible(c * width_mult, 8)
             for i in range(n):
-                layers.append(block(input_channel, output_channel, s if i == 0 else 1, t, use_se))
+                layers.append(
+                    block(input_channel, output_channel, s if i == 0 else 1, t, use_se)
+                )
                 input_channel = output_channel
         self.features = nn.Sequential(*layers)
         # building last several layers
-        output_channel = _make_divisible(1792 * width_mult, 8) if width_mult > 1.0 else 1792
+        output_channel = (
+            _make_divisible(1792 * width_mult, 8) if width_mult > 1.0 else 1792
+        )
         self.conv = conv_1x1_bn(input_channel, output_channel)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.classifier = nn.Linear(output_channel, num_classes)
 
-        #self._initialize_weights()
+        # self._initialize_weights()
 
     def forward(self, x):
         x = self.features(x)
@@ -205,17 +199,18 @@ class EffNetV2(nn.Module):
         x = self.classifier(x)
         return x
 
+
 def effnetv2_s(**kwargs):
     """
     Constructs a EfficientNetV2-S model
     """
     cfgs = [
         # t, c, n, s, SE
-        [1,  24,  2, 1, 0],
-        [4,  48,  4, 2, 0],
-        [4,  64,  4, 2, 0],
-        [4, 128,  6, 2, 1],
-        [6, 160,  9, 1, 1],
+        [1, 24, 2, 1, 0],
+        [4, 48, 4, 2, 0],
+        [4, 64, 4, 2, 0],
+        [4, 128, 6, 2, 1],
+        [6, 160, 9, 1, 1],
         [6, 256, 15, 2, 1],
     ]
     return EffNetV2(cfgs, **kwargs)
@@ -227,13 +222,13 @@ def effnetv2_m(**kwargs):
     """
     cfgs = [
         # t, c, n, s, SE
-        [1,  24,  3, 1, 0],
-        [4,  48,  5, 2, 0],
-        [4,  80,  5, 2, 0],
-        [4, 160,  7, 2, 1],
+        [1, 24, 3, 1, 0],
+        [4, 48, 5, 2, 0],
+        [4, 80, 5, 2, 0],
+        [4, 160, 7, 2, 1],
         [6, 176, 14, 1, 1],
         [6, 304, 18, 2, 1],
-        [6, 512,  5, 1, 1],
+        [6, 512, 5, 1, 1],
     ]
     return EffNetV2(cfgs, **kwargs)
 
@@ -244,13 +239,13 @@ def effnetv2_l(**kwargs):
     """
     cfgs = [
         # t, c, n, s, SE
-        [1,  32,  4, 1, 0],
-        [4,  64,  7, 2, 0],
-        [4,  96,  7, 2, 0],
+        [1, 32, 4, 1, 0],
+        [4, 64, 7, 2, 0],
+        [4, 96, 7, 2, 0],
         [4, 192, 10, 2, 1],
         [6, 224, 19, 1, 1],
         [6, 384, 25, 2, 1],
-        [6, 640,  7, 1, 1],
+        [6, 640, 7, 1, 1],
     ]
     return EffNetV2(cfgs, **kwargs)
 
@@ -261,12 +256,12 @@ def effnetv2_xl(**kwargs):
     """
     cfgs = [
         # t, c, n, s, SE
-        [1,  32,  4, 1, 0],
-        [4,  64,  8, 2, 0],
-        [4,  96,  8, 2, 0],
+        [1, 32, 4, 1, 0],
+        [4, 64, 8, 2, 0],
+        [4, 96, 8, 2, 0],
         [4, 192, 16, 2, 1],
         [6, 256, 24, 1, 1],
         [6, 512, 32, 2, 1],
-        [6, 640,  8, 1, 1],
+        [6, 640, 8, 1, 1],
     ]
     return EffNetV2(cfgs, **kwargs)

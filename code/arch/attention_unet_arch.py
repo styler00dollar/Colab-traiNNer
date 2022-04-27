@@ -9,15 +9,22 @@ import torch
 
 
 class add_attn(nn.Module):
-
     def __init__(self, x_channels, g_channels=256):
         super(add_attn, self).__init__()
         self.W = nn.Sequential(
-            nn.Conv2d(x_channels, x_channels, kernel_size=1, stride=1, padding=0), nn.BatchNorm2d(x_channels))
-        self.theta = nn.Conv2d(x_channels, x_channels, kernel_size=2, stride=2, padding=0, bias=False)
+            nn.Conv2d(x_channels, x_channels, kernel_size=1, stride=1, padding=0),
+            nn.BatchNorm2d(x_channels),
+        )
+        self.theta = nn.Conv2d(
+            x_channels, x_channels, kernel_size=2, stride=2, padding=0, bias=False
+        )
 
-        self.phi = nn.Conv2d(g_channels, x_channels, kernel_size=1, stride=1, padding=0, bias=True)
-        self.psi = nn.Conv2d(x_channels, out_channels=1, kernel_size=1, stride=1, padding=0, bias=True)
+        self.phi = nn.Conv2d(
+            g_channels, x_channels, kernel_size=1, stride=1, padding=0, bias=True
+        )
+        self.psi = nn.Conv2d(
+            x_channels, out_channels=1, kernel_size=1, stride=1, padding=0, bias=True
+        )
 
     def forward(self, x, g):
         input_size = x.size()
@@ -26,11 +33,15 @@ class add_attn(nn.Module):
 
         theta_x = self.theta(x)
         theta_x_size = theta_x.size()
-        phi_g = F.interpolate(self.phi(g), size=theta_x_size[2:], mode='bilinear', align_corners=False)
+        phi_g = F.interpolate(
+            self.phi(g), size=theta_x_size[2:], mode="bilinear", align_corners=False
+        )
         f = F.relu(theta_x + phi_g, inplace=True)
 
         sigm_psi_f = torch.sigmoid(self.psi(f))
-        sigm_psi_f = F.interpolate(sigm_psi_f, size=input_size[2:], mode='bilinear', align_corners=False)
+        sigm_psi_f = F.interpolate(
+            sigm_psi_f, size=input_size[2:], mode="bilinear", align_corners=False
+        )
 
         y = sigm_psi_f.expand_as(x) * x
         W_y = self.W(y)
@@ -38,7 +49,6 @@ class add_attn(nn.Module):
 
 
 class unetCat(nn.Module):
-
     def __init__(self, dim_in, dim_out):
         super(unetCat, self).__init__()
         norm = spectral_norm
@@ -46,7 +56,9 @@ class unetCat(nn.Module):
 
     def forward(self, input_1, input_2):
         # Upsampling
-        input_2 = F.interpolate(input_2, scale_factor=2, mode='bilinear', align_corners=False)
+        input_2 = F.interpolate(
+            input_2, scale_factor=2, mode="bilinear", align_corners=False
+        )
 
         output_2 = F.leaky_relu(self.convU(input_2), negative_slope=0.2, inplace=True)
 
@@ -128,5 +140,6 @@ class UNetDiscriminator(nn.Module):
 
 if __name__ == "__main__":
     from torchsummary import summary
+
     uNet = UNetDiscriminator(3)
     summary(uNet, (3, 224, 224), batch_size=1)

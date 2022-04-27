@@ -7,10 +7,11 @@ from torch import nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 
+
 def get_norm(name, out_channels):
-    if name == 'batch':
+    if name == "batch":
         norm = nn.BatchNorm2d(out_channels)
-    elif name == 'instance':
+    elif name == "instance":
         norm = nn.InstanceNorm2d(out_channels)
     else:
         norm = None
@@ -18,15 +19,15 @@ def get_norm(name, out_channels):
 
 
 def get_act(name):
-    if name == 'relu':
+    if name == "relu":
         activation = nn.ReLU(inplace=True)
-    elif name == 'elu':
+    elif name == "elu":
         activation == nn.ELU(inplace=True)
-    elif name == 'leaky_relu':
+    elif name == "leaky_relu":
         activation = nn.LeakyReLU(negative_slope=0.2, inplace=True)
-    elif name == 'tanh':
+    elif name == "tanh":
         activation = nn.Tanh()
-    elif name == 'sigmoid':
+    elif name == "sigmoid":
         activation = nn.Sigmoid()
     else:
         activation = None
@@ -34,15 +35,23 @@ def get_act(name):
 
 
 class CoarseEncodeBlock(pl.LightningModule):
-    def __init__(self, in_channels, out_channels, kernel_size, stride,
-                 normalization=None, activation=None):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride,
+        normalization=None,
+        activation=None,
+    ):
         super().__init__()
 
         layers = []
         if activation:
             layers.append(get_act(activation))
         layers.append(
-            nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding=1))
+            nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding=1)
+        )
         if normalization:
             layers.append(get_norm(normalization, out_channels))
         self.encode = nn.Sequential(*layers)
@@ -52,15 +61,25 @@ class CoarseEncodeBlock(pl.LightningModule):
 
 
 class CoarseDecodeBlock(pl.LightningModule):
-    def __init__(self, in_channels, out_channels, kernel_size, stride,
-                 normalization=None, activation=None):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride,
+        normalization=None,
+        activation=None,
+    ):
         super().__init__()
 
         layers = []
         if activation:
             layers.append(get_act(activation))
         layers.append(
-            nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride, padding=1))
+            nn.ConvTranspose2d(
+                in_channels, out_channels, kernel_size, stride, padding=1
+            )
+        )
         if normalization:
             layers.append(get_norm(normalization, out_channels))
         self.decode = nn.Sequential(*layers)
@@ -70,32 +89,58 @@ class CoarseDecodeBlock(pl.LightningModule):
 
 
 class CoarseNet(pl.LightningModule):
-    def __init__(self, c_img=3,
-                 norm='instance', act_en='leaky_relu', act_de='relu'):
+    def __init__(self, c_img=3, norm="instance", act_en="leaky_relu", act_de="relu"):
         super().__init__()
 
         cnum = 64
 
         self.en_1 = nn.Conv2d(c_img, cnum, 4, 2, padding=1)
-        self.en_2 = CoarseEncodeBlock(cnum, cnum*2, 4, 2, normalization=norm, activation=act_en)
-        self.en_3 = CoarseEncodeBlock(cnum*2, cnum*4, 4, 2, normalization=norm, activation=act_en)
-        self.en_4 = CoarseEncodeBlock(cnum*4, cnum*8, 4, 2, normalization=norm, activation=act_en)
-        self.en_5 = CoarseEncodeBlock(cnum*8, cnum*8, 4, 2, normalization=norm, activation=act_en)
-        self.en_6 = CoarseEncodeBlock(cnum*8, cnum*8, 4, 2, normalization=norm, activation=act_en)
-        self.en_7 = CoarseEncodeBlock(cnum*8, cnum*8, 4, 2, normalization=norm, activation=act_en)
-        self.en_8 = CoarseEncodeBlock(cnum*8, cnum*8, 4, 2, activation=act_en)
+        self.en_2 = CoarseEncodeBlock(
+            cnum, cnum * 2, 4, 2, normalization=norm, activation=act_en
+        )
+        self.en_3 = CoarseEncodeBlock(
+            cnum * 2, cnum * 4, 4, 2, normalization=norm, activation=act_en
+        )
+        self.en_4 = CoarseEncodeBlock(
+            cnum * 4, cnum * 8, 4, 2, normalization=norm, activation=act_en
+        )
+        self.en_5 = CoarseEncodeBlock(
+            cnum * 8, cnum * 8, 4, 2, normalization=norm, activation=act_en
+        )
+        self.en_6 = CoarseEncodeBlock(
+            cnum * 8, cnum * 8, 4, 2, normalization=norm, activation=act_en
+        )
+        self.en_7 = CoarseEncodeBlock(
+            cnum * 8, cnum * 8, 4, 2, normalization=norm, activation=act_en
+        )
+        self.en_8 = CoarseEncodeBlock(cnum * 8, cnum * 8, 4, 2, activation=act_en)
 
-        self.de_8 = CoarseDecodeBlock(cnum*8, cnum*8, 4, 2, normalization=norm, activation=act_de)
-        self.de_7 = CoarseDecodeBlock(cnum*8*2, cnum*8, 4, 2, normalization=norm, activation=act_de)
-        self.de_6 = CoarseDecodeBlock(cnum*8*2, cnum*8, 4, 2, normalization=norm, activation=act_de)
-        self.de_5 = CoarseDecodeBlock(cnum*8*2, cnum*8, 4, 2, normalization=norm, activation=act_de)
-        self.de_4 = CoarseDecodeBlock(cnum*8*2, cnum*4, 4, 2, normalization=norm, activation=act_de)
-        self.de_3 = CoarseDecodeBlock(cnum*4*2, cnum*2, 4, 2, normalization=norm, activation=act_de)
-        self.de_2 = CoarseDecodeBlock(cnum*2*2, cnum, 4, 2, normalization=norm, activation=act_de)
+        self.de_8 = CoarseDecodeBlock(
+            cnum * 8, cnum * 8, 4, 2, normalization=norm, activation=act_de
+        )
+        self.de_7 = CoarseDecodeBlock(
+            cnum * 8 * 2, cnum * 8, 4, 2, normalization=norm, activation=act_de
+        )
+        self.de_6 = CoarseDecodeBlock(
+            cnum * 8 * 2, cnum * 8, 4, 2, normalization=norm, activation=act_de
+        )
+        self.de_5 = CoarseDecodeBlock(
+            cnum * 8 * 2, cnum * 8, 4, 2, normalization=norm, activation=act_de
+        )
+        self.de_4 = CoarseDecodeBlock(
+            cnum * 8 * 2, cnum * 4, 4, 2, normalization=norm, activation=act_de
+        )
+        self.de_3 = CoarseDecodeBlock(
+            cnum * 4 * 2, cnum * 2, 4, 2, normalization=norm, activation=act_de
+        )
+        self.de_2 = CoarseDecodeBlock(
+            cnum * 2 * 2, cnum, 4, 2, normalization=norm, activation=act_de
+        )
         self.de_1 = nn.Sequential(
             get_act(act_de),
-            nn.ConvTranspose2d(cnum*2, c_img, 4, 2, padding=1),
-            get_act('tanh'))
+            nn.ConvTranspose2d(cnum * 2, c_img, 4, 2, padding=1),
+            get_act("tanh"),
+        )
 
     def forward(self, x):
         out_1 = self.en_1(x)
@@ -127,22 +172,19 @@ class CoarseNet(pl.LightningModule):
 
 
 class RefineEncodeBlock(pl.LightningModule):
-    def __init__(self, in_channels, out_channels,
-                 normalization=None, activation=None):
+    def __init__(self, in_channels, out_channels, normalization=None, activation=None):
         super().__init__()
 
         layers = []
         if activation:
             layers.append(get_act(activation))
-        layers.append(
-            nn.Conv2d(in_channels, in_channels, 4, 2, dilation=2, padding=3))
+        layers.append(nn.Conv2d(in_channels, in_channels, 4, 2, dilation=2, padding=3))
         if normalization:
             layers.append(get_norm(normalization, out_channels))
 
         if activation:
             layers.append(get_act(activation))
-        layers.append(
-            nn.Conv2d(in_channels, out_channels, 3, 1, padding=1))
+        layers.append(nn.Conv2d(in_channels, out_channels, 3, 1, padding=1))
         if normalization:
             layers.append(get_norm(normalization, out_channels))
         self.encode = nn.Sequential(*layers)
@@ -152,22 +194,19 @@ class RefineEncodeBlock(pl.LightningModule):
 
 
 class RefineDecodeBlock(pl.LightningModule):
-    def __init__(self, in_channels, out_channels,
-                 normalization=None, activation=None):
+    def __init__(self, in_channels, out_channels, normalization=None, activation=None):
         super().__init__()
 
         layers = []
         if activation:
             layers.append(get_act(activation))
-        layers.append(
-            nn.ConvTranspose2d(in_channels, out_channels, 3, 1, padding=1))
+        layers.append(nn.ConvTranspose2d(in_channels, out_channels, 3, 1, padding=1))
         if normalization:
             layers.append(get_norm(normalization, out_channels))
 
         if activation:
             layers.append(get_act(activation))
-        layers.append(
-            nn.ConvTranspose2d(out_channels, out_channels, 4, 2, padding=1))
+        layers.append(nn.ConvTranspose2d(out_channels, out_channels, 4, 2, padding=1))
         if normalization:
             layers.append(get_norm(normalization, out_channels))
         self.decode = nn.Sequential(*layers)
@@ -177,41 +216,68 @@ class RefineDecodeBlock(pl.LightningModule):
 
 
 class RefineNet(pl.LightningModule):
-    def __init__(self, c_img=3,
-                 norm='instance', act_en='leaky_relu', act_de='relu'):
+    def __init__(self, c_img=3, norm="instance", act_en="leaky_relu", act_de="relu"):
         super().__init__()
 
         c_in = c_img + c_img
         cnum = 64
 
         self.en_1 = nn.Conv2d(c_in, cnum, 3, 1, padding=1)
-        self.en_2 = RefineEncodeBlock(cnum, cnum*2, normalization=norm, activation=act_en)
-        self.en_3 = RefineEncodeBlock(cnum*2, cnum*4, normalization=norm, activation=act_en)
-        self.en_4 = RefineEncodeBlock(cnum*4, cnum*8, normalization=norm, activation=act_en)
-        self.en_5 = RefineEncodeBlock(cnum*8, cnum*8, normalization=norm, activation=act_en)
-        self.en_6 = RefineEncodeBlock(cnum*8, cnum*8, normalization=norm, activation=act_en)
-        self.en_7 = RefineEncodeBlock(cnum*8, cnum*8, normalization=norm, activation=act_en)
-        self.en_8 = RefineEncodeBlock(cnum*8, cnum*8, normalization=norm, activation=act_en)
+        self.en_2 = RefineEncodeBlock(
+            cnum, cnum * 2, normalization=norm, activation=act_en
+        )
+        self.en_3 = RefineEncodeBlock(
+            cnum * 2, cnum * 4, normalization=norm, activation=act_en
+        )
+        self.en_4 = RefineEncodeBlock(
+            cnum * 4, cnum * 8, normalization=norm, activation=act_en
+        )
+        self.en_5 = RefineEncodeBlock(
+            cnum * 8, cnum * 8, normalization=norm, activation=act_en
+        )
+        self.en_6 = RefineEncodeBlock(
+            cnum * 8, cnum * 8, normalization=norm, activation=act_en
+        )
+        self.en_7 = RefineEncodeBlock(
+            cnum * 8, cnum * 8, normalization=norm, activation=act_en
+        )
+        self.en_8 = RefineEncodeBlock(
+            cnum * 8, cnum * 8, normalization=norm, activation=act_en
+        )
         self.en_9 = nn.Sequential(
-            get_act(act_en),
-            nn.Conv2d(cnum*8, cnum*8, 4, 2, padding=1))
+            get_act(act_en), nn.Conv2d(cnum * 8, cnum * 8, 4, 2, padding=1)
+        )
 
         self.de_9 = nn.Sequential(
             get_act(act_de),
-            nn.ConvTranspose2d(cnum*8, cnum*8, 4, 2, padding=1),
-            get_norm(norm, cnum*8))
-        self.de_8 = RefineDecodeBlock(cnum*8*2, cnum*8, normalization=norm, activation=act_de)
-        self.de_7 = RefineDecodeBlock(cnum*8*2, cnum*8, normalization=norm, activation=act_de)
-        self.de_6 = RefineDecodeBlock(cnum*8*2, cnum*8, normalization=norm, activation=act_de)
-        self.de_5 = RefineDecodeBlock(cnum*8*2, cnum*8, normalization=norm, activation=act_de)
-        self.de_4 = RefineDecodeBlock(cnum*8*2, cnum*4, normalization=norm, activation=act_de)
-        self.de_3 = RefineDecodeBlock(cnum*4*2, cnum*2, normalization=norm, activation=act_de)
-        self.de_2 = RefineDecodeBlock(cnum*2*2, cnum, normalization=norm, activation=act_de)
+            nn.ConvTranspose2d(cnum * 8, cnum * 8, 4, 2, padding=1),
+            get_norm(norm, cnum * 8),
+        )
+        self.de_8 = RefineDecodeBlock(
+            cnum * 8 * 2, cnum * 8, normalization=norm, activation=act_de
+        )
+        self.de_7 = RefineDecodeBlock(
+            cnum * 8 * 2, cnum * 8, normalization=norm, activation=act_de
+        )
+        self.de_6 = RefineDecodeBlock(
+            cnum * 8 * 2, cnum * 8, normalization=norm, activation=act_de
+        )
+        self.de_5 = RefineDecodeBlock(
+            cnum * 8 * 2, cnum * 8, normalization=norm, activation=act_de
+        )
+        self.de_4 = RefineDecodeBlock(
+            cnum * 8 * 2, cnum * 4, normalization=norm, activation=act_de
+        )
+        self.de_3 = RefineDecodeBlock(
+            cnum * 4 * 2, cnum * 2, normalization=norm, activation=act_de
+        )
+        self.de_2 = RefineDecodeBlock(
+            cnum * 2 * 2, cnum, normalization=norm, activation=act_de
+        )
 
         self.de_1 = nn.Sequential(
-            get_act(act_de),
-            nn.ConvTranspose2d(cnum*2, c_img, 3, 1, padding=1))
-
+            get_act(act_de), nn.ConvTranspose2d(cnum * 2, c_img, 3, 1, padding=1)
+        )
 
     def forward(self, x1, x2):
         x = torch.cat([x1, x2], 1)
@@ -255,7 +321,7 @@ class CSA(pl.LightningModule):
 
 
 class InpaintNet(pl.LightningModule):
-    def __init__(self, c_img=3, norm='instance', act_en='leaky_relu', act_de='relu'):
+    def __init__(self, c_img=3, norm="instance", act_en="leaky_relu", act_de="relu"):
         super().__init__()
 
         self.coarse = CoarseNet(c_img=c_img, norm=norm, act_en=act_en, act_de=act_de)
@@ -263,6 +329,6 @@ class InpaintNet(pl.LightningModule):
 
     def forward(self, image, mask):
         out_c = self.coarse(image)
-        out_c = image * (1. - mask) + out_c * mask
+        out_c = image * (1.0 - mask) + out_c * mask
         out_r, csa, csa_d = self.refine(out_c, image)
         return out_c, out_r, csa, csa_d

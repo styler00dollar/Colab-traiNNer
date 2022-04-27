@@ -7,8 +7,10 @@ import numpy as np
 import torch
 from torch.nn import functional as F
 import yaml
+
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
+
 
 class BatchAugment:
     def __init__(self, mixopts, mixprob, mixalpha, aux_mixprob, aux_mixalpha):
@@ -28,8 +30,15 @@ class BatchAugment:
             img2: the input image.
         """
         img1_aug, img2_aug, self.mask, self.aug = BatchAug(
-            img1, img2, self.mixopts, self.mixprob, self.mixalpha,
-            self.aux_mixprob, self.aux_mixalpha, self.mix_p)
+            img1,
+            img2,
+            self.mixopts,
+            self.mixprob,
+            self.mixalpha,
+            self.aux_mixprob,
+            self.aux_mixalpha,
+            self.mix_p,
+        )
         return img1_aug, img2_aug
 
     def apply_mask(self, img1, img2):
@@ -45,9 +54,10 @@ class BatchAugment:
         return img1, img2
 
 
-def BatchAug(img1, img2, options, probs, alphas,
-    aux_prob=None, aux_alpha=None, mix_p=None):
-    """ Mixture of Batch Augmentations (MoA)
+def BatchAug(
+    img1, img2, options, probs, alphas, aux_prob=None, aux_alpha=None, mix_p=None
+):
+    """Mixture of Batch Augmentations (MoA)
     Randomly selects single augmentation from the augmentation pool
     and applies it to the batch.
     Note: most of these augmentations require batch size > 1
@@ -69,41 +79,38 @@ def BatchAug(img1, img2, options, probs, alphas,
     if aug == "none":
         img1_aug, img2_aug = img1.clone(), img2.clone()
     elif aug == "blend":
-        img1_aug, img2_aug = blend(
-            img1.clone(), img2.clone(),
-            prob=prob, alpha=alpha
-        )
+        img1_aug, img2_aug = blend(img1.clone(), img2.clone(), prob=prob, alpha=alpha)
     elif aug == "rgb":
-        img1_aug, img2_aug = rgb(
-            img1.clone(), img2.clone(),
-            prob=prob
-        )
+        img1_aug, img2_aug = rgb(img1.clone(), img2.clone(), prob=prob)
     elif aug == "mixup":
         img1_aug, img2_aug, = mixup(
-            img1.clone(), img2.clone(),
-            prob=prob, alpha=alpha,
+            img1.clone(),
+            img2.clone(),
+            prob=prob,
+            alpha=alpha,
         )
     elif aug == "cutout":
         img1_aug, img2_aug, mask, _ = cutout(
-            img1.clone(), img2.clone(),
-            prob=prob, alpha=alpha
+            img1.clone(), img2.clone(), prob=prob, alpha=alpha
         )
     elif aug == "cutmix":
         img1_aug, img2_aug = cutmix(
-            img1.clone(), img2.clone(),
-            prob=prob, alpha=alpha,
+            img1.clone(),
+            img2.clone(),
+            prob=prob,
+            alpha=alpha,
         )
     elif aug == "cutmixup":
         img1_aug, img2_aug = cutmixup(
-            img1.clone(), img2.clone(),
-            mixup_prob=aux_prob, mixup_alpha=aux_alpha,
-            cutmix_prob=prob, cutmix_alpha=alpha,
+            img1.clone(),
+            img2.clone(),
+            mixup_prob=aux_prob,
+            mixup_alpha=aux_alpha,
+            cutmix_prob=prob,
+            cutmix_alpha=alpha,
         )
     elif aug == "cutblur":
-        img1_aug, img2_aug = cutblur(
-            img1.clone(), img2.clone(),
-            prob=prob, alpha=alpha
-        )
+        img1_aug, img2_aug = cutblur(img1.clone(), img2.clone(), prob=prob, alpha=alpha)
     else:
         raise ValueError("{} is not invalid.".format(aug))
 
@@ -120,14 +127,13 @@ def blend(img1, img2, prob=1.0, alpha=0.6):
     h1, w1 = img1.shape[2:]
     h2, w2 = img2.shape[2:]
 
-    c = torch.empty((img2.size(0), 3, 1, 1),
-        device=img2.device).uniform_(0, 1.0)
+    c = torch.empty((img2.size(0), 3, 1, 1), device=img2.device).uniform_(0, 1.0)
     rimg1 = c.repeat((1, 1, h1, w1))
     rimg2 = c.repeat((1, 1, h2, w2))
 
     v = np.random.uniform(alpha, 1)
-    img1 = v * img1 + (1-v) * rimg1
-    img2 = v * img2 + (1-v) * rimg2
+    img1 = v * img1 + (1 - v) * rimg1
+    img2 = v * img2 + (1 - v) * rimg2
 
     return img1, img2
 
@@ -145,7 +151,7 @@ def rgb(img1, img2, prob=1.0):
 
 
 def mixup(img1, img2, prob=1.0, alpha=1.2):
-    """ Blend two randomly selected images.
+    """Blend two randomly selected images.
     Uses the default setting of Feng et al. which is:
         I0 = λIi + (1−λ)Ij, where λ ∼Beta(α,α).
     From: "Hongyi Zhang, Moustapha Cisse, Yann N Dauphin, and David
@@ -185,12 +191,12 @@ def mixup(img1, img2, prob=1.0, alpha=1.2):
     return img1, img2
 
 
-#TODO: no longer used in cutmix, but can be repurposed elsewhere 
+# TODO: no longer used in cutmix, but can be repurposed elsewhere
 def rand_bbox(size, lam):
     W = size[2]
     H = size[3]
     # image_h, image_w = data.shape[2:]
-    cut_rat = np.sqrt(1. - lam)
+    cut_rat = np.sqrt(1.0 - lam)
     cut_w = np.int(W * cut_rat)
     cut_h = np.int(H * cut_rat)
 
@@ -215,19 +221,24 @@ def _cutmix(img2, prob=1.0, alpha=1.0):
     h, w = img2.shape[2:]
     ch, cw = np.int(h * cut_ratio), np.int(w * cut_ratio)
 
-    fcy = np.random.randint(0, h-ch+1)
-    fcx = np.random.randint(0, w-cw+1)
+    fcy = np.random.randint(0, h - ch + 1)
+    fcx = np.random.randint(0, w - cw + 1)
     tcy, tcx = fcy, fcx
     r_index = torch.randperm(img2.size(0)).to(img2.device)
 
     return {
-        "r_index": r_index, "ch": ch, "cw": cw,
-        "tcy": tcy, "tcx": tcx, "fcy": fcy, "fcx": fcx,
+        "r_index": r_index,
+        "ch": ch,
+        "cw": cw,
+        "tcy": tcy,
+        "tcx": tcx,
+        "fcy": fcy,
+        "fcx": fcx,
     }
 
 
 def cutmix(img1, img2, prob=1.0, alpha=1.0):
-    """ Replace randomly selected square-shape region to
+    """Replace randomly selected square-shape region to
     sub-patch from other image in the batch. The coordinates are
     calculated as:
         rx = Unif(0,W), rw = λW , where λ ∼N(α,0.01)
@@ -255,18 +266,22 @@ def cutmix(img1, img2, prob=1.0, alpha=1.0):
     tcy, tcx, fcy, fcx = c["tcy"], c["tcx"], c["fcy"], c["fcx"]
 
     hch, hcw = ch * scale, cw * scale
-    hfcy, hfcx, htcy, htcx = (
-        fcy * scale, fcx * scale, tcy * scale, tcx * scale)
+    hfcy, hfcx, htcy, htcx = (fcy * scale, fcx * scale, tcy * scale, tcx * scale)
 
-    img1[..., htcy:htcy+hch, htcx:htcx+hcw] = img1[r_index, :, hfcy:hfcy+hch, hfcx:hfcx+hcw]
-    img2[..., tcy:tcy+ch, tcx:tcx+cw] = img2[r_index, :, fcy:fcy+ch, fcx:fcx+cw]
+    img1[..., htcy : htcy + hch, htcx : htcx + hcw] = img1[
+        r_index, :, hfcy : hfcy + hch, hfcx : hfcx + hcw
+    ]
+    img2[..., tcy : tcy + ch, tcx : tcx + cw] = img2[
+        r_index, :, fcy : fcy + ch, fcx : fcx + cw
+    ]
 
     return img1, img2
 
 
-def cutmixup(img1, img2, mixup_prob=1.0, mixup_alpha=1.0,
-    cutmix_prob=1.0, cutmix_alpha=1.0):  # (α1 / α2) -> 0.7 / 1.2
-    """ CutMix with the Mixup-ed image.
+def cutmixup(
+    img1, img2, mixup_prob=1.0, mixup_alpha=1.0, cutmix_prob=1.0, cutmix_alpha=1.0
+):  # (α1 / α2) -> 0.7 / 1.2
+    """CutMix with the Mixup-ed image.
     CutMix and Mixup procedure use hyper-parameter α1 and α2 respectively.
     """
     c = _cutmix(img2, cutmix_prob, cutmix_alpha)
@@ -278,31 +293,38 @@ def cutmixup(img1, img2, mixup_prob=1.0, mixup_alpha=1.0,
     tcy, tcx, fcy, fcx = c["tcy"], c["tcx"], c["fcy"], c["fcx"]
 
     hch, hcw = ch * scale, cw * scale
-    hfcy, hfcx, htcy, htcx = (
-        fcy * scale, fcx * scale, tcy * scale, tcx * scale)
+    hfcy, hfcx, htcy, htcx = (fcy * scale, fcx * scale, tcy * scale, tcx * scale)
 
     v = np.random.beta(mixup_alpha, mixup_alpha)
     if mixup_alpha <= 0 or random.random() >= mixup_prob:
         img1_aug = img1[r_index, :]
         img2_aug = img2[r_index, :]
     else:
-        img1_aug = v * img1 + (1-v) * img1[r_index, :]
-        img2_aug = v * img2 + (1-v) * img2[r_index, :]
+        img1_aug = v * img1 + (1 - v) * img1[r_index, :]
+        img2_aug = v * img2 + (1 - v) * img2[r_index, :]
 
     # apply mixup to inside or outside
     if np.random.random() > 0.5:
-        img1[..., htcy:htcy+hch, htcx:htcx+hcw] = img1_aug[..., hfcy:hfcy+hch, hfcx:hfcx+hcw]
-        img2[..., tcy:tcy+ch, tcx:tcx+cw] = img2_aug[..., fcy:fcy+ch, fcx:fcx+cw]
+        img1[..., htcy : htcy + hch, htcx : htcx + hcw] = img1_aug[
+            ..., hfcy : hfcy + hch, hfcx : hfcx + hcw
+        ]
+        img2[..., tcy : tcy + ch, tcx : tcx + cw] = img2_aug[
+            ..., fcy : fcy + ch, fcx : fcx + cw
+        ]
     else:
-        img1_aug[..., htcy:htcy+hch, htcx:htcx+hcw] = img1[..., hfcy:hfcy+hch, hfcx:hfcx+hcw]
-        img2_aug[..., tcy:tcy+ch, tcx:tcx+cw] = img2[..., fcy:fcy+ch, fcx:fcx+cw]
+        img1_aug[..., htcy : htcy + hch, htcx : htcx + hcw] = img1[
+            ..., hfcy : hfcy + hch, hfcx : hfcx + hcw
+        ]
+        img2_aug[..., tcy : tcy + ch, tcx : tcx + cw] = img2[
+            ..., fcy : fcy + ch, fcx : fcx + cw
+        ]
         img2, img1 = img2_aug, img1_aug
 
     return img1, img2
 
 
 def cutblur(img1, img2, prob=1.0, alpha=1.0):
-    """ Perform CutMix with same image but different resolution,
+    """Perform CutMix with same image but different resolution,
     producing xHR→LR (HR patch pasted into LR) and xLR→HR (LR patch
     pasted into HR). Randomly choose x from [xHR→LR, xLR→HR],
     to one as input of the network.
@@ -320,16 +342,18 @@ def cutblur(img1, img2, prob=1.0, alpha=1.0):
     cut_ratio = np.random.randn() * 0.01 + alpha
 
     h, w = img2.size(2), img2.size(3)
-    ch, cw = np.int(h*cut_ratio), np.int(w*cut_ratio)
-    cy = np.random.randint(0, h-ch+1)
-    cx = np.random.randint(0, w-cw+1)
+    ch, cw = np.int(h * cut_ratio), np.int(w * cut_ratio)
+    cy = np.random.randint(0, h - ch + 1)
+    cx = np.random.randint(0, w - cw + 1)
 
     # apply CutBlur to inside or outside
     if np.random.random() > 0.5:
-        img2[..., cy:cy+ch, cx:cx+cw] = img1[..., cy:cy+ch, cx:cx+cw]
+        img2[..., cy : cy + ch, cx : cx + cw] = img1[..., cy : cy + ch, cx : cx + cw]
     else:
         img2_aug = img1.clone()
-        img2_aug[..., cy:cy+ch, cx:cx+cw] = img2[..., cy:cy+ch, cx:cx+cw]
+        img2_aug[..., cy : cy + ch, cx : cx + cw] = img2[
+            ..., cy : cy + ch, cx : cx + cw
+        ]
         img2 = img2_aug
 
     return img1, img2
@@ -353,7 +377,7 @@ def cutout(img1, img2, prob=1.0, alpha=0.1):
         fimg1 = F.interpolate(fimg2, scale_factor=scale, mode="nearest")
         return img1, img2, fimg1, fimg2
 
-    fimg2 = np.random.choice([0.0, 1.0], size=fsize, p=[alpha, 1-alpha])
+    fimg2 = np.random.choice([0.0, 1.0], size=fsize, p=[alpha, 1 - alpha])
     fimg2 = torch.tensor(fimg2, dtype=torch.float, device=img2.device)
     fimg1 = F.interpolate(fimg2, scale_factor=scale, mode="nearest")
 

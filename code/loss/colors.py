@@ -63,11 +63,11 @@ def grayscale_to_bgr(input: torch.Tensor) -> torch.Tensor:
     return grayscale_to_rgb(input)
 
 
-def rgb_to_ycbcr(input: torch.Tensor, consts='yuv'):
-    return rgb_to_yuv(input, consts == 'ycbcr')
+def rgb_to_ycbcr(input: torch.Tensor, consts="yuv"):
+    return rgb_to_yuv(input, consts == "ycbcr")
 
 
-def rgb_to_yuv(input: torch.Tensor, consts='yuv'):
+def rgb_to_yuv(input: torch.Tensor, consts="yuv"):
     """Converts one or more images from RGB to YUV.
     Outputs a tensor of the same shape as the `input`
     image tensor, containing the YUV value of the pixels.
@@ -87,9 +87,9 @@ def rgb_to_yuv(input: torch.Tensor, consts='yuv'):
         images: images tensor with the same shape as `input`.
     """
 
-    #channels = input.shape[0]
+    # channels = input.shape[0]
 
-    if consts == 'BT.709':
+    if consts == "BT.709":
         # HDTV YUV
         Wr = 0.2126
         Wb = 0.0722
@@ -97,15 +97,15 @@ def rgb_to_yuv(input: torch.Tensor, consts='yuv'):
         Uc = 0.539
         Vc = 0.635
         delta: float = 0.5  # 128 if image range in [0,255]
-    elif consts == 'ycbcr':
+    elif consts == "ycbcr":
         # Alt. BT.601 from Kornia YCbCr values, from JPEG conversion
         Wr = 0.299
         Wb = 0.114
         Wg = 1 - Wr - Wb  # 0.587
         Uc = 0.564  # (b-y) #cb
         Vc = 0.713  # (r-y) #cr
-        delta: float = .5  # 128 if image range in [0,255]
-    elif consts == 'yuvK':
+        delta: float = 0.5  # 128 if image range in [0,255]
+    elif consts == "yuvK":
         # Alt. yuv from Kornia YUV values:
         # https://github.com/kornia/kornia/blob/master/kornia/color/yuv.py
         Wr = 0.299
@@ -118,7 +118,7 @@ def rgb_to_yuv(input: torch.Tensor, consts='yuv'):
         Vg = -0.515
         Vb = -0.100
         # delta: float = 0.0
-    elif consts == 'y':
+    elif consts == "y":
         # returns only Y channel, same as rgb_to_grayscale()
         # Note: torchvision uses ITU-R 601-2: Wr = 0.2989, Wg = 0.5870, Wb = 0.1140
         Wr = 0.299
@@ -140,11 +140,11 @@ def rgb_to_yuv(input: torch.Tensor, consts='yuv'):
     # Differentiable? Kornia uses both in different places
     # r, g, b = torch.chunk(input, chunks=3, dim=-3)
 
-    if consts == 'y':
+    if consts == "y":
         y: torch.Tensor = Wr * r + Wg * g + Wb * b
         # (0.2989 * input[0] + 0.5870 * input[1] + 0.1140 * input[2]).to(img.dtype)
         return y
-    elif consts == 'yuvK':
+    elif consts == "yuvK":
         y: torch.Tensor = Wr * r + Wg * g + Wb * b
         u: torch.Tensor = Ur * r + Ug * g + Ub * b
         v: torch.Tensor = Vr * r + Vg * g + Vb * b
@@ -154,7 +154,7 @@ def rgb_to_yuv(input: torch.Tensor, consts='yuv'):
         u: torch.Tensor = (b - y) * Uc + delta  # cb
         v: torch.Tensor = (r - y) * Vc + delta  # cr
 
-    if consts == 'uv':
+    if consts == "uv":
         # returns only UV channels
         return torch.stack((u, v), -3)
     else:
@@ -162,11 +162,11 @@ def rgb_to_yuv(input: torch.Tensor, consts='yuv'):
 
 
 def ycbcr_to_rgb(input: torch.Tensor):
-    return yuv_to_rgb(input, consts = 'ycbcr')
+    return yuv_to_rgb(input, consts="ycbcr")
 
 
-def yuv_to_rgb(input: torch.Tensor, consts='yuv') -> torch.Tensor:
-    if consts == 'yuvK':
+def yuv_to_rgb(input: torch.Tensor, consts="yuv") -> torch.Tensor:
+    if consts == "yuvK":
         # Alt. yuv from Kornia YUV values:
         # https://github.com/kornia/kornia/blob/master/kornia/color/yuv.py
         Wr = 1.14  # 1.402
@@ -174,13 +174,13 @@ def yuv_to_rgb(input: torch.Tensor, consts='yuv') -> torch.Tensor:
         Wgu = 0.396  # .344136
         Wgv = 0.581  # .714136
         delta: float = 0.0
-    elif consts == 'yuv' or consts == 'ycbcr':
+    elif consts == "yuv" or consts == "ycbcr":
         # BT.601 from Kornia YCbCr values, from JPEG conversion
         Wr = 1.403  # 1.402
         Wb = 1.773  # 1.772
-        Wgu = .344  # .344136
-        Wgv = .714  # .714136
-        delta: float = .5  # 128 if image range in [0,255]
+        Wgu = 0.344  # .344136
+        Wgv = 0.714  # .714136
+        delta: float = 0.5  # 128 if image range in [0,255]
 
     y: torch.Tensor = input[..., 0, :, :]
     u: torch.Tensor = input[..., 1, :, :]  # cb
@@ -197,19 +197,29 @@ def yuv_to_rgb(input: torch.Tensor, consts='yuv') -> torch.Tensor:
     b: torch.Tensor = y + Wb * u_shifted
     return torch.stack((r, g, b), -3)
 
+
 # Not tested:
 def rgb2srgb(imgs):
-    return torch.where(imgs<=0.04045,imgs/12.92,torch.pow((imgs+0.055)/1.055,2.4))
+    return torch.where(
+        imgs <= 0.04045, imgs / 12.92, torch.pow((imgs + 0.055) / 1.055, 2.4)
+    )
+
 
 # Not tested:
 def srgb2rgb(imgs):
-    return torch.where(imgs<=0.0031308,imgs*12.92,1.055*torch.pow((imgs),1/2.4)-0.055)
+    return torch.where(
+        imgs <= 0.0031308, imgs * 12.92, 1.055 * torch.pow((imgs), 1 / 2.4) - 0.055
+    )
 
 
-
-def color_shift(image: torch.Tensor, mode:str='uniform',
-    rgb_weights=None, alpha:float=0.8, Y:bool=False,
-    channels:str='single') -> torch.Tensor:
+def color_shift(
+    image: torch.Tensor,
+    mode: str = "uniform",
+    rgb_weights=None,
+    alpha: float = 0.8,
+    Y: bool = False,
+    channels: str = "single",
+) -> torch.Tensor:
     """Random color shift transformation.
     Applies color shift to an image to decrease the influence of
     color and luminance (for texture extraction).
@@ -230,7 +240,7 @@ def color_shift(image: torch.Tensor, mode:str='uniform',
         rgb_weights = get_colorshift_weights(mode=mode, Y=Y)
 
     rgb_weights = rgb_weights.to(image.device)
-    if channels == 'multi':
+    if channels == "multi":
         # returns 3 chanel image
         output = (image * rgb_weights[None, :, None, None]) / rgb_weights.sum()
     else:
@@ -238,29 +248,32 @@ def color_shift(image: torch.Tensor, mode:str='uniform',
         r: torch.Tensor = image[..., 0:1, :, :]
         g: torch.Tensor = image[..., 1:2, :, :]
         b: torch.Tensor = image[..., 2:3, :, :]
-        output = (rgb_weights[0]*r+rgb_weights[1]*g+rgb_weights[2]*b)/(rgb_weights.sum())
+        output = (rgb_weights[0] * r + rgb_weights[1] * g + rgb_weights[2] * b) / (
+            rgb_weights.sum()
+        )
 
-    if Y and channels == 'single':
-        output = (1-alpha)*output + alpha*rgb_to_grayscale(image)
+    if Y and channels == "single":
+        output = (1 - alpha) * output + alpha * rgb_to_grayscale(image)
 
     return output
 
-def get_colorshift_weights(mode='uniform', Y=False):
+
+def get_colorshift_weights(mode="uniform", Y=False):
     if Y:
-        if mode == 'normal':
+        if mode == "normal":
             r_weight = np.random.normal(loc=0.0, scale=1.0)
             g_weight = np.random.normal(loc=0.0, scale=1.0)
             b_weight = np.random.normal(loc=0.0, scale=1.0)
-        elif mode == 'uniform':
+        elif mode == "uniform":
             r_weight = np.random.uniform(low=-1.0, high=1.0)
             g_weight = np.random.uniform(low=-1.0, high=1.0)
             b_weight = np.random.uniform(low=-1.0, high=1.0)
     else:
-        if mode == 'normal':
+        if mode == "normal":
             r_weight = np.random.normal(loc=0.299, scale=0.1)
             g_weight = np.random.normal(loc=0.587, scale=0.1)
             b_weight = np.random.normal(loc=0.114, scale=0.1)
-        elif mode == 'uniform':
+        elif mode == "uniform":
             r_weight = np.random.uniform(low=0.199, high=0.399)
             g_weight = np.random.uniform(low=0.487, high=0.687)
             b_weight = np.random.uniform(low=0.014, high=0.214)
@@ -269,8 +282,9 @@ def get_colorshift_weights(mode='uniform', Y=False):
 
 
 class ColorShift(nn.Module):
-    """ Color shift class"""
-    def __init__(self, mode='uniform', alpha=0.8, Y=False):
+    """Color shift class"""
+
+    def __init__(self, mode="uniform", alpha=0.8, Y=False):
         super(ColorShift, self).__init__()
         self.mode = mode
         self.alpha = alpha
@@ -279,5 +293,5 @@ class ColorShift(nn.Module):
     def forward(self, *img: torch.Tensor):
         rgb_weights = get_colorshift_weights(mode=self.mode, Y=self.Y)
         return (
-            color_shift(im, self.mode, rgb_weights, self.alpha, self.Y) for im in img)
-
+            color_shift(im, self.mode, rgb_weights, self.alpha, self.Y) for im in img
+        )

@@ -7,6 +7,7 @@ https://github.com/HRNet/HRFormer/blob/main/cls/models/modules/multihead_attenti
 https://github.com/HRNet/HRFormer/blob/main/cls/models/modules/ffn_block.py
 """
 import yaml
+
 with open("hrt_config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
@@ -39,7 +40,9 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 import warnings
+
 BN_MOMENTUM = 0.1
+
 
 class Mlp(nn.Module):
     def __init__(
@@ -141,6 +144,7 @@ class MlpDWBN(nn.Module):
 
         else:
             raise RuntimeError("Unsupported input shape: {}".format(x.shape))
+
 
 class MultiheadAttention(Module):
     bias_k: Optional[Tensor]
@@ -963,7 +967,6 @@ class MultiheadISAAttention(nn.Module):
         return flops
 
 
-
 class GeneralTransformerBlock(nn.Module):
     expansion = 1
 
@@ -1192,6 +1195,7 @@ class BottleneckDWP(nn.Module):
         out = self.relu(out)
 
         return out
+
 
 blocks_dict = {
     "BOTTLENECK": Bottleneck,

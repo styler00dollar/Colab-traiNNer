@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from torch.nn import init
 import pytorch_lightning as pl
 
+
 class hswish(pl.LightningModule):
     def forward(self, x):
         out = x * F.relu6(x + 3, inplace=True) / 6
@@ -25,12 +26,26 @@ class SeModule(pl.LightningModule):
         super(SeModule, self).__init__()
         self.se = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(in_size, in_size // reduction, kernel_size=1, stride=1, padding=0, bias=False),
+            nn.Conv2d(
+                in_size,
+                in_size // reduction,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                bias=False,
+            ),
             # nn.BatchNorm2d(in_size // reduction),
             nn.ReLU(inplace=True),
-            nn.Conv2d(in_size // reduction, in_size, kernel_size=1, stride=1, padding=0, bias=False),
+            nn.Conv2d(
+                in_size // reduction,
+                in_size,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                bias=False,
+            ),
             # nn.BatchNorm2d(in_size),
-            hsigmoid()
+            hsigmoid(),
         )
 
     def forward(self, x):
@@ -66,26 +81,40 @@ class SeModule(pl.LightningModule):
 #         out = nn.Tanh()(out)
 #         return out
 
+
 class Block(pl.LightningModule):
-    '''expand + depthwise + pointwise'''
+    """expand + depthwise + pointwise"""
 
     def __init__(self, kernel_size, in_size, expand_size, out_size, stride, dilation=1):
         super(Block, self).__init__()
         self.stride = stride
         self.se = SeModule(out_size)
 
-        self.conv1 = nn.Conv2d(in_size, expand_size, kernel_size=1, stride=1, padding=0, bias=False)
+        self.conv1 = nn.Conv2d(
+            in_size, expand_size, kernel_size=1, stride=1, padding=0, bias=False
+        )
         self.nolinear1 = nn.Tanh()
-        self.conv2 = nn.Conv2d(expand_size, expand_size, kernel_size=kernel_size, stride=stride,
-                               padding=(kernel_size + (kernel_size - 1) * (dilation - 1) - 1) // 2, dilation=dilation,
-                               groups=expand_size, bias=False)
+        self.conv2 = nn.Conv2d(
+            expand_size,
+            expand_size,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=(kernel_size + (kernel_size - 1) * (dilation - 1) - 1) // 2,
+            dilation=dilation,
+            groups=expand_size,
+            bias=False,
+        )
         self.nolinear2 = nn.Tanh()
-        self.conv3 = nn.Conv2d(expand_size, out_size, kernel_size=1, stride=1, padding=0, bias=False)
+        self.conv3 = nn.Conv2d(
+            expand_size, out_size, kernel_size=1, stride=1, padding=0, bias=False
+        )
 
         self.shortcut = nn.Sequential()
         if stride == 1 and in_size != out_size:
             self.shortcut = nn.Sequential(
-                nn.Conv2d(in_size, out_size, kernel_size=1, stride=1, padding=0, bias=False),
+                nn.Conv2d(
+                    in_size, out_size, kernel_size=1, stride=1, padding=0, bias=False
+                ),
             )
 
     def forward(self, x):
@@ -101,9 +130,8 @@ class Block(pl.LightningModule):
 class LinkNet(pl.LightningModule):
     def __init__(self, in_channels=3, residual_blocks=1, init_weights=True):
         super(LinkNet, self).__init__()
-        self.conv1 =    nn.Sequential(
-            nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.Tanh()
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False), nn.Tanh()
         )
         # self.conv1 =Block(3, 3, 8, 16, 2)
         self.block1 = nn.Sequential(
@@ -113,19 +141,25 @@ class LinkNet(pl.LightningModule):
         #  out 16
         self.conv2 = Block(3, 16, 64, 24, 2)
         self.block2 = nn.Sequential(
-            *[Block(3, 24, 72, 24, 1) for _ in range(residual_blocks * 2)]  # residual_blocks1
+            *[
+                Block(3, 24, 72, 24, 1) for _ in range(residual_blocks * 2)
+            ]  # residual_blocks1
         )
         #  out 24
 
         self.conv3 = Block(5, 24, 72, 40, 2)
         self.block3 = nn.Sequential(
-            *[Block(5, 40, 120, 40, 1) for _ in range(residual_blocks * 3)]  # residual_blocks2
+            *[
+                Block(5, 40, 120, 40, 1) for _ in range(residual_blocks * 3)
+            ]  # residual_blocks2
         )
         #  out 40
 
         self.conv4 = Block(3, 40, 240, 80, 2, 1)
         self.block4 = nn.Sequential(
-            *[Block(3, 80, 200, 80, 1, 4) for _ in range(residual_blocks * 4)]  # residual_blocks3
+            *[
+                Block(3, 80, 200, 80, 1, 4) for _ in range(residual_blocks * 4)
+            ]  # residual_blocks3
         )
         #  out 80
 
@@ -144,34 +178,38 @@ class LinkNet(pl.LightningModule):
         self.up2 = nn.Sequential(
             nn.Conv2d(24, 16, 3, 1, 1, bias=False),
             nn.Tanh(),
-            nn.Upsample(scale_factor=2 << 0, mode='bilinear')
+            nn.Upsample(scale_factor=2 << 0, mode="bilinear"),
         )
 
         self.up3 = nn.Sequential(
             nn.Conv2d(40, 16, 3, 1, 1, bias=False),
             nn.Tanh(),
-            nn.Upsample(scale_factor=2 << 1, mode='bilinear')
+            nn.Upsample(scale_factor=2 << 1, mode="bilinear"),
         )
         self.up4 = nn.Sequential(
             nn.Conv2d(80, 16, 3, 1, 1, bias=False),
             nn.Tanh(),
-            nn.Upsample(scale_factor=2 << 2, mode='bilinear')
+            nn.Upsample(scale_factor=2 << 2, mode="bilinear"),
         )
 
         self.up5 = nn.Sequential(
             nn.Conv2d(160, 16, 3, 1, 1, bias=False),
             nn.Tanh(),
-            nn.Upsample(scale_factor=2 << 3, mode='bilinear')
+            nn.Upsample(scale_factor=2 << 3, mode="bilinear"),
         )
 
         self.fusion = nn.Sequential(
-            *[Block(5, 80, 160, 80, 1) for _ in range(residual_blocks * 4)],  # 3x3 original:residual_blocks*2
+            *[
+                Block(5, 80, 160, 80, 1) for _ in range(residual_blocks * 4)
+            ],  # 3x3 original:residual_blocks*2
             Block(5, 80, 48, 32, 1)
             # nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
         )
 
         self.block_fusion = nn.Sequential(
-            *[Block(5, 32, 48, 32, 1) for _ in range(residual_blocks * 4)]  # 3x3 original:residual_blocks*2
+            *[
+                Block(5, 32, 48, 32, 1) for _ in range(residual_blocks * 4)
+            ]  # 3x3 original:residual_blocks*2
             # nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
         )
         self.final = nn.Conv2d(32, 3, kernel_size=3, stride=1, padding=1, bias=False)
@@ -212,8 +250,7 @@ class PyramidNet(pl.LightningModule):
     def __init__(self, in_channels=3, residual_blocks=1, init_weights=True):
         super(PyramidNet, self).__init__()
         self.conv1 = nn.Sequential(
-            nn.Conv2d(4, 16, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.Tanh()
+            nn.Conv2d(4, 16, kernel_size=3, stride=1, padding=1, bias=False), nn.Tanh()
         )
         self.block1 = nn.Sequential(
             *[Block(3, 16, 16, 16, 1) for i in range(residual_blocks)]
@@ -222,19 +259,25 @@ class PyramidNet(pl.LightningModule):
         #  out 16
         self.conv2 = Block(3, 16, 64, 24, 2)
         self.block2 = nn.Sequential(
-            *[Block(3, 24, 72, 24, 1) for _ in range(residual_blocks * 2)]  # residual_blocks1
+            *[
+                Block(3, 24, 72, 24, 1) for _ in range(residual_blocks * 2)
+            ]  # residual_blocks1
         )
         #  out 24
 
         self.conv3 = Block(5, 24, 72, 40, 2)
         self.block3 = nn.Sequential(
-            *[Block(5, 40, 120, 40, 1) for _ in range(residual_blocks * 3)]  # residual_blocks2
+            *[
+                Block(5, 40, 120, 40, 1) for _ in range(residual_blocks * 3)
+            ]  # residual_blocks2
         )
         #  out 40
 
         self.conv4 = Block(3, 40, 240, 80, 2, 2)
         self.block4 = nn.Sequential(
-            *[Block(3, 80, 200, 80, 1, 4) for _ in range(residual_blocks * 4)]  # residual_blocks3
+            *[
+                Block(3, 80, 200, 80, 1, 4) for _ in range(residual_blocks * 4)
+            ]  # residual_blocks3
         )
         #  out 80
 
@@ -276,13 +319,17 @@ class PyramidNet(pl.LightningModule):
         self.smooth1 = nn.Conv2d(16, 16, kernel_size=3, stride=1, padding=1)
 
         self.fusion = nn.Sequential(
-            *[Block(5, 80, 160, 80, 1) for _ in range(residual_blocks * 4)],  # 3x3 original:residual_blocks*2
+            *[
+                Block(5, 80, 160, 80, 1) for _ in range(residual_blocks * 4)
+            ],  # 3x3 original:residual_blocks*2
             Block(5, 80, 48, 32, 1)
             # nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
         )
 
         self.block_fusion = nn.Sequential(
-            *[Block(5, 32, 48, 32, 1) for _ in range(residual_blocks * 4)]  # 3x3 original:residual_blocks*2
+            *[
+                Block(5, 32, 48, 32, 1) for _ in range(residual_blocks * 4)
+            ]  # 3x3 original:residual_blocks*2
             # nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
         )
         self.final = nn.Conv2d(16, 3, kernel_size=3, stride=1, padding=1, bias=False)
@@ -312,16 +359,16 @@ class PyramidNet(pl.LightningModule):
         x3 = self.block3(self.conv3(x2))
         x4 = self.block4(self.conv4(x3))
         x5 = self.block5(self.conv5(x4))
-        c4=self.smooth4(self._upsample_add( self.channel_reduce4(x5),x4))
-        c3=self.smooth3(self._upsample_add( self.channel_reduce3(c4),x3))
-        c2=self.smooth2(self._upsample_add( self.channel_reduce2(c3),x2))
-        c1=self.smooth1(self._upsample_add( self.channel_reduce1(c2),x1))
+        c4 = self.smooth4(self._upsample_add(self.channel_reduce4(x5), x4))
+        c3 = self.smooth3(self._upsample_add(self.channel_reduce3(c4), x3))
+        c2 = self.smooth2(self._upsample_add(self.channel_reduce2(c3), x2))
+        c1 = self.smooth1(self._upsample_add(self.channel_reduce1(c2), x1))
         x = self.final(c1)
         out = (torch.tanh(x) + 1) / 2
         return out
 
     def _upsample_add(self, x, y):
-        '''Upsample and add two feature maps.
+        """Upsample and add two feature maps.
         Args:
           x: (Variable) top feature map to be upsampled.
           y: (Variable) lateral feature map.
@@ -335,6 +382,6 @@ class PyramidNet(pl.LightningModule):
         conv2d feature map size: [N,_,8,8] ->
         upsampled feature map size: [N,_,16,16]
         So we choose bilinear upsample which supports arbitrary output sizes.
-        '''
+        """
         _, _, H, W = y.size()
-        return F.upsample(x, size=(H, W), mode='bilinear') + y
+        return F.upsample(x, size=(H, W), mode="bilinear") + y

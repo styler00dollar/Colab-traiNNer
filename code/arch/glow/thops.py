@@ -28,7 +28,7 @@ def sum(tensor, dim=None, keepdim=False):
             tensor = tensor.sum(dim=d, keepdim=True)
         if not keepdim:
             for i, d in enumerate(dim):
-                tensor.squeeze_(d-i)
+                tensor.squeeze_(d - i)
         return tensor
 
 
@@ -44,7 +44,7 @@ def mean(tensor, dim=None, keepdim=False):
             tensor = tensor.mean(dim=d, keepdim=True)
         if not keepdim:
             for i, d in enumerate(dim):
-                tensor.squeeze_(d-i)
+                tensor.squeeze_(d - i)
         return tensor
 
 
@@ -54,7 +54,7 @@ def split_feature(tensor, type="split"):
     """
     C = tensor.size(1)
     if type == "split":
-        return tensor[:, :C // 2, ...], tensor[:, C // 2:, ...]
+        return tensor[:, : C // 2, ...], tensor[:, C // 2 :, ...]
     elif type == "cross":
         return tensor[:, 0::2, ...], tensor[:, 1::2, ...]
 

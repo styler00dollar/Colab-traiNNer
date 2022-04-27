@@ -17,7 +17,7 @@ class _ActNorm(nn.Module):
     After initialization, `bias` and `logs` will be trained as parameters.
     """
 
-    def __init__(self, num_features, scale=1.):
+    def __init__(self, num_features, scale=1.0):
         super().__init__()
         # register mean and scale
         size = [1, num_features, 1, 1]
@@ -64,7 +64,9 @@ class _ActNorm(nn.Module):
             logs = logs + offset
 
         if not reverse:
-            input = input * torch.exp(logs) # should have shape batchsize, n_channels, 1, 1
+            input = input * torch.exp(
+                logs
+            )  # should have shape batchsize, n_channels, 1, 1
             # input = input * torch.exp(logs+logs_offset)
         else:
             input = input * torch.exp(-logs)
@@ -79,7 +81,15 @@ class _ActNorm(nn.Module):
             logdet = logdet + dlogdet
         return input, logdet
 
-    def forward(self, input, logdet=None, reverse=False, offset_mask=None, logs_offset=None, bias_offset=None):
+    def forward(
+        self,
+        input,
+        logdet=None,
+        reverse=False,
+        offset_mask=None,
+        logs_offset=None,
+        bias_offset=None,
+    ):
         if not self.inited:
             self.initialize_parameters(input)
         self._check_input_dim(input)
@@ -108,7 +118,8 @@ class ActNorm2d(_ActNorm):
     Adapted from:
         > https://github.com/openai/glow
     """
-    def __init__(self, num_features, scale=1.):
+
+    def __init__(self, num_features, scale=1.0):
         super().__init__(num_features, scale)
 
     def _check_input_dim(self, input):
@@ -116,11 +127,13 @@ class ActNorm2d(_ActNorm):
         assert input.size(1) == self.num_features, (
             "[ActNorm]: input should be in shape as `BCHW`,"
             " channels should be {} rather than {}".format(
-                self.num_features, input.size()))
+                self.num_features, input.size()
+            )
+        )
 
 
 class MaskedActNorm2d(ActNorm2d):
-    def __init__(self, num_features, scale=1.):
+    def __init__(self, num_features, scale=1.0):
         super().__init__(num_features, scale)
 
     def forward(self, input, mask, logdet=None, reverse=False):
@@ -132,4 +145,3 @@ class MaskedActNorm2d(ActNorm2d):
         logdet[mask] = logdet_out[mask]
 
         return input, logdet
-

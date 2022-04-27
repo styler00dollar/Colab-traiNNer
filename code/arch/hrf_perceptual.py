@@ -39,14 +39,14 @@ segm_options = dict(colors=loadmat(colors_path)['colors'],
                     classes=pd.read_csv(classes_path),)
 """
 model_urls = {
-    'resnet50': 'http://sceneparsing.csail.mit.edu/model/pretrained_resnet/resnet50-imagenet.pth',
+    "resnet50": "http://sceneparsing.csail.mit.edu/model/pretrained_resnet/resnet50-imagenet.pth",
 }
 
 
-def load_url(url, model_dir='./pretrained', map_location=None):
+def load_url(url, model_dir="./pretrained", map_location=None):
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
-    filename = url.split('/')[-1]
+    filename = url.split("/")[-1]
     cached_file = os.path.join(model_dir, filename)
     if not os.path.exists(cached_file):
         sys.stderr.write('Downloading: "{}" to {}\n'.format(url, cached_file))
@@ -54,18 +54,17 @@ def load_url(url, model_dir='./pretrained', map_location=None):
     return torch.load(cached_file, map_location=map_location)
 
 
-def color_encode(labelmap, colors, mode='RGB'):
-    labelmap = labelmap.astype('int')
-    labelmap_rgb = np.zeros((labelmap.shape[0], labelmap.shape[1], 3),
-                            dtype=np.uint8)
+def color_encode(labelmap, colors, mode="RGB"):
+    labelmap = labelmap.astype("int")
+    labelmap_rgb = np.zeros((labelmap.shape[0], labelmap.shape[1], 3), dtype=np.uint8)
     for label in np.unique(labelmap):
         if label < 0:
             continue
-        labelmap_rgb += (labelmap == label)[:, :, np.newaxis] * \
-            np.tile(colors[label],
-                    (labelmap.shape[0], labelmap.shape[1], 1))
+        labelmap_rgb += (labelmap == label)[:, :, np.newaxis] * np.tile(
+            colors[label], (labelmap.shape[0], labelmap.shape[1], 1)
+        )
 
-    if mode == 'BGR':
+    if mode == "BGR":
         return labelmap_rgb[:, :, ::-1]
     else:
         return labelmap_rgb
@@ -73,8 +72,9 @@ def color_encode(labelmap, colors, mode='RGB'):
 
 def conv3x3(in_planes, out_planes, stride=1):
     "3x3 convolution with padding"
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=1, bias=False)
+    return nn.Conv2d(
+        in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False
+    )
 
 
 class BasicBlock(nn.Module):
@@ -116,8 +116,9 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
         self.bn1 = BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
-                               padding=1, bias=False)
+        self.conv2 = nn.Conv2d(
+            planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
+        )
         self.bn2 = BatchNorm2d(planes)
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
         self.bn3 = BatchNorm2d(planes * 4)
@@ -149,7 +150,6 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-
     def __init__(self, block, layers, num_classes=1000):
         self.inplanes = 128
         super(ResNet, self).__init__()
@@ -174,7 +174,7 @@ class ResNet(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
+                m.weight.data.normal_(0, math.sqrt(2.0 / n))
             elif isinstance(m, BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
@@ -183,8 +183,13 @@ class ResNet(nn.Module):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
+                nn.Conv2d(
+                    self.inplanes,
+                    planes * block.expansion,
+                    kernel_size=1,
+                    stride=stride,
+                    bias=False,
+                ),
                 BatchNorm2d(planes * block.expansion),
             )
 
@@ -222,7 +227,7 @@ def resnet50(pretrained=False, **kwargs):
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
-        model.load_state_dict(load_url(model_urls['resnet50']), strict=False)
+        model.load_state_dict(load_url(model_urls["resnet50"]), strict=False)
     return model
 
 
@@ -233,15 +238,17 @@ def resnet18(pretrained=False, **kwargs):
     """
     model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
     if pretrained:
-        model.load_state_dict(load_url(model_urls['resnet18']))
+        model.load_state_dict(load_url(model_urls["resnet18"]))
     return model
 
-    
+
 def check_and_warn_input_range(tensor, min_value, max_value, name):
     actual_min = tensor.min()
     actual_max = tensor.max()
     if actual_min < min_value or actual_max > max_value:
-        warnings.warn(f"{name} must be in {min_value}..{max_value} range, but it ranges {actual_min}..{actual_max}")
+        warnings.warn(
+            f"{name} must be in {min_value}..{max_value} range, but it ranges {actual_min}..{actual_max}"
+        )
 
 
 class NormalizeTensor:
@@ -280,112 +287,148 @@ class ModelBuilder:
     @staticmethod
     def weights_init(m):
         classname = m.__class__.__name__
-        if classname.find('Conv') != -1:
+        if classname.find("Conv") != -1:
             nn.init.kaiming_normal_(m.weight.data)
-        elif classname.find('BatchNorm') != -1:
-            m.weight.data.fill_(1.)
+        elif classname.find("BatchNorm") != -1:
+            m.weight.data.fill_(1.0)
             m.bias.data.fill_(1e-4)
 
     @staticmethod
-    def build_encoder(arch='resnet50dilated', fc_dim=512, weights=''):
+    def build_encoder(arch="resnet50dilated", fc_dim=512, weights=""):
         pretrained = True if len(weights) == 0 else False
         arch = arch.lower()
-        if arch == 'resnet18':
+        if arch == "resnet18":
             orig_resnet = resnet18(pretrained=pretrained)
             net_encoder = Resnet(orig_resnet)
-        elif arch == 'resnet18dilated':
+        elif arch == "resnet18dilated":
             orig_resnet = resnet18(pretrained=pretrained)
             net_encoder = ResnetDilated(orig_resnet, dilate_scale=8)
-        elif arch == 'resnet50dilated':
+        elif arch == "resnet50dilated":
             orig_resnet = resnet50(pretrained=pretrained)
             net_encoder = ResnetDilated(orig_resnet, dilate_scale=8)
-        elif arch == 'resnet50':
+        elif arch == "resnet50":
             orig_resnet = resnet50(pretrained=pretrained)
             net_encoder = Resnet(orig_resnet)
         else:
-            raise Exception('Architecture undefined!')
+            raise Exception("Architecture undefined!")
 
         # encoders are usually pretrained
         # net_encoder.apply(ModelBuilder.weights_init)
         if len(weights) > 0:
-            print('Loading weights for net_encoder')
+            print("Loading weights for net_encoder")
             net_encoder.load_state_dict(
-                torch.load(weights, map_location=lambda storage, loc: storage), strict=False)
+                torch.load(weights, map_location=lambda storage, loc: storage),
+                strict=False,
+            )
         return net_encoder
 
     @staticmethod
-    def build_decoder(arch='ppm_deepsup',
-                      fc_dim=512, num_class=NUM_CLASS,
-                      weights='', use_softmax=False, drop_last_conv=False):
+    def build_decoder(
+        arch="ppm_deepsup",
+        fc_dim=512,
+        num_class=NUM_CLASS,
+        weights="",
+        use_softmax=False,
+        drop_last_conv=False,
+    ):
         arch = arch.lower()
-        if arch == 'ppm_deepsup':
+        if arch == "ppm_deepsup":
             net_decoder = PPMDeepsup(
                 num_class=num_class,
                 fc_dim=fc_dim,
                 use_softmax=use_softmax,
-                drop_last_conv=drop_last_conv)
-        elif arch == 'c1_deepsup':
+                drop_last_conv=drop_last_conv,
+            )
+        elif arch == "c1_deepsup":
             net_decoder = C1DeepSup(
                 num_class=num_class,
                 fc_dim=fc_dim,
                 use_softmax=use_softmax,
-                drop_last_conv=drop_last_conv)
+                drop_last_conv=drop_last_conv,
+            )
         else:
-            raise Exception('Architecture undefined!')
+            raise Exception("Architecture undefined!")
 
         net_decoder.apply(ModelBuilder.weights_init)
         if len(weights) > 0:
-            print('Loading weights for net_decoder')
+            print("Loading weights for net_decoder")
             net_decoder.load_state_dict(
-                torch.load(weights, map_location=lambda storage, loc: storage), strict=False)
+                torch.load(weights, map_location=lambda storage, loc: storage),
+                strict=False,
+            )
         return net_decoder
 
     @staticmethod
-    def get_decoder(weights_path, arch_encoder, arch_decoder, fc_dim, drop_last_conv, *arts, **kwargs):
-        path = os.path.join(weights_path, 'ade20k', f'ade20k-{arch_encoder}-{arch_decoder}/decoder_epoch_20.pth')
-        return ModelBuilder.build_decoder(arch=arch_decoder, fc_dim=fc_dim, weights=path, use_softmax=True, drop_last_conv=drop_last_conv)
+    def get_decoder(
+        weights_path,
+        arch_encoder,
+        arch_decoder,
+        fc_dim,
+        drop_last_conv,
+        *arts,
+        **kwargs,
+    ):
+        path = os.path.join(
+            weights_path,
+            "ade20k",
+            f"ade20k-{arch_encoder}-{arch_decoder}/decoder_epoch_20.pth",
+        )
+        return ModelBuilder.build_decoder(
+            arch=arch_decoder,
+            fc_dim=fc_dim,
+            weights=path,
+            use_softmax=True,
+            drop_last_conv=drop_last_conv,
+        )
 
     @staticmethod
-    def get_encoder(weights_path, arch_encoder, arch_decoder, fc_dim, segmentation,
-                    *arts, **kwargs):
+    def get_encoder(
+        weights_path, arch_encoder, arch_decoder, fc_dim, segmentation, *arts, **kwargs
+    ):
         if segmentation:
-          if not os.path.exists("encoder_epoch_20.pth"):
-            import gdown
-            url = 'https://drive.google.com/uc?id=1WdN7_wZbT5ZFz1nkca41ug8MX-sTF2rf'
-            output = 'encoder_epoch_20.pth'
-            gdown.download(url, output, quiet=False)
-            print("encoder_epoch_20.pth downloaded")
-          else:
-            print("encoder_epoch_20.pth already downloaded")
-          path = "encoder_epoch_20.pth"
+            if not os.path.exists("encoder_epoch_20.pth"):
+                import gdown
+
+                url = "https://drive.google.com/uc?id=1WdN7_wZbT5ZFz1nkca41ug8MX-sTF2rf"
+                output = "encoder_epoch_20.pth"
+                gdown.download(url, output, quiet=False)
+                print("encoder_epoch_20.pth downloaded")
+            else:
+                print("encoder_epoch_20.pth already downloaded")
+            path = "encoder_epoch_20.pth"
         else:
-            path = ''
-        return ModelBuilder.build_encoder(arch=arch_encoder, fc_dim=fc_dim, weights=path)
+            path = ""
+        return ModelBuilder.build_encoder(
+            arch=arch_encoder, fc_dim=fc_dim, weights=path
+        )
 
 
 def conv3x3_bn_relu(in_planes, out_planes, stride=1):
     return nn.Sequential(
-        nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False),
+        nn.Conv2d(
+            in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False
+        ),
         BatchNorm2d(out_planes),
         nn.ReLU(inplace=True),
     )
 
 
 class SegmentationModule(nn.Module):
-    def __init__(self,
-                 weights_path,
-                 num_classes=150,
-                 arch_encoder="resnet50dilated",
-                 drop_last_conv=False,
-                 net_enc=None,  # None for Default encoder
-                 net_dec=None,  # None for Default decoder
-                 encode=None,  # {None, 'binary', 'color', 'sky'}
-                 use_default_normalization=False,
-                 return_feature_maps=False,
-                 return_feature_maps_level=3,  # {0, 1, 2, 3}
-                 return_feature_maps_only=True,
-                 **kwargs,
-                 ):
+    def __init__(
+        self,
+        weights_path,
+        num_classes=150,
+        arch_encoder="resnet50dilated",
+        drop_last_conv=False,
+        net_enc=None,  # None for Default encoder
+        net_dec=None,  # None for Default decoder
+        encode=None,  # {None, 'binary', 'color', 'sky'}
+        use_default_normalization=False,
+        return_feature_maps=False,
+        return_feature_maps_level=3,  # {0, 1, 2, 3}
+        return_feature_maps_only=True,
+        **kwargs,
+    ):
         super().__init__()
         self.weights_path = weights_path
         self.drop_last_conv = drop_last_conv
@@ -395,18 +438,29 @@ class SegmentationModule(nn.Module):
             self.fc_dim = 2048
         else:
             raise NotImplementedError(f"No such arch_encoder={self.arch_encoder}")
-        model_builder_kwargs = dict(arch_encoder=self.arch_encoder,
-                                    arch_decoder=self.arch_decoder,
-                                    fc_dim=self.fc_dim,
-                                    drop_last_conv=drop_last_conv,
-                                    weights_path=self.weights_path)
+        model_builder_kwargs = dict(
+            arch_encoder=self.arch_encoder,
+            arch_decoder=self.arch_decoder,
+            fc_dim=self.fc_dim,
+            drop_last_conv=drop_last_conv,
+            weights_path=self.weights_path,
+        )
 
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.encoder = ModelBuilder.get_encoder(**model_builder_kwargs) if net_enc is None else net_enc
-        self.decoder = ModelBuilder.get_decoder(**model_builder_kwargs) if net_dec is None else net_dec
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.encoder = (
+            ModelBuilder.get_encoder(**model_builder_kwargs)
+            if net_enc is None
+            else net_enc
+        )
+        self.decoder = (
+            ModelBuilder.get_decoder(**model_builder_kwargs)
+            if net_dec is None
+            else net_dec
+        )
         self.use_default_normalization = use_default_normalization
-        self.default_normalization = NormalizeTensor(mean=[0.485, 0.456, 0.406],
-                                                     std=[0.229, 0.224, 0.225])
+        self.default_normalization = NormalizeTensor(
+            mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+        )
 
         self.encode = encode
 
@@ -422,11 +476,13 @@ class SegmentationModule(nn.Module):
 
     @property
     def feature_maps_channels(self):
-        return 256 * 2**(self.return_feature_maps_level)  # 256, 512, 1024, 2048
+        return 256 * 2 ** (self.return_feature_maps_level)  # 256, 512, 1024, 2048
 
     def forward(self, img_data, segSize=None):
         if segSize is None:
-            raise NotImplementedError("Please pass segSize param. By default: (300, 300)")
+            raise NotImplementedError(
+                "Please pass segSize param. By default: (300, 300)"
+            )
 
         fmaps = self.encoder(img_data, return_feature_maps=True)
         pred = self.decoder(fmaps, segSize=segSize)
@@ -439,6 +495,7 @@ class SegmentationModule(nn.Module):
     def multi_mask_from_multiclass(self, pred, classes):
         def isin(ar1, ar2):
             return (ar1[..., None] == ar2).any(-1).float()
+
         return isin(pred, torch.LongTensor(classes).to(self.device))
 
     @staticmethod
@@ -451,8 +508,9 @@ class SegmentationModule(nn.Module):
                 res += scores[:, c]
         return res
 
-    def predict(self, tensor, imgSizes=(-1,),  # (300, 375, 450, 525, 600)
-                segSize=None):
+    def predict(
+        self, tensor, imgSizes=(-1,), segSize=None  # (300, 375, 450, 525, 600)
+    ):
         """Entry-point for segmentation. Use this methods instead of forward
         Arguments:
             tensor {torch.Tensor} -- BCHW
@@ -469,7 +527,9 @@ class SegmentationModule(nn.Module):
             if self.use_default_normalization:
                 tensor = self.normalize_input(tensor)
             scores = torch.zeros(1, NUM_CLASS, segSize[0], segSize[1]).to(self.device)
-            features = torch.zeros(1, self.feature_maps_channels, segSize[0], segSize[1]).to(self.device)
+            features = torch.zeros(
+                1, self.feature_maps_channels, segSize[0], segSize[1]
+            ).to(self.device)
 
             result = []
             for img_size in imgSizes:
@@ -483,13 +543,14 @@ class SegmentationModule(nn.Module):
                 else:
                     pred_current = self.forward(img_data, segSize=segSize)
 
-
                 result.append(pred_current)
                 scores = scores + pred_current / len(imgSizes)
 
                 # Disclaimer: We use and aggregate only last fmaps: fmaps[3]
                 if self.return_feature_maps:
-                    features = features + F.interpolate(fmaps[self.return_feature_maps_level], size=segSize) / len(imgSizes)
+                    features = features + F.interpolate(
+                        fmaps[self.return_feature_maps_level], size=segSize
+                    ) / len(imgSizes)
 
             _, pred = torch.max(scores, dim=1)
 
@@ -512,31 +573,43 @@ class SegmentationModule(nn.Module):
 
 # pyramid pooling, deep supervision
 class PPMDeepsup(nn.Module):
-    def __init__(self, num_class=NUM_CLASS, fc_dim=4096,
-                 use_softmax=False, pool_scales=(1, 2, 3, 6),
-                 drop_last_conv=False):
+    def __init__(
+        self,
+        num_class=NUM_CLASS,
+        fc_dim=4096,
+        use_softmax=False,
+        pool_scales=(1, 2, 3, 6),
+        drop_last_conv=False,
+    ):
         super().__init__()
         self.use_softmax = use_softmax
         self.drop_last_conv = drop_last_conv
 
         self.ppm = []
         for scale in pool_scales:
-            self.ppm.append(nn.Sequential(
-                nn.AdaptiveAvgPool2d(scale),
-                nn.Conv2d(fc_dim, 512, kernel_size=1, bias=False),
-                BatchNorm2d(512),
-                nn.ReLU(inplace=True)
-            ))
+            self.ppm.append(
+                nn.Sequential(
+                    nn.AdaptiveAvgPool2d(scale),
+                    nn.Conv2d(fc_dim, 512, kernel_size=1, bias=False),
+                    BatchNorm2d(512),
+                    nn.ReLU(inplace=True),
+                )
+            )
         self.ppm = nn.ModuleList(self.ppm)
         self.cbr_deepsup = conv3x3_bn_relu(fc_dim // 2, fc_dim // 4, 1)
 
         self.conv_last = nn.Sequential(
-            nn.Conv2d(fc_dim + len(pool_scales) * 512, 512,
-                      kernel_size=3, padding=1, bias=False),
+            nn.Conv2d(
+                fc_dim + len(pool_scales) * 512,
+                512,
+                kernel_size=3,
+                padding=1,
+                bias=False,
+            ),
             BatchNorm2d(512),
             nn.ReLU(inplace=True),
             nn.Dropout2d(0.1),
-            nn.Conv2d(512, num_class, kernel_size=1)
+            nn.Conv2d(512, num_class, kernel_size=1),
         )
         self.conv_last_deepsup = nn.Conv2d(fc_dim // 4, num_class, 1, 1, 0)
         self.dropout_deepsup = nn.Dropout2d(0.1)
@@ -547,10 +620,14 @@ class PPMDeepsup(nn.Module):
         input_size = conv5.size()
         ppm_out = [conv5]
         for pool_scale in self.ppm:
-            ppm_out.append(nn.functional.interpolate(
-                pool_scale(conv5),
-                (input_size[2], input_size[3]),
-                mode='bilinear', align_corners=False))
+            ppm_out.append(
+                nn.functional.interpolate(
+                    pool_scale(conv5),
+                    (input_size[2], input_size[3]),
+                    mode="bilinear",
+                    align_corners=False,
+                )
+            )
         ppm_out = torch.cat(ppm_out, 1)
 
         if self.drop_last_conv:
@@ -560,7 +637,8 @@ class PPMDeepsup(nn.Module):
 
             if self.use_softmax:  # is True during inference
                 x = nn.functional.interpolate(
-                    x, size=segSize, mode='bilinear', align_corners=False)
+                    x, size=segSize, mode="bilinear", align_corners=False
+                )
                 x = nn.functional.softmax(x, dim=1)
                 return x
 
@@ -604,14 +682,19 @@ class Resnet(nn.Module):
         x = self.relu3(self.bn3(self.conv3(x)))
         x = self.maxpool(x)
 
-        x = self.layer1(x); conv_out.append(x);
-        x = self.layer2(x); conv_out.append(x);
-        x = self.layer3(x); conv_out.append(x);
-        x = self.layer4(x); conv_out.append(x);
+        x = self.layer1(x)
+        conv_out.append(x)
+        x = self.layer2(x)
+        conv_out.append(x)
+        x = self.layer3(x)
+        conv_out.append(x)
+        x = self.layer4(x)
+        conv_out.append(x)
 
         if return_feature_maps:
             return conv_out
         return [x]
+
 
 # Resnet Dilated
 class ResnetDilated(nn.Module):
@@ -620,13 +703,10 @@ class ResnetDilated(nn.Module):
         from functools import partial
 
         if dilate_scale == 8:
-            orig_resnet.layer3.apply(
-                partial(self._nostride_dilate, dilate=2))
-            orig_resnet.layer4.apply(
-                partial(self._nostride_dilate, dilate=4))
+            orig_resnet.layer3.apply(partial(self._nostride_dilate, dilate=2))
+            orig_resnet.layer4.apply(partial(self._nostride_dilate, dilate=4))
         elif dilate_scale == 16:
-            orig_resnet.layer4.apply(
-                partial(self._nostride_dilate, dilate=2))
+            orig_resnet.layer4.apply(partial(self._nostride_dilate, dilate=2))
 
         # take pretrained resnet, except AvgPool and FC
         self.conv1 = orig_resnet.conv1
@@ -646,7 +726,7 @@ class ResnetDilated(nn.Module):
 
     def _nostride_dilate(self, m, dilate):
         classname = m.__class__.__name__
-        if classname.find('Conv') != -1:
+        if classname.find("Conv") != -1:
             # the convolution with stride
             if m.stride == (2, 2):
                 m.stride = (1, 1)
@@ -680,9 +760,12 @@ class ResnetDilated(nn.Module):
             return conv_out
         return [x]
 
+
 # last conv, deep supervision
 class C1DeepSup(nn.Module):
-    def __init__(self, num_class=150, fc_dim=2048, use_softmax=False, drop_last_conv=False):
+    def __init__(
+        self, num_class=150, fc_dim=2048, use_softmax=False, drop_last_conv=False
+    ):
         super(C1DeepSup, self).__init__()
         self.use_softmax = use_softmax
         self.drop_last_conv = drop_last_conv
@@ -706,7 +789,8 @@ class C1DeepSup(nn.Module):
 
             if self.use_softmax:  # is True during inference
                 x = nn.functional.interpolate(
-                    x, size=segSize, mode='bilinear', align_corners=False)
+                    x, size=segSize, mode="bilinear", align_corners=False
+                )
                 x = nn.functional.softmax(x, dim=1)
                 return x
 
@@ -737,9 +821,10 @@ class C1(nn.Module):
         x = self.cbr(conv5)
         x = self.conv_last(x)
 
-        if self.use_softmax: # is True during inference
+        if self.use_softmax:  # is True during inference
             x = nn.functional.interpolate(
-                x, size=segSize, mode='bilinear', align_corners=False)
+                x, size=segSize, mode="bilinear", align_corners=False
+            )
             x = nn.functional.softmax(x, dim=1)
         else:
             x = nn.functional.log_softmax(x, dim=1)
@@ -749,28 +834,36 @@ class C1(nn.Module):
 
 # pyramid pooling
 class PPM(nn.Module):
-    def __init__(self, num_class=150, fc_dim=4096,
-                 use_softmax=False, pool_scales=(1, 2, 3, 6)):
+    def __init__(
+        self, num_class=150, fc_dim=4096, use_softmax=False, pool_scales=(1, 2, 3, 6)
+    ):
         super(PPM, self).__init__()
         self.use_softmax = use_softmax
 
         self.ppm = []
         for scale in pool_scales:
-            self.ppm.append(nn.Sequential(
-                nn.AdaptiveAvgPool2d(scale),
-                nn.Conv2d(fc_dim, 512, kernel_size=1, bias=False),
-                BatchNorm2d(512),
-                nn.ReLU(inplace=True)
-            ))
+            self.ppm.append(
+                nn.Sequential(
+                    nn.AdaptiveAvgPool2d(scale),
+                    nn.Conv2d(fc_dim, 512, kernel_size=1, bias=False),
+                    BatchNorm2d(512),
+                    nn.ReLU(inplace=True),
+                )
+            )
         self.ppm = nn.ModuleList(self.ppm)
 
         self.conv_last = nn.Sequential(
-            nn.Conv2d(fc_dim+len(pool_scales)*512, 512,
-                      kernel_size=3, padding=1, bias=False),
+            nn.Conv2d(
+                fc_dim + len(pool_scales) * 512,
+                512,
+                kernel_size=3,
+                padding=1,
+                bias=False,
+            ),
             BatchNorm2d(512),
             nn.ReLU(inplace=True),
             nn.Dropout2d(0.1),
-            nn.Conv2d(512, num_class, kernel_size=1)
+            nn.Conv2d(512, num_class, kernel_size=1),
         )
 
     def forward(self, conv_out, segSize=None):
@@ -779,22 +872,26 @@ class PPM(nn.Module):
         input_size = conv5.size()
         ppm_out = [conv5]
         for pool_scale in self.ppm:
-            ppm_out.append(nn.functional.interpolate(
-                pool_scale(conv5),
-                (input_size[2], input_size[3]),
-                mode='bilinear', align_corners=False))
+            ppm_out.append(
+                nn.functional.interpolate(
+                    pool_scale(conv5),
+                    (input_size[2], input_size[3]),
+                    mode="bilinear",
+                    align_corners=False,
+                )
+            )
         ppm_out = torch.cat(ppm_out, 1)
 
         x = self.conv_last(ppm_out)
 
         if self.use_softmax:  # is True during inference
             x = nn.functional.interpolate(
-                x, size=segSize, mode='bilinear', align_corners=False)
+                x, size=segSize, mode="bilinear", align_corners=False
+            )
             x = nn.functional.softmax(x, dim=1)
         else:
             x = nn.functional.log_softmax(x, dim=1)
         return x
-
 
 
 class PerceptualLoss(nn.Module):
@@ -812,9 +909,9 @@ class PerceptualLoss(nn.Module):
             weights.requires_grad = False
 
         for module in vgg.modules():
-            if module.__class__.__name__ == 'Sequential':
+            if module.__class__.__name__ == "Sequential":
                 continue
-            elif module.__class__.__name__ == 'MaxPool2d':
+            elif module.__class__.__name__ == "MaxPool2d":
                 vgg_avg_pooling.append(nn.AvgPool2d(kernel_size=2, stride=2, padding=0))
             else:
                 vgg_avg_pooling.append(module)
@@ -825,7 +922,9 @@ class PerceptualLoss(nn.Module):
         return (x - self.mean_.to(x.device)) / self.std_.to(x.device)
 
     def partial_losses(self, input, target, mask=None):
-        check_and_warn_input_range(target, 0, 1, 'PerceptualLoss target in partial_losses')
+        check_and_warn_input_range(
+            target, 0, 1, "PerceptualLoss target in partial_losses"
+        )
 
         # we expect input and target to be in [0, 1] range
         losses = []
@@ -842,12 +941,16 @@ class PerceptualLoss(nn.Module):
             features_input = layer(features_input)
             features_target = layer(features_target)
 
-            if layer.__class__.__name__ == 'ReLU':
-                loss = F.mse_loss(features_input, features_target, reduction='none')
+            if layer.__class__.__name__ == "ReLU":
+                loss = F.mse_loss(features_input, features_target, reduction="none")
 
                 if mask is not None:
-                    cur_mask = F.interpolate(mask, size=features_input.shape[-2:],
-                                             mode='bilinear', align_corners=False)
+                    cur_mask = F.interpolate(
+                        mask,
+                        size=features_input.shape[-2:],
+                        mode="bilinear",
+                        align_corners=False,
+                    )
                     loss = loss * (1 - cur_mask)
 
                 loss = loss.mean(dim=tuple(range(1, len(loss.shape))))
@@ -860,7 +963,9 @@ class PerceptualLoss(nn.Module):
         return torch.stack(losses).sum(dim=0)
 
     def get_global_features(self, input):
-        check_and_warn_input_range(input, 0, 1, 'PerceptualLoss input in get_global_features')
+        check_and_warn_input_range(
+            input, 0, 1, "PerceptualLoss input in get_global_features"
+        )
 
         if self.normalize_inputs:
             features_input = self.do_normalize_inputs(input)
@@ -872,14 +977,21 @@ class PerceptualLoss(nn.Module):
 
 
 class ResNetPL(nn.Module):
-    def __init__(self, weight=1,
-                 weights_path=None, arch_encoder='resnet50dilated', segmentation=True):
+    def __init__(
+        self,
+        weight=1,
+        weights_path=None,
+        arch_encoder="resnet50dilated",
+        segmentation=True,
+    ):
         super().__init__()
-        self.impl = ModelBuilder.get_encoder(weights_path=weights_path,
-                                             arch_encoder=arch_encoder,
-                                             arch_decoder='ppm_deepsup',
-                                             fc_dim=2048,
-                                             segmentation=segmentation)
+        self.impl = ModelBuilder.get_encoder(
+            weights_path=weights_path,
+            arch_encoder=arch_encoder,
+            arch_decoder="ppm_deepsup",
+            fc_dim=2048,
+            segmentation=segmentation,
+        )
         self.impl.eval()
         for w in self.impl.parameters():
             w.requires_grad_(False)
@@ -893,7 +1005,13 @@ class ResNetPL(nn.Module):
         pred_feats = self.impl(pred, return_feature_maps=True)
         target_feats = self.impl(target, return_feature_maps=True)
 
-        result = torch.stack([F.mse_loss(cur_pred, cur_target)
-                              for cur_pred, cur_target
-                              in zip(pred_feats, target_feats)]).sum() * self.weight
+        result = (
+            torch.stack(
+                [
+                    F.mse_loss(cur_pred, cur_target)
+                    for cur_pred, cur_target in zip(pred_feats, target_feats)
+                ]
+            ).sum()
+            * self.weight
+        )
         return result

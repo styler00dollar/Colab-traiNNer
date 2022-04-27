@@ -13,47 +13,122 @@ import os
 import warnings
 import numpy as np
 import torch
-from .util import EasyDict # import dnnlib
+from .util import EasyDict  # import dnnlib
 import traceback
 
 from . import custom_ops
 from . import misc
 
-#----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 activation_funcs = {
-    'linear':   EasyDict(func=lambda x, **_:         x,                                          def_alpha=0,    def_gain=1,             cuda_idx=1, ref='',  has_2nd_grad=False),
-    'relu':     EasyDict(func=lambda x, **_:         torch.nn.functional.relu(x),                def_alpha=0,    def_gain=np.sqrt(2),    cuda_idx=2, ref='y', has_2nd_grad=False),
-    'lrelu':    EasyDict(func=lambda x, alpha, **_:  torch.nn.functional.leaky_relu(x, alpha),   def_alpha=0.2,  def_gain=np.sqrt(2),    cuda_idx=3, ref='y', has_2nd_grad=False),
-    'tanh':     EasyDict(func=lambda x, **_:         torch.tanh(x),                              def_alpha=0,    def_gain=1,             cuda_idx=4, ref='y', has_2nd_grad=True),
-    'sigmoid':  EasyDict(func=lambda x, **_:         torch.sigmoid(x),                           def_alpha=0,    def_gain=1,             cuda_idx=5, ref='y', has_2nd_grad=True),
-    'elu':      EasyDict(func=lambda x, **_:         torch.nn.functional.elu(x),                 def_alpha=0,    def_gain=1,             cuda_idx=6, ref='y', has_2nd_grad=True),
-    'selu':     EasyDict(func=lambda x, **_:         torch.nn.functional.selu(x),                def_alpha=0,    def_gain=1,             cuda_idx=7, ref='y', has_2nd_grad=True),
-    'softplus': EasyDict(func=lambda x, **_:         torch.nn.functional.softplus(x),            def_alpha=0,    def_gain=1,             cuda_idx=8, ref='y', has_2nd_grad=True),
-    'swish':    EasyDict(func=lambda x, **_:         torch.sigmoid(x) * x,                       def_alpha=0,    def_gain=np.sqrt(2),    cuda_idx=9, ref='x', has_2nd_grad=True),
+    "linear": EasyDict(
+        func=lambda x, **_: x,
+        def_alpha=0,
+        def_gain=1,
+        cuda_idx=1,
+        ref="",
+        has_2nd_grad=False,
+    ),
+    "relu": EasyDict(
+        func=lambda x, **_: torch.nn.functional.relu(x),
+        def_alpha=0,
+        def_gain=np.sqrt(2),
+        cuda_idx=2,
+        ref="y",
+        has_2nd_grad=False,
+    ),
+    "lrelu": EasyDict(
+        func=lambda x, alpha, **_: torch.nn.functional.leaky_relu(x, alpha),
+        def_alpha=0.2,
+        def_gain=np.sqrt(2),
+        cuda_idx=3,
+        ref="y",
+        has_2nd_grad=False,
+    ),
+    "tanh": EasyDict(
+        func=lambda x, **_: torch.tanh(x),
+        def_alpha=0,
+        def_gain=1,
+        cuda_idx=4,
+        ref="y",
+        has_2nd_grad=True,
+    ),
+    "sigmoid": EasyDict(
+        func=lambda x, **_: torch.sigmoid(x),
+        def_alpha=0,
+        def_gain=1,
+        cuda_idx=5,
+        ref="y",
+        has_2nd_grad=True,
+    ),
+    "elu": EasyDict(
+        func=lambda x, **_: torch.nn.functional.elu(x),
+        def_alpha=0,
+        def_gain=1,
+        cuda_idx=6,
+        ref="y",
+        has_2nd_grad=True,
+    ),
+    "selu": EasyDict(
+        func=lambda x, **_: torch.nn.functional.selu(x),
+        def_alpha=0,
+        def_gain=1,
+        cuda_idx=7,
+        ref="y",
+        has_2nd_grad=True,
+    ),
+    "softplus": EasyDict(
+        func=lambda x, **_: torch.nn.functional.softplus(x),
+        def_alpha=0,
+        def_gain=1,
+        cuda_idx=8,
+        ref="y",
+        has_2nd_grad=True,
+    ),
+    "swish": EasyDict(
+        func=lambda x, **_: torch.sigmoid(x) * x,
+        def_alpha=0,
+        def_gain=np.sqrt(2),
+        cuda_idx=9,
+        ref="x",
+        has_2nd_grad=True,
+    ),
 }
 
-#----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 _inited = False
 _plugin = None
 _null_tensor = torch.empty([0])
 
+
 def _init():
     global _inited, _plugin
     if not _inited:
         _inited = True
-        sources = ['bias_act.cpp', 'bias_act.cu']
+        sources = ["bias_act.cpp", "bias_act.cu"]
         sources = [os.path.join(os.path.dirname(__file__), s) for s in sources]
         try:
-            _plugin = custom_ops.get_plugin('bias_act_plugin', sources=sources, extra_cuda_cflags=['--use_fast_math'])
+            _plugin = custom_ops.get_plugin(
+                "bias_act_plugin",
+                sources=sources,
+                extra_cuda_cflags=["--use_fast_math"],
+            )
         except:
-            warnings.warn('Failed to build CUDA kernels for bias_act. Falling back to slow reference implementation. Details:\n\n' + traceback.format_exc())
+            warnings.warn(
+                "Failed to build CUDA kernels for bias_act. Falling back to slow reference implementation. Details:\n\n"
+                + traceback.format_exc()
+            )
     return _plugin is not None
 
-#----------------------------------------------------------------------------
 
-def bias_act(x, b=None, dim=1, act='linear', alpha=None, gain=None, clamp=None, impl='cuda'):
+# ----------------------------------------------------------------------------
+
+
+def bias_act(
+    x, b=None, dim=1, act="linear", alpha=None, gain=None, clamp=None, impl="cuda"
+):
     r"""Fused bias and activation function.
 
     Adds bias `b` to activation tensor `x`, evaluates activation function `act`,
@@ -84,17 +159,22 @@ def bias_act(x, b=None, dim=1, act='linear', alpha=None, gain=None, clamp=None, 
         Tensor of the same shape and datatype as `x`.
     """
     assert isinstance(x, torch.Tensor)
-    assert impl in ['ref', 'cuda']
-    if impl == 'cuda' and x.device.type == 'cuda' and _init():
-        return _bias_act_cuda(dim=dim, act=act, alpha=alpha, gain=gain, clamp=clamp).apply(x, b)
-    return _bias_act_ref(x=x, b=b, dim=dim, act=act, alpha=alpha, gain=gain, clamp=clamp)
+    assert impl in ["ref", "cuda"]
+    if impl == "cuda" and x.device.type == "cuda" and _init():
+        return _bias_act_cuda(
+            dim=dim, act=act, alpha=alpha, gain=gain, clamp=clamp
+        ).apply(x, b)
+    return _bias_act_ref(
+        x=x, b=b, dim=dim, act=act, alpha=alpha, gain=gain, clamp=clamp
+    )
 
-#----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
+
 
 @misc.profiled_function
-def _bias_act_ref(x, b=None, dim=1, act='linear', alpha=None, gain=None, clamp=None):
-    """Slow reference implementation of `bias_act()` using standard TensorFlow ops.
-    """
+def _bias_act_ref(x, b=None, dim=1, act="linear", alpha=None, gain=None, clamp=None):
+    """Slow reference implementation of `bias_act()` using standard TensorFlow ops."""
     assert isinstance(x, torch.Tensor)
     assert clamp is None or clamp >= 0
     spec = activation_funcs[act]
@@ -120,16 +200,17 @@ def _bias_act_ref(x, b=None, dim=1, act='linear', alpha=None, gain=None, clamp=N
 
     # Clamp.
     if clamp >= 0:
-        x = x.clamp(-clamp, clamp) # pylint: disable=invalid-unary-operand-type
+        x = x.clamp(-clamp, clamp)  # pylint: disable=invalid-unary-operand-type
     return x
 
-#----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
 
 _bias_act_cuda_cache = dict()
 
-def _bias_act_cuda(dim=1, act='linear', alpha=None, gain=None, clamp=None):
-    """Fast CUDA implementation of `bias_act()` using custom ops.
-    """
+
+def _bias_act_cuda(dim=1, act="linear", alpha=None, gain=None, clamp=None):
+    """Fast CUDA implementation of `bias_act()` using custom ops."""
     # Parse arguments.
     assert clamp is None or clamp >= 0
     spec = activation_funcs[act]
@@ -145,21 +226,38 @@ def _bias_act_cuda(dim=1, act='linear', alpha=None, gain=None, clamp=None):
     # Forward op.
     class BiasActCuda(torch.autograd.Function):
         @staticmethod
-        def forward(ctx, x, b): # pylint: disable=arguments-differ
-            ctx.memory_format = torch.channels_last if x.ndim > 2 and x.stride()[1] == 1 else torch.contiguous_format
+        def forward(ctx, x, b):  # pylint: disable=arguments-differ
+            ctx.memory_format = (
+                torch.channels_last
+                if x.ndim > 2 and x.stride()[1] == 1
+                else torch.contiguous_format
+            )
             x = x.contiguous(memory_format=ctx.memory_format)
             b = b.contiguous() if b is not None else _null_tensor
             y = x
-            if act != 'linear' or gain != 1 or clamp >= 0 or b is not _null_tensor:
-                y = _plugin.bias_act(x, b, _null_tensor, _null_tensor, _null_tensor, 0, dim, spec.cuda_idx, alpha, gain, clamp)
+            if act != "linear" or gain != 1 or clamp >= 0 or b is not _null_tensor:
+                y = _plugin.bias_act(
+                    x,
+                    b,
+                    _null_tensor,
+                    _null_tensor,
+                    _null_tensor,
+                    0,
+                    dim,
+                    spec.cuda_idx,
+                    alpha,
+                    gain,
+                    clamp,
+                )
             ctx.save_for_backward(
-                x if 'x' in spec.ref or spec.has_2nd_grad else _null_tensor,
-                b if 'x' in spec.ref or spec.has_2nd_grad else _null_tensor,
-                y if 'y' in spec.ref else _null_tensor)
+                x if "x" in spec.ref or spec.has_2nd_grad else _null_tensor,
+                b if "x" in spec.ref or spec.has_2nd_grad else _null_tensor,
+                y if "y" in spec.ref else _null_tensor,
+            )
             return y
 
         @staticmethod
-        def backward(ctx, dy): # pylint: disable=arguments-differ
+        def backward(ctx, dy):  # pylint: disable=arguments-differ
             dy = dy.contiguous(memory_format=ctx.memory_format)
             x, b, y = ctx.saved_tensors
             dx = None
@@ -167,7 +265,7 @@ def _bias_act_cuda(dim=1, act='linear', alpha=None, gain=None, clamp=None):
 
             if ctx.needs_input_grad[0] or ctx.needs_input_grad[1]:
                 dx = dy
-                if act != 'linear' or gain != 1 or clamp >= 0:
+                if act != "linear" or gain != 1 or clamp >= 0:
                     dx = BiasActCudaGrad.apply(dy, x, b, y)
 
             if ctx.needs_input_grad[1]:
@@ -178,16 +276,20 @@ def _bias_act_cuda(dim=1, act='linear', alpha=None, gain=None, clamp=None):
     # Backward op.
     class BiasActCudaGrad(torch.autograd.Function):
         @staticmethod
-        def forward(ctx, dy, x, b, y): # pylint: disable=arguments-differ
-            ctx.memory_format = torch.channels_last if dy.ndim > 2 and dy.stride()[1] == 1 else torch.contiguous_format
-            dx = _plugin.bias_act(dy, b, x, y, _null_tensor, 1, dim, spec.cuda_idx, alpha, gain, clamp)
-            ctx.save_for_backward(
-                dy if spec.has_2nd_grad else _null_tensor,
-                x, b, y)
+        def forward(ctx, dy, x, b, y):  # pylint: disable=arguments-differ
+            ctx.memory_format = (
+                torch.channels_last
+                if dy.ndim > 2 and dy.stride()[1] == 1
+                else torch.contiguous_format
+            )
+            dx = _plugin.bias_act(
+                dy, b, x, y, _null_tensor, 1, dim, spec.cuda_idx, alpha, gain, clamp
+            )
+            ctx.save_for_backward(dy if spec.has_2nd_grad else _null_tensor, x, b, y)
             return dx
 
         @staticmethod
-        def backward(ctx, d_dx): # pylint: disable=arguments-differ
+        def backward(ctx, d_dx):  # pylint: disable=arguments-differ
             d_dx = d_dx.contiguous(memory_format=ctx.memory_format)
             dy, x, b, y = ctx.saved_tensors
             d_dy = None
@@ -198,8 +300,12 @@ def _bias_act_cuda(dim=1, act='linear', alpha=None, gain=None, clamp=None):
             if ctx.needs_input_grad[0]:
                 d_dy = BiasActCudaGrad.apply(d_dx, x, b, y)
 
-            if spec.has_2nd_grad and (ctx.needs_input_grad[1] or ctx.needs_input_grad[2]):
-                d_x = _plugin.bias_act(d_dx, b, x, y, dy, 2, dim, spec.cuda_idx, alpha, gain, clamp)
+            if spec.has_2nd_grad and (
+                ctx.needs_input_grad[1] or ctx.needs_input_grad[2]
+            ):
+                d_x = _plugin.bias_act(
+                    d_dx, b, x, y, dy, 2, dim, spec.cuda_idx, alpha, gain, clamp
+                )
 
             if spec.has_2nd_grad and ctx.needs_input_grad[2]:
                 d_b = d_x.sum([i for i in range(d_x.ndim) if i != dim])
@@ -210,4 +316,5 @@ def _bias_act_cuda(dim=1, act='linear', alpha=None, gain=None, clamp=None):
     _bias_act_cuda_cache[key] = BiasActCuda
     return BiasActCuda
 
-#----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------

@@ -5,17 +5,21 @@ https://github.com/victorca25/BasicSR/blob/14aced7d1049a283761c145f3cf300a94c6ac
 import torch
 from torch import nn as nn
 
-#from models.modules.architectures.glow import thops
+# from models.modules.architectures.glow import thops
 from arch.glow import thops
-#from models.modules.architectures.glow.flow import Conv2d, Conv2dZeros
+
+# from models.modules.architectures.glow.flow import Conv2d, Conv2dZeros
 from arch.glow.flow import Conv2d, Conv2dZeros
-#from options.options import opt_get
+
+# from options.options import opt_get
 """
 import yaml
 
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 """
+
+
 class CondAffineSeparatedAndCond(nn.Module):
     def __init__(self, in_channels, opt):
         super().__init__()
@@ -25,11 +29,11 @@ class CondAffineSeparatedAndCond(nn.Module):
         self.kernel_hidden = 1  # from GLOW/RealNVP papers
         self.affine_eps = 0.0001
         self.n_hidden_layers = 1  # from GLOW/RealNVP papers
-        #hidden_channels = opt_get(opt, ['network_G', 'flow', 'CondAffineSeparatedAndCond', 'hidden_channels'])
-        #self.hidden_channels = 64 if hidden_channels is None else hidden_channels
+        # hidden_channels = opt_get(opt, ['network_G', 'flow', 'CondAffineSeparatedAndCond', 'hidden_channels'])
+        # self.hidden_channels = 64 if hidden_channels is None else hidden_channels
         self.hidden_channels = 64
 
-        #self.affine_eps = opt_get(opt, ['network_G', 'flow', 'CondAffineSeparatedAndCond', 'eps'],  0.0001)
+        # self.affine_eps = opt_get(opt, ['network_G', 'flow', 'CondAffineSeparatedAndCond', 'eps'],  0.0001)
         self.affine_eps = 0.0001
 
         self.channels_for_nn = self.in_channels // 2
@@ -38,17 +42,21 @@ class CondAffineSeparatedAndCond(nn.Module):
         if self.channels_for_nn is None:
             self.channels_for_nn = self.in_channels // 2
 
-        self.fAffine = self.F(in_channels=self.channels_for_nn + self.in_channels_rrdb,
-                              out_channels=self.channels_for_co * 2,
-                              hidden_channels=self.hidden_channels,
-                              kernel_hidden=self.kernel_hidden,
-                              n_hidden_layers=self.n_hidden_layers)
+        self.fAffine = self.F(
+            in_channels=self.channels_for_nn + self.in_channels_rrdb,
+            out_channels=self.channels_for_co * 2,
+            hidden_channels=self.hidden_channels,
+            kernel_hidden=self.kernel_hidden,
+            n_hidden_layers=self.n_hidden_layers,
+        )
 
-        self.fFeatures = self.F(in_channels=self.in_channels_rrdb,
-                                out_channels=self.in_channels * 2,
-                                hidden_channels=self.hidden_channels,
-                                kernel_hidden=self.kernel_hidden,
-                                n_hidden_layers=self.n_hidden_layers)
+        self.fFeatures = self.F(
+            in_channels=self.in_channels_rrdb,
+            out_channels=self.in_channels * 2,
+            hidden_channels=self.hidden_channels,
+            kernel_hidden=self.kernel_hidden,
+            n_hidden_layers=self.n_hidden_layers,
+        )
 
     def forward(self, input: torch.Tensor, logdet=None, reverse=False, ft=None):
         if not reverse:
@@ -78,7 +86,7 @@ class CondAffineSeparatedAndCond(nn.Module):
             z1, z2 = self.split(z)
             scale, shift = self.feature_extract_aff(z1, ft, self.fAffine)
             self.asserts(scale, shift, z1, z2)
-            #z2 = z2 / scale
+            # z2 = z2 / scale
             z2 = z2.cuda() / scale.cuda()
             z2 = z2 - shift
             z = thops.cat_feature(z1, z2)
@@ -103,36 +111,48 @@ class CondAffineSeparatedAndCond(nn.Module):
         return thops.sum(torch.log(scale), dim=[1, 2, 3])
 
     def feature_extract(self, z, f):
-        #TODO: The original OpenAI glow code uses gradient checkpointing, an efficient way 
-        # of reducing peak memory consumption. Test adding gradient checkpointing to reduce 
+        # TODO: The original OpenAI glow code uses gradient checkpointing, an efficient way
+        # of reducing peak memory consumption. Test adding gradient checkpointing to reduce
         # memory consumption.
         # h = torch.utils.checkpoint.checkpoint(f, z) # change the line below to this.
         h = f(z)
         shift, scale = thops.split_feature(h, "cross")
-        #TODO: test with tanh instead of sigmoid like in RealNVP
-        scale = (torch.sigmoid(scale + 2.) + self.affine_eps)
+        # TODO: test with tanh instead of sigmoid like in RealNVP
+        scale = torch.sigmoid(scale + 2.0) + self.affine_eps
         return scale, shift
 
     def feature_extract_aff(self, z1, ft, f):
-        #z = torch.cat([z1, ft], dim=1)
+        # z = torch.cat([z1, ft], dim=1)
         z = torch.cat([z1.cuda(), ft.cuda()], dim=1)
-        #TODO: The original OpenAI glow code uses gradient checkpointing, an efficient way 
-        # of reducing peak memory consumption. Test adding gradient checkpointing to reduce 
+        # TODO: The original OpenAI glow code uses gradient checkpointing, an efficient way
+        # of reducing peak memory consumption. Test adding gradient checkpointing to reduce
         # memory consumption.
         # h = torch.utils.checkpoint.checkpoint(f, z) # change the line below to this.
         h = f(z)
         shift, scale = thops.split_feature(h, "cross")
-        #TODO: test with tanh instead of sigmoid like in RealNVP
-        scale = (torch.sigmoid(scale + 2.) + self.affine_eps)
+        # TODO: test with tanh instead of sigmoid like in RealNVP
+        scale = torch.sigmoid(scale + 2.0) + self.affine_eps
         return scale, shift
 
     def split(self, z):
-        z1 = z[:, :self.channels_for_nn]
-        z2 = z[:, self.channels_for_nn:]
-        assert z1.shape[1] + z2.shape[1] == z.shape[1], (z1.shape[1], z2.shape[1], z.shape[1])
+        z1 = z[:, : self.channels_for_nn]
+        z2 = z[:, self.channels_for_nn :]
+        assert z1.shape[1] + z2.shape[1] == z.shape[1], (
+            z1.shape[1],
+            z2.shape[1],
+            z.shape[1],
+        )
         return z1, z2
 
-    def F(self, in_channels, out_channels, hidden_channels, kernel_hidden=1, n_hidden_layers=1, do_actnorm=True):
+    def F(
+        self,
+        in_channels,
+        out_channels,
+        hidden_channels,
+        kernel_hidden=1,
+        n_hidden_layers=1,
+        do_actnorm=True,
+    ):
         """Convolutional network used to compute scale and translate factors.
         Args:
             in_channels (int): Number of channels in the input.
@@ -142,17 +162,24 @@ class CondAffineSeparatedAndCond(nn.Module):
             out_channels (int): Number of channels in the output.
             do_actnorm (bool): use ActNorm in the convolutions.
         Note:
-            In the glow paper there is no mention of using activations, but 
-            in the code they use ActNorm (alt: BatchNorm) before every 
+            In the glow paper there is no mention of using activations, but
+            in the code they use ActNorm (alt: BatchNorm) before every
             convolution that could help achieve lower losses more quickly.
         """
-        layers = [Conv2d(in_channels, hidden_channels, do_actnorm=do_actnorm), nn.ReLU(inplace=False)]
+        layers = [
+            Conv2d(in_channels, hidden_channels, do_actnorm=do_actnorm),
+            nn.ReLU(inplace=False),
+        ]
 
         for _ in range(n_hidden_layers):
-            layers.append(Conv2d(hidden_channels,
-                                 hidden_channels,
-                                 kernel_size=[kernel_hidden, kernel_hidden],
-                                 do_actnorm=do_actnorm))
+            layers.append(
+                Conv2d(
+                    hidden_channels,
+                    hidden_channels,
+                    kernel_size=[kernel_hidden, kernel_hidden],
+                    do_actnorm=do_actnorm,
+                )
+            )
             layers.append(nn.ReLU(inplace=False))
         layers.append(Conv2dZeros(hidden_channels, out_channels))
 

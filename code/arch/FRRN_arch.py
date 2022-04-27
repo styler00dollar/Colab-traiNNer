@@ -5,8 +5,10 @@ https://github.com/ZongyuGuo/Inpainting_FRRN/blob/master/src/networks.py
 
 import torch
 import torch.nn as nn
-#from .convolutions import partialconv2d
+
+# from .convolutions import partialconv2d
 import pytorch_lightning as pl
+
 
 class FRRNet(pl.LightningModule):
     def __init__(self, block_num=16):
@@ -38,16 +40,30 @@ class FRRNet(pl.LightningModule):
 class FRRBlock(pl.LightningModule):
     def __init__(self):
         super(FRRBlock, self).__init__()
-        self.full_conv1 = PConvLayer(3,  32, kernel_size=5, stride=1, padding=2, use_norm=False)
-        self.full_conv2 = PConvLayer(32, 32, kernel_size=5, stride=1, padding=2, use_norm=False)
-        self.full_conv3 = PConvLayer(32, 3,  kernel_size=5, stride=1, padding=2, use_norm=False)
-        self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
-        self.branch_conv1 = PConvLayer(3,   64,  kernel_size=3, stride=2, padding=1, use_norm=False)
-        self.branch_conv2 = PConvLayer(64,  96,  kernel_size=3, stride=2, padding=1)
-        self.branch_conv3 = PConvLayer(96,  128, kernel_size=3, stride=2, padding=1)
-        self.branch_conv4 = PConvLayer(128, 96,  kernel_size=3, stride=1, padding=1, act='LeakyReLU')
-        self.branch_conv5 = PConvLayer(96,  64,  kernel_size=3, stride=1, padding=1, act='LeakyReLU')
-        self.branch_conv6 = PConvLayer(64,  3,   kernel_size=3, stride=1, padding=1, act='Tanh')
+        self.full_conv1 = PConvLayer(
+            3, 32, kernel_size=5, stride=1, padding=2, use_norm=False
+        )
+        self.full_conv2 = PConvLayer(
+            32, 32, kernel_size=5, stride=1, padding=2, use_norm=False
+        )
+        self.full_conv3 = PConvLayer(
+            32, 3, kernel_size=5, stride=1, padding=2, use_norm=False
+        )
+        self.upsample = nn.Upsample(scale_factor=2, mode="nearest")
+        self.branch_conv1 = PConvLayer(
+            3, 64, kernel_size=3, stride=2, padding=1, use_norm=False
+        )
+        self.branch_conv2 = PConvLayer(64, 96, kernel_size=3, stride=2, padding=1)
+        self.branch_conv3 = PConvLayer(96, 128, kernel_size=3, stride=2, padding=1)
+        self.branch_conv4 = PConvLayer(
+            128, 96, kernel_size=3, stride=1, padding=1, act="LeakyReLU"
+        )
+        self.branch_conv5 = PConvLayer(
+            96, 64, kernel_size=3, stride=1, padding=1, act="LeakyReLU"
+        )
+        self.branch_conv6 = PConvLayer(
+            64, 3, kernel_size=3, stride=1, padding=1, act="Tanh"
+        )
 
     def forward(self, input, mask, mask_ori):
         x = input
@@ -71,23 +87,37 @@ class FRRBlock(pl.LightningModule):
 
         mask_new = mask_f * mask_b
         out = (out_f * mask_new + out_b * mask_new) / 2 * (1 - mask_ori) + input
-        #out = (out_f * mask_new + out_b * mask_new) / 2 * (1 - mask_ori) + input * mask_ori
+        # out = (out_f * mask_new + out_b * mask_new) / 2 * (1 - mask_ori) + input * mask_ori
         return out, mask_new
 
 
-
 class PConvLayer(pl.LightningModule):
-    def __init__(self, in_channels, out_channels, kernel_size, stride, padding, act='ReLU', use_norm=True):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride,
+        padding,
+        act="ReLU",
+        use_norm=True,
+    ):
         super(PConvLayer, self).__init__()
-        self.conv = PartialConv2d(in_channels=in_channels, out_channels=out_channels,
-                        kernel_size=kernel_size, stride=stride, padding=padding, return_mask=True)
+        self.conv = PartialConv2d(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            return_mask=True,
+        )
         self.norm = nn.InstanceNorm2d(out_channels, track_running_stats=False)
         self.use_norm = use_norm
-        if act == 'ReLU':
+        if act == "ReLU":
             self.act = nn.ReLU(True)
-        elif act == 'LeakyReLU':
+        elif act == "LeakyReLU":
             self.act = nn.LeakyReLU(0.2, True)
-        elif act == 'Tanh':
+        elif act == "Tanh":
             self.act = nn.Tanh()
 
     def forward(self, x, mask):

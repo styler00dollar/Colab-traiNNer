@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 
+
 class ResModule(pl.LightningModule):
     def __init__(self, num_features, normalization):
         super(ResModule, self).__init__()
@@ -22,43 +23,62 @@ class ResModule(pl.LightningModule):
         return x + self.block(x)
 
 
-
 class InpaintNet(pl.LightningModule):
     def __init__(self):
         super(InpaintNet, self).__init__()
         cnum = 64
         num_of_resblock = 8
-        normalization_config = 'batch_norm'
+        normalization_config = "batch_norm"
 
-        if normalization_config == 'batch_norm':
+        if normalization_config == "batch_norm":
             normalization = nn.BatchNorm2d
-        elif normalization_config == 'instance_norm':
+        elif normalization_config == "instance_norm":
             normalization = nn.InstanceNorm2d
         else:
-            raise ValueError("batch normalization or instance normalization is only available")
+            raise ValueError(
+                "batch normalization or instance normalization is only available"
+            )
 
-        self.enc_conv1 = nn.Conv2d(in_channels=4, out_channels=cnum, kernel_size=3, stride=1, padding=1)  # cnum, 128, 128
+        self.enc_conv1 = nn.Conv2d(
+            in_channels=4, out_channels=cnum, kernel_size=3, stride=1, padding=1
+        )  # cnum, 128, 128
         self.enc_norm1 = normalization(num_features=cnum)
         self.enc_activation1 = nn.ReLU(inplace=True)
-        self.enc_conv2 = nn.Conv2d(in_channels=cnum, out_channels=2*cnum, kernel_size=3, stride=2, padding=1)  # 2cnum, 64, 64
-        self.enc_norm2 = normalization(num_features=2*cnum)
+        self.enc_conv2 = nn.Conv2d(
+            in_channels=cnum, out_channels=2 * cnum, kernel_size=3, stride=2, padding=1
+        )  # 2cnum, 64, 64
+        self.enc_norm2 = normalization(num_features=2 * cnum)
         self.enc_activation2 = nn.ReLU(inplace=True)
-        self.enc_conv3 = nn.Conv2d(in_channels=2*cnum, out_channels=4*cnum, kernel_size=3, stride=2, padding=1)  # 4cnum, 32, 32
+        self.enc_conv3 = nn.Conv2d(
+            in_channels=2 * cnum,
+            out_channels=4 * cnum,
+            kernel_size=3,
+            stride=2,
+            padding=1,
+        )  # 4cnum, 32, 32
 
-        res = [ResModule(4*cnum, normalization) for _ in range(num_of_resblock)]
-        self.res_module = nn.Sequential(
-            *res
-        )
+        res = [ResModule(4 * cnum, normalization) for _ in range(num_of_resblock)]
+        self.res_module = nn.Sequential(*res)
 
-        self.dec_norm1 = normalization(4*cnum)
+        self.dec_norm1 = normalization(4 * cnum)
         self.dec_activation1 = nn.ReLU(inplace=True)
-        self.dec_conv1 = nn.Conv2d(in_channels=4*cnum, out_channels=2*cnum, kernel_size=3, stride=1, padding=1)    # 2*cnum, 64, 64
-        self.dec_norm2 = normalization(num_features=2*cnum)
+        self.dec_conv1 = nn.Conv2d(
+            in_channels=4 * cnum,
+            out_channels=2 * cnum,
+            kernel_size=3,
+            stride=1,
+            padding=1,
+        )  # 2*cnum, 64, 64
+        self.dec_norm2 = normalization(num_features=2 * cnum)
         self.dec_activation2 = nn.ReLU(inplace=True)
-        self.dec_conv2 = nn.Conv2d(in_channels=2*cnum, out_channels=cnum, kernel_size=3, stride=1, padding=1)   # cnum, 128, 128
+        self.dec_conv2 = nn.Conv2d(
+            in_channels=2 * cnum, out_channels=cnum, kernel_size=3, stride=1, padding=1
+        )  # cnum, 128, 128
         self.dec_norm3 = normalization(num_features=cnum)
         self.dec_activation3 = nn.ReLU(inplace=True)
-        self.dec_conv3 = nn.Conv2d(in_channels=cnum, out_channels=3, kernel_size=3, stride=1, padding=1)    # 3, 128, 128
+        self.dec_conv3 = nn.Conv2d(
+            in_channels=cnum, out_channels=3, kernel_size=3, stride=1, padding=1
+        )  # 3, 128, 128
         self.tanh = nn.Tanh()
 
     def forward(self, image, mask):

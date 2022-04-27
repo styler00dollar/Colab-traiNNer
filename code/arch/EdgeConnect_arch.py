@@ -8,60 +8,71 @@ import torch.nn as nn
 import os
 import torch.optim as optim
 
-#from models.modules.architectures.convolutions.partialconv2d import PartialConv2d
-#from models.modules.architectures.convolutions.deformconv2d import DeformConv2d
+# from models.modules.architectures.convolutions.partialconv2d import PartialConv2d
+# from models.modules.architectures.convolutions.deformconv2d import DeformConv2d
 import pytorch_lightning as pl
 from torchvision.utils import save_image
 
+
 class InpaintGenerator(pl.LightningModule):
-    def __init__(self, residual_blocks=8, init_weights=True, conv_type='deform'):
+    def __init__(self, residual_blocks=8, init_weights=True, conv_type="deform"):
         super(InpaintGenerator, self).__init__()
 
-        if conv_type == 'normal':
-          self.encoder = nn.Sequential(
-              nn.ReflectionPad2d(3),
-              nn.Conv2d(in_channels=4, out_channels=64, kernel_size=7, padding=0),
-              nn.InstanceNorm2d(64, track_running_stats=False),
-              nn.ReLU(True),
-
-              nn.Conv2d(in_channels=64, out_channels=128, kernel_size=4, stride=2, padding=1),
-              nn.InstanceNorm2d(128, track_running_stats=False),
-              nn.ReLU(True),
-
-              nn.Conv2d(in_channels=128, out_channels=256, kernel_size=4, stride=2, padding=1),
-              nn.InstanceNorm2d(256, track_running_stats=False),
-              nn.ReLU(True)
-          )
-        elif conv_type == 'partial':
-          self.encoder = nn.Sequential(
-              nn.ReflectionPad2d(3),
-              PartialConv2d(in_channels=4, out_channels=64, kernel_size=7, padding=0),
-              nn.InstanceNorm2d(64, track_running_stats=False),
-              nn.ReLU(True),
-
-              PartialConv2d(in_channels=64, out_channels=128, kernel_size=4, stride=2, padding=1),
-              nn.InstanceNorm2d(128, track_running_stats=False),
-              nn.ReLU(True),
-
-              PartialConv2d(in_channels=128, out_channels=256, kernel_size=4, stride=2, padding=1),
-              nn.InstanceNorm2d(256, track_running_stats=False),
-              nn.ReLU(True)
-          )
-        elif conv_type == 'deform':
-          self.encoder = nn.Sequential(
-              nn.ReflectionPad2d(3),
-              DeformConv2d(in_nc=4, out_nc=64, kernel_size=7, padding=0),
-              nn.InstanceNorm2d(64, track_running_stats=False),
-              nn.ReLU(True),
-
-              DeformConv2d(in_nc=64, out_nc=128, kernel_size=4, stride=2, padding=1),
-              nn.InstanceNorm2d(128, track_running_stats=False),
-              nn.ReLU(True),
-
-              DeformConv2d(in_nc=128, out_nc=256, kernel_size=4, stride=2, padding=1),
-              nn.InstanceNorm2d(256, track_running_stats=False),
-              nn.ReLU(True)
-          )
+        if conv_type == "normal":
+            self.encoder = nn.Sequential(
+                nn.ReflectionPad2d(3),
+                nn.Conv2d(in_channels=4, out_channels=64, kernel_size=7, padding=0),
+                nn.InstanceNorm2d(64, track_running_stats=False),
+                nn.ReLU(True),
+                nn.Conv2d(
+                    in_channels=64, out_channels=128, kernel_size=4, stride=2, padding=1
+                ),
+                nn.InstanceNorm2d(128, track_running_stats=False),
+                nn.ReLU(True),
+                nn.Conv2d(
+                    in_channels=128,
+                    out_channels=256,
+                    kernel_size=4,
+                    stride=2,
+                    padding=1,
+                ),
+                nn.InstanceNorm2d(256, track_running_stats=False),
+                nn.ReLU(True),
+            )
+        elif conv_type == "partial":
+            self.encoder = nn.Sequential(
+                nn.ReflectionPad2d(3),
+                PartialConv2d(in_channels=4, out_channels=64, kernel_size=7, padding=0),
+                nn.InstanceNorm2d(64, track_running_stats=False),
+                nn.ReLU(True),
+                PartialConv2d(
+                    in_channels=64, out_channels=128, kernel_size=4, stride=2, padding=1
+                ),
+                nn.InstanceNorm2d(128, track_running_stats=False),
+                nn.ReLU(True),
+                PartialConv2d(
+                    in_channels=128,
+                    out_channels=256,
+                    kernel_size=4,
+                    stride=2,
+                    padding=1,
+                ),
+                nn.InstanceNorm2d(256, track_running_stats=False),
+                nn.ReLU(True),
+            )
+        elif conv_type == "deform":
+            self.encoder = nn.Sequential(
+                nn.ReflectionPad2d(3),
+                DeformConv2d(in_nc=4, out_nc=64, kernel_size=7, padding=0),
+                nn.InstanceNorm2d(64, track_running_stats=False),
+                nn.ReLU(True),
+                DeformConv2d(in_nc=64, out_nc=128, kernel_size=4, stride=2, padding=1),
+                nn.InstanceNorm2d(128, track_running_stats=False),
+                nn.ReLU(True),
+                DeformConv2d(in_nc=128, out_nc=256, kernel_size=4, stride=2, padding=1),
+                nn.InstanceNorm2d(256, track_running_stats=False),
+                nn.ReLU(True),
+            )
 
         blocks = []
         for _ in range(residual_blocks):
@@ -71,18 +82,19 @@ class InpaintGenerator(pl.LightningModule):
         self.middle = nn.Sequential(*blocks)
 
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(
+                in_channels=256, out_channels=128, kernel_size=4, stride=2, padding=1
+            ),
             nn.InstanceNorm2d(128, track_running_stats=False),
             nn.ReLU(True),
-
-            nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(
+                in_channels=128, out_channels=64, kernel_size=4, stride=2, padding=1
+            ),
             nn.InstanceNorm2d(64, track_running_stats=False),
             nn.ReLU(True),
-
             nn.ReflectionPad2d(3),
             nn.Conv2d(in_channels=64, out_channels=3, kernel_size=7, padding=0),
         )
-
 
     def forward(self, x):
         x = self.encoder(x)
@@ -94,54 +106,98 @@ class InpaintGenerator(pl.LightningModule):
 
 
 class EdgeGenerator(pl.LightningModule):
-    def __init__(self, residual_blocks=8, use_spectral_norm=True, init_weights=True, conv_type='normal'):
+    def __init__(
+        self,
+        residual_blocks=8,
+        use_spectral_norm=True,
+        init_weights=True,
+        conv_type="normal",
+    ):
         super(EdgeGenerator, self).__init__()
 
-        if conv_type == 'normal':
-          self.encoder = nn.Sequential(
-              nn.ReflectionPad2d(3),
-              spectral_norm(nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, padding=0), use_spectral_norm),
-              nn.InstanceNorm2d(64, track_running_stats=False),
-              nn.ReLU(True),
-
-              spectral_norm(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=4, stride=2, padding=1), use_spectral_norm),
-              nn.InstanceNorm2d(128, track_running_stats=False),
-              nn.ReLU(True),
-
-              spectral_norm(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=4, stride=2, padding=1), use_spectral_norm),
-              nn.InstanceNorm2d(256, track_running_stats=False),
-              nn.ReLU(True)
-          )
-        elif conv_type == 'partial':
-          self.encoder = nn.Sequential(
-              nn.ReflectionPad2d(3),
-              spectral_norm(PartialConv2d(in_channels=3, out_channels=64, kernel_size=7, padding=0), use_spectral_norm),
-              nn.InstanceNorm2d(64, track_running_stats=False),
-              nn.ReLU(True),
-
-              spectral_norm(PartialConv2d(in_channels=64, out_channels=128, kernel_size=4, stride=2, padding=1), use_spectral_norm),
-              nn.InstanceNorm2d(128, track_running_stats=False),
-              nn.ReLU(True),
-
-              spectral_norm(PartialConv2d(in_channels=128, out_channels=256, kernel_size=4, stride=2, padding=1), use_spectral_norm),
-              nn.InstanceNorm2d(256, track_running_stats=False),
-              nn.ReLU(True)
-          )
-        elif conv_type == 'deform':
+        if conv_type == "normal":
+            self.encoder = nn.Sequential(
+                nn.ReflectionPad2d(3),
+                spectral_norm(
+                    nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, padding=0),
+                    use_spectral_norm,
+                ),
+                nn.InstanceNorm2d(64, track_running_stats=False),
+                nn.ReLU(True),
+                spectral_norm(
+                    nn.Conv2d(
+                        in_channels=64,
+                        out_channels=128,
+                        kernel_size=4,
+                        stride=2,
+                        padding=1,
+                    ),
+                    use_spectral_norm,
+                ),
+                nn.InstanceNorm2d(128, track_running_stats=False),
+                nn.ReLU(True),
+                spectral_norm(
+                    nn.Conv2d(
+                        in_channels=128,
+                        out_channels=256,
+                        kernel_size=4,
+                        stride=2,
+                        padding=1,
+                    ),
+                    use_spectral_norm,
+                ),
+                nn.InstanceNorm2d(256, track_running_stats=False),
+                nn.ReLU(True),
+            )
+        elif conv_type == "partial":
+            self.encoder = nn.Sequential(
+                nn.ReflectionPad2d(3),
+                spectral_norm(
+                    PartialConv2d(
+                        in_channels=3, out_channels=64, kernel_size=7, padding=0
+                    ),
+                    use_spectral_norm,
+                ),
+                nn.InstanceNorm2d(64, track_running_stats=False),
+                nn.ReLU(True),
+                spectral_norm(
+                    PartialConv2d(
+                        in_channels=64,
+                        out_channels=128,
+                        kernel_size=4,
+                        stride=2,
+                        padding=1,
+                    ),
+                    use_spectral_norm,
+                ),
+                nn.InstanceNorm2d(128, track_running_stats=False),
+                nn.ReLU(True),
+                spectral_norm(
+                    PartialConv2d(
+                        in_channels=128,
+                        out_channels=256,
+                        kernel_size=4,
+                        stride=2,
+                        padding=1,
+                    ),
+                    use_spectral_norm,
+                ),
+                nn.InstanceNorm2d(256, track_running_stats=False),
+                nn.ReLU(True),
+            )
+        elif conv_type == "deform":
             # without spectral_norm
             self.encoder = nn.Sequential(
                 nn.ReflectionPad2d(3),
                 DeformConv2d(in_nc=3, out_nc=64, kernel_size=7, padding=0),
                 nn.InstanceNorm2d(64, track_running_stats=False),
                 nn.ReLU(True),
-
                 DeformConv2d(in_nc=64, out_nc=128, kernel_size=4, stride=2, padding=1),
                 nn.InstanceNorm2d(128, track_running_stats=False),
                 nn.ReLU(True),
-
                 DeformConv2d(in_nc=128, out_nc=256, kernel_size=4, stride=2, padding=1),
                 nn.InstanceNorm2d(256, track_running_stats=False),
-                nn.ReLU(True)
+                nn.ReLU(True),
             )
 
         blocks = []
@@ -152,18 +208,29 @@ class EdgeGenerator(pl.LightningModule):
         self.middle = nn.Sequential(*blocks)
 
         self.decoder = nn.Sequential(
-            spectral_norm(nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=4, stride=2, padding=1), use_spectral_norm),
+            spectral_norm(
+                nn.ConvTranspose2d(
+                    in_channels=256,
+                    out_channels=128,
+                    kernel_size=4,
+                    stride=2,
+                    padding=1,
+                ),
+                use_spectral_norm,
+            ),
             nn.InstanceNorm2d(128, track_running_stats=False),
             nn.ReLU(True),
-
-            spectral_norm(nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=4, stride=2, padding=1), use_spectral_norm),
+            spectral_norm(
+                nn.ConvTranspose2d(
+                    in_channels=128, out_channels=64, kernel_size=4, stride=2, padding=1
+                ),
+                use_spectral_norm,
+            ),
             nn.InstanceNorm2d(64, track_running_stats=False),
             nn.ReLU(True),
-
             nn.ReflectionPad2d(3),
             nn.Conv2d(in_channels=64, out_channels=1, kernel_size=7, padding=0),
         )
-
 
     def forward(self, x):
         x = self.encoder(x)
@@ -178,12 +245,31 @@ class ResnetBlock(pl.LightningModule):
         super(ResnetBlock, self).__init__()
         self.conv_block = nn.Sequential(
             nn.ReflectionPad2d(dilation),
-            spectral_norm(nn.Conv2d(in_channels=dim, out_channels=dim, kernel_size=3, padding=0, dilation=dilation, bias=not use_spectral_norm), use_spectral_norm),
+            spectral_norm(
+                nn.Conv2d(
+                    in_channels=dim,
+                    out_channels=dim,
+                    kernel_size=3,
+                    padding=0,
+                    dilation=dilation,
+                    bias=not use_spectral_norm,
+                ),
+                use_spectral_norm,
+            ),
             nn.InstanceNorm2d(dim, track_running_stats=False),
             nn.ReLU(True),
-
             nn.ReflectionPad2d(1),
-            spectral_norm(nn.Conv2d(in_channels=dim, out_channels=dim, kernel_size=3, padding=0, dilation=1, bias=not use_spectral_norm), use_spectral_norm),
+            spectral_norm(
+                nn.Conv2d(
+                    in_channels=dim,
+                    out_channels=dim,
+                    kernel_size=3,
+                    padding=0,
+                    dilation=1,
+                    bias=not use_spectral_norm,
+                ),
+                use_spectral_norm,
+            ),
             nn.InstanceNorm2d(dim, track_running_stats=False),
         )
 
@@ -202,11 +288,25 @@ def spectral_norm(module, mode=True):
 
     return module
 
+
 class EdgeConnectModel(pl.LightningModule):
-    def __init__(self, residual_blocks_edge=8, residual_blocks_inpaint=8, use_spectral_norm=True, conv_type_edge='normal', conv_type_inpaint='normal'):
+    def __init__(
+        self,
+        residual_blocks_edge=8,
+        residual_blocks_inpaint=8,
+        use_spectral_norm=True,
+        conv_type_edge="normal",
+        conv_type_inpaint="normal",
+    ):
         super().__init__()
-        self.EdgeGenerator = EdgeGenerator(residual_blocks=residual_blocks_edge, use_spectral_norm=use_spectral_norm, conv_type=conv_type_edge)
-        self.InpaintGenerator = InpaintGenerator(residual_blocks=residual_blocks_inpaint, conv_type=conv_type_inpaint)
+        self.EdgeGenerator = EdgeGenerator(
+            residual_blocks=residual_blocks_edge,
+            use_spectral_norm=use_spectral_norm,
+            conv_type=conv_type_edge,
+        )
+        self.InpaintGenerator = InpaintGenerator(
+            residual_blocks=residual_blocks_inpaint, conv_type=conv_type_inpaint
+        )
 
     def forward(self, images, edges, grayscale, masks):
         images = images.type(torch.cuda.FloatTensor)
@@ -214,16 +314,17 @@ class EdgeConnectModel(pl.LightningModule):
         grayscale = grayscale.type(torch.cuda.FloatTensor)
         masks = masks.type(torch.cuda.FloatTensor)
 
-
         # edge
-        edges_masked = (edges * masks)
+        edges_masked = edges * masks
         grayscale_masked = grayscale * masks
 
         inputs = torch.cat((grayscale_masked, edges_masked, masks), dim=1)
-        outputs_edge = self.EdgeGenerator(inputs)                                      # in: [grayscale(1) + edge(1) + mask(1)]
+        outputs_edge = self.EdgeGenerator(
+            inputs
+        )  # in: [grayscale(1) + edge(1) + mask(1)]
 
         # inpaint
-        images_masked = (images * masks).float() + (1-masks)
+        images_masked = (images * masks).float() + (1 - masks)
         inputs = torch.cat((images_masked, outputs_edge), dim=1)
-        outputs = self.InpaintGenerator(inputs)                                    # in: [rgb(3) + edge(1)]
+        outputs = self.InpaintGenerator(inputs)  # in: [rgb(3) + edge(1)]
         return outputs, outputs_edge

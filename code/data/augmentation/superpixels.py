@@ -4,40 +4,55 @@ https://github.com/victorca25/augmennt/blob/master/augmennt/superpixels.py
 """
 # Workaround to disable Intel Fortran Control+C console event handler installed by scipy
 from os import environ as os_env
-os_env['FOR_DISABLE_CONSOLE_CTRL_HANDLER'] = 'T'
+
+os_env["FOR_DISABLE_CONSOLE_CTRL_HANDLER"] = "T"
 
 import numpy as np
 import cv2
 
-from .common import (preserve_shape, _maybe_process_in_chunks,
-                    _cv2_str2interpolation, MAX_VALUES_BY_DTYPE)
+from .common import (
+    preserve_shape,
+    _maybe_process_in_chunks,
+    _cv2_str2interpolation,
+    MAX_VALUES_BY_DTYPE,
+)
 from .extra_functional import apply_kmeans
 
 
 try:
     # for sk superpixel segmentation:
     from skimage.segmentation import slic, felzenszwalb
+
     # for selective search:
     from skimage.feature import local_binary_pattern
     from skimage.segmentation import find_boundaries
+
     # for RAG merging:
     from skimage.future.graph import merge_hierarchical, rag_mean_color
-    sk_available =  True
+
+    sk_available = True
 except ImportError:
     sk_available = False
 
 try:
     # for selective search:
     from scipy.ndimage import find_objects
-    scipy_available =  True
+
+    scipy_available = True
 except ImportError:
     scipy_available = False
 
 
-
-def label2rgb(label_field, image, kind='mix', bg_label=-1,
-                bg_color=(0, 0, 0), replace_samples=(True,),
-                reduced_colors=None, ret_rbg_labels=False):
+def label2rgb(
+    label_field,
+    image,
+    kind="mix",
+    bg_label=-1,
+    bg_color=(0, 0, 0),
+    replace_samples=(True,),
+    reduced_colors=None,
+    ret_rbg_labels=False,
+):
     """
     Return an RGB image where color-coded labels are painted over the image.
     Visualises each segment in `label_field` with its mean color in `image`.
@@ -83,10 +98,13 @@ def label2rgb(label_field, image, kind='mix', bg_label=-1,
     # max_value = MAX_VALUES_BY_DTYPE[image.dtype]
 
     # paste labels on new empty image or paste them on the original image
-    out = (np.zeros_like(image) if (len(replace_samples)==1 and
-        replace_samples[0]) else image.copy())
+    out = (
+        np.zeros_like(image)
+        if (len(replace_samples) == 1 and replace_samples[0])
+        else image.copy()
+    )
     labels = np.unique(label_field)
-    bg = (labels == bg_label)
+    bg = labels == bg_label
     if bg.any():
         labels = labels[labels != bg_label]
         mask = (label_field == bg_label).nonzero()
@@ -102,18 +120,18 @@ def label2rgb(label_field, image, kind='mix', bg_label=-1,
     for idx, label in enumerate(labels):
         if replace_samples[idx % len(replace_samples)]:
             mask = (label_field == label).nonzero()
-            if kind == 'avg':  # original _label2rgb_avg
+            if kind == "avg":  # original _label2rgb_avg
                 color = image[mask].mean(axis=0)
-            elif kind == 'median':  # modification to use median
+            elif kind == "median":  # modification to use median
                 color = np.median(image[mask], axis=0)
-            elif kind == 'mix':  # adaptive coloring
+            elif kind == "mix":  # adaptive coloring
                 std = np.std(image[mask])
                 if std < 20:
                     color = image[mask].mean(axis=0)
                 elif 20 <= std < 40:
                     mean = image[mask].mean(axis=0)
                     median = np.median(image[mask], axis=0)
-                    color = 0.5*mean + 0.5*median
+                    color = 0.5 * mean + 0.5 * median
                 elif 40 <= std:
                     color = np.median(image[mask], axis=0)
 
@@ -136,9 +154,18 @@ def label2rgb(label_field, image, kind='mix', bg_label=-1,
 
 
 @preserve_shape
-def superpixels(img=None, n_segments: int=200, cs=None, n_iters: int=10,
-    algo: str='slic', kind: str='mix', reduction=None,
-    replace_samples=(True,), max_size=None, interpolation='BILINEAR') -> np.ndarray:
+def superpixels(
+    img=None,
+    n_segments: int = 200,
+    cs=None,
+    n_iters: int = 10,
+    algo: str = "slic",
+    kind: str = "mix",
+    reduction=None,
+    replace_samples=(True,),
+    max_size=None,
+    interpolation="BILINEAR",
+) -> np.ndarray:
     """
     Superpixel segmentation algorithms. Can use either cv2 (default)
     or skimage algorithms if available.
@@ -168,73 +195,79 @@ def superpixels(img=None, n_segments: int=200, cs=None, n_iters: int=10,
             height, width = img.shape[:2]
             new_height, new_width = int(height * scale), int(width * scale)
             resize_fn = _maybe_process_in_chunks(
-                cv2.resize, dsize=(new_width, new_height),
-                interpolation=_cv2_str2interpolation[interpolation]
+                cv2.resize,
+                dsize=(new_width, new_height),
+                interpolation=_cv2_str2interpolation[interpolation],
             )
             img = resize_fn(img)
 
     img_sp = img.copy()
 
-    if 'sk' not in algo:
+    if "sk" not in algo:
         g_sigma = 3
         g_ksize = 0
         img_sp = cv2.GaussianBlur(img_sp, (g_ksize, g_ksize), g_sigma)
 
         if not cs:
             # TODO: may only be needed for real photos, not cartoon, test
-            cs = 'hsv'
+            cs = "hsv"
     else:
         if not sk_available:
-            raise Exception('skimage package is not available.')
+            raise Exception("skimage package is not available.")
         if not cs:
             # TODO: better results with 'sk_slic', test
-            cs = 'lab'
+            cs = "lab"
 
-    if cs == 'lab':
+    if cs == "lab":
         img_sp = cv2.cvtColor(img_sp, cv2.COLOR_BGR2LAB)
-    elif cs == 'hsv':
+    elif cs == "hsv":
         img_sp = cv2.cvtColor(img_sp, cv2.COLOR_BGR2HSV)
 
     h, w, c = img_sp.shape
 
-    if 'seeds' in algo:
+    if "seeds" in algo:
         prior = 2
         double_step = False
         num_levels = 4
         num_histogram_bins = 5
-    elif 'slic' in algo or 'felzenszwalb' in algo:
+    elif "slic" in algo or "felzenszwalb" in algo:
         # regionsize: Chooses an average superpixel size measured in pixels (50)
-        regionsize = int(np.sqrt(h*w / n_segments))
+        regionsize = int(np.sqrt(h * w / n_segments))
         # ruler: Chooses the enforcement of superpixel smoothness factor
         ruler = 10.0
 
-    if algo == 'seeds':
+    if algo == "seeds":
         # SEEDS algorithm
-        ss = cv2.ximgproc.createSuperpixelSEEDS(w, h, c, n_segments, num_levels, prior, num_histogram_bins)
+        ss = cv2.ximgproc.createSuperpixelSEEDS(
+            w, h, c, n_segments, num_levels, prior, num_histogram_bins
+        )
         ss.iterate(img_sp, n_iters)
-    elif algo == 'slic':
+    elif algo == "slic":
         # SLIC algorithm:
         # cv2.ximgproc.SLICType.SLIC segments image using a desired region_size (value: 100)
         ss = cv2.ximgproc.createSuperpixelSLIC(img_sp, 100, regionsize, ruler)
         ss.iterate(n_iters)
-    elif algo == 'slico':
+    elif algo == "slico":
         # SLICO algorithm:
         # cv2.ximgproc.SLICType.SLICO will optimize using adaptive compactness factor (value: 101)
         ss = cv2.ximgproc.createSuperpixelSLIC(img_sp, 101, regionsize, ruler)
         ss.iterate(n_iters)
-    elif algo == 'mslic':
+    elif algo == "mslic":
         # MSLIC algorithm:
         # cv2.ximgproc.SLICType.MSLIC will optimize using manifold methods
         # resulting in more content-sensitive superpixels (value: 102).
         ss = cv2.ximgproc.createSuperpixelSLIC(img_sp, 102, regionsize, ruler)
         ss.iterate(n_iters)
-    elif algo == 'sk_slic':
+    elif algo == "sk_slic":
         # skimage SLIC algorithm:
-        labels = slic(img_sp, n_segments=n_segments, compactness=ruler,
-            max_iter=n_iters, sigma=1)  # sigma=0
-    elif algo == 'sk_felzenszwalb':
+        labels = slic(
+            img_sp, n_segments=n_segments, compactness=ruler, max_iter=n_iters, sigma=1
+        )  # sigma=0
+    elif algo == "sk_felzenszwalb":
         # skimage Felzenszwalb algorithm:
-        min_size = int(0.5*(h+w)/2.5)  # 2.5 is the rough empirical estimate factor, needs testing
+        min_size = int(
+            0.5 * (h + w) / 2.5
+        )  # 2.5 is the rough empirical estimate factor, needs testing
         k = 10  # a larger k causes a preference for larger components
         # Note: can make k relative to image size with:
         # k = int(regionsize/1.5)
@@ -243,7 +276,7 @@ def superpixels(img=None, n_segments: int=200, cs=None, n_iters: int=10,
         # leave k=10 and apply a reduction afterwards
         labels = felzenszwalb(img_sp, scale=k, sigma=0.8, min_size=min_size)
 
-    if 'sk' not in algo:
+    if "sk" not in algo:
         # retrieve the segmentation result
         labels = ss.getLabels()
 
@@ -253,57 +286,80 @@ def superpixels(img=None, n_segments: int=200, cs=None, n_iters: int=10,
 
     if len(np.unique(labels)) > n_segments and reduction:
         # reduce segments/colors and aggregate colors
-        rgbmap = segmentation_reduction(img, labels, n_segments, reduction, kind, cs='lab')
+        rgbmap = segmentation_reduction(
+            img, labels, n_segments, reduction, kind, cs="lab"
+        )
     else:
         # aggregate (average/mix) colors in each of the labels and output
         rgbmap = label2rgb(
-            labels, img, kind=kind, bg_label=-1, bg_color=(0, 0, 0), replace_samples=replace_samples)
+            labels,
+            img,
+            kind=kind,
+            bg_label=-1,
+            bg_color=(0, 0, 0),
+            replace_samples=replace_samples,
+        )
 
     if orig_shape and orig_shape != rgbmap.shape:
         resize_fn = _maybe_process_in_chunks(
-            cv2.resize, dsize=(orig_shape[1], orig_shape[0]),
-            interpolation=_cv2_str2interpolation[interpolation]
+            cv2.resize,
+            dsize=(orig_shape[1], orig_shape[0]),
+            interpolation=_cv2_str2interpolation[interpolation],
         )
         rgbmap = resize_fn(rgbmap)
 
     return rgbmap
 
 
-def segmentation_reduction(img, labels, n_segments, reduction=None, kind='mix', cs=None):
+def segmentation_reduction(
+    img, labels, n_segments, reduction=None, kind="mix", cs=None
+):
 
-    if reduction == 'selective':
+    if reduction == "selective":
         # selective search
-        img_cvtcolor = label2rgb(labels, img, kind=kind, bg_label=-1, bg_color=(0, 0, 0))
+        img_cvtcolor = label2rgb(
+            labels, img, kind=kind, bg_label=-1, bg_color=(0, 0, 0)
+        )
 
-        if cs == 'lab':
+        if cs == "lab":
             img_cvtcolor = cv2.cvtColor(img_cvtcolor, cv2.COLOR_BGR2LAB)
-        elif cs == 'hsv':
+        elif cs == "hsv":
             img_cvtcolor = cv2.cvtColor(img_cvtcolor, cv2.COLOR_BGR2HSV)
 
-        merged_labels = selective_search(img_cvtcolor, labels,
-            seg_num=n_segments, sim_strategy='CTSF')
+        merged_labels = selective_search(
+            img_cvtcolor, labels, seg_num=n_segments, sim_strategy="CTSF"
+        )
         rgbmap = label2rgb(merged_labels, img, kind=kind)
-    elif reduction == 'cluster':
+    elif reduction == "cluster":
         # aggregate colors in each of the labels and output
         _, rbg_labels = label2rgb(
-            labels, img, kind=kind, bg_label=-1, bg_color=(0, 0, 0), ret_rbg_labels=True)
+            labels, img, kind=kind, bg_label=-1, bg_color=(0, 0, 0), ret_rbg_labels=True
+        )
         # apply kmeans clustering to the resulting color labels
         ret, klabels, centroids = apply_kmeans(
-            np.array(rbg_labels, dtype=np.float32), n_segments)
+            np.array(rbg_labels, dtype=np.float32), n_segments
+        )
         reduced_colors = centroids[klabels.flatten()]
         rgbmap = label2rgb(labels, img, reduced_colors=reduced_colors)
-    elif reduction == 'rag':
+    elif reduction == "rag":
         # Region Adjacency Graph (RAG)
         g = rag_mean_color(img, labels)
-        merged_labels = merge_hierarchical(labels, g, thresh=35,
-            rag_copy=False, in_place_merge=True, merge_func=merge_mean_color,
-            weight_func=_weight_mean_color)
-        rgbmap = label2rgb(merged_labels, img, kind=kind, bg_label=-1, bg_color=(0, 0, 0))
+        merged_labels = merge_hierarchical(
+            labels,
+            g,
+            thresh=35,
+            rag_copy=False,
+            in_place_merge=True,
+            merge_func=merge_mean_color,
+            weight_func=_weight_mean_color,
+        )
+        rgbmap = label2rgb(
+            merged_labels, img, kind=kind, bg_label=-1, bg_color=(0, 0, 0)
+        )
     else:
         rgbmap = img
 
     return rgbmap
-
 
 
 #######################################
@@ -311,8 +367,7 @@ def segmentation_reduction(img, labels, n_segments, reduction=None, kind='mix', 
 #######################################
 
 
-def selective_search(img, img_seg, seg_num=200,
-    sim_strategy='CTSF', ada_regions=True):
+def selective_search(img, img_seg, seg_num=200, sim_strategy="CTSF", ada_regions=True):
     """Selective Search using single diversification strategy
     Args:
         img: Original image, already converted to proper color space
@@ -330,9 +385,9 @@ def selective_search(img, img_seg, seg_num=200,
 
     # adaptive adjustment to image size
     # for larger images or images with many initial segments
-    if ada_regions and S.num_regions() > 2*seg_num:  # 3?
+    if ada_regions and S.num_regions() > 2 * seg_num:  # 3?
         h, w = img_seg.shape[0:2]
-        seg_num = int(np.sqrt(h*w)*0.8)
+        seg_num = int(np.sqrt(h * w) * 0.8)
 
     # start hierarchical grouping
     while S.num_regions() > seg_num:
@@ -354,13 +409,14 @@ class HierarchicalGrouping:
             similarity, texture similarity, size similarity, and fill similarity.
     Adapted from: https://github.com/ChenjieXu/selective_search
     """
+
     def __init__(self, img, img_seg, sim_strategy):
         self.img = img
         self.sim_strategy = sim_strategy
         self.img_seg = img_seg.copy()
         self.labels = np.unique(self.img_seg).tolist()
         if not scipy_available:
-            raise Exception('scipy package is not available for selective search.')
+            raise Exception("scipy package is not available for selective search.")
 
     def build_regions(self):
         self.regions = {}
@@ -368,18 +424,20 @@ class HierarchicalGrouping:
         for label in self.labels:
             size = (self.img_seg == 1).sum()
             region_slice = find_objects(self.img_seg == label)[0]
-            box = tuple([region_slice[i].start for i in (1, 0)] +
-                        [region_slice[i].stop for i in (1, 0)])
+            box = tuple(
+                [region_slice[i].start for i in (1, 0)]
+                + [region_slice[i].stop for i in (1, 0)]
+            )
 
             mask = self.img_seg == label
             color_hist = calculate_color_hist(mask, self.img)
             texture_hist = calculate_texture_hist(mask, lbp_img)
 
             self.regions[label] = {
-                'size': size,
-                'box': box,
-                'color_hist': color_hist,
-                'texture_hist': texture_hist
+                "size": size,
+                "box": box,
+                "color_hist": color_hist,
+                "texture_hist": texture_hist,
             }
 
     def build_region_pairs(self):
@@ -388,19 +446,21 @@ class HierarchicalGrouping:
             neighbors = self._find_neighbors(i)
             for j in neighbors:
                 if i < j:
-                    self.s[(i, j)] = calculate_sim(self.regions[i],
-                                                    self.regions[j],
-                                                    self.img.size,
-                                                    self.sim_strategy)
+                    self.s[(i, j)] = calculate_sim(
+                        self.regions[i],
+                        self.regions[j],
+                        self.img.size,
+                        self.sim_strategy,
+                    )
 
     def _find_neighbors(self, label):
-        """ 
+        """
         Args:
             label (int): label of the region
         Returns:
             neighbors (list): list of labels of neighbors
         """
-        boundary = find_boundaries(self.img_seg == label, mode='outer')
+        boundary = find_boundaries(self.img_seg == label, mode="outer")
         neighbors = np.unique(self.img_seg[boundary]).tolist()
         return neighbors
 
@@ -415,20 +475,24 @@ class HierarchicalGrouping:
         # merge blobs and update blob set
         ri, rj = self.regions[i], self.regions[j]
 
-        new_size = ri['size'] + rj['size']
-        new_box = (min(ri['box'][0], rj['box'][0]),
-                min(ri['box'][1], rj['box'][1]),
-                max(ri['box'][2], rj['box'][2]),
-                max(ri['box'][3], rj['box'][3]))
+        new_size = ri["size"] + rj["size"]
+        new_box = (
+            min(ri["box"][0], rj["box"][0]),
+            min(ri["box"][1], rj["box"][1]),
+            max(ri["box"][2], rj["box"][2]),
+            max(ri["box"][3], rj["box"][3]),
+        )
         value = {
-            'box': new_box,
-            'size': new_size,
-            'color_hist':
-                (ri['color_hist'] * ri['size']
-                + rj['color_hist'] * rj['size']) / new_size,
-            'texture_hist':
-                (ri['texture_hist'] * ri['size']
-                + rj['texture_hist'] * rj['size']) / new_size,
+            "box": new_box,
+            "size": new_size,
+            "color_hist": (
+                ri["color_hist"] * ri["size"] + rj["color_hist"] * rj["size"]
+            )
+            / new_size,
+            "texture_hist": (
+                ri["texture_hist"] * ri["size"] + rj["texture_hist"] * rj["size"]
+            )
+            / new_size,
         }
 
         self.regions[new_label] = value
@@ -457,10 +521,9 @@ class HierarchicalGrouping:
 
         for j in neighbors:
             # i is larger than j, so use (j,i) instead
-            self.s[(j, i)] = calculate_sim(self.regions[i],
-                                            self.regions[j],
-                                            self.img.size,
-                                            self.sim_strategy)
+            self.s[(j, i)] = calculate_sim(
+                self.regions[i], self.regions[j], self.img.size, self.sim_strategy
+            )
 
     def is_empty(self):
         return True if not self.s.keys() else False
@@ -480,28 +543,29 @@ def _calculate_texture_sim(ri, rj):
 
 
 def _calculate_size_sim(ri, rj, imsize):
-    """ Size similarity boosts joint between small regions, which prevents
-        a single region from engulfing other blobs one by one.
-            size (ri, rj) = 1 − [size(ri) + size(rj)] / size(image)
+    """Size similarity boosts joint between small regions, which prevents
+    a single region from engulfing other blobs one by one.
+        size (ri, rj) = 1 − [size(ri) + size(rj)] / size(image)
     """
-    return 1.0 - (ri['size'] + rj['size']) / imsize
+    return 1.0 - (ri["size"] + rj["size"]) / imsize
 
 
 def _calculate_fill_sim(ri, rj, imsize):
-    """ Fill similarity measures how well ri and rj fit into each other.
-        BBij is the bounding box around ri and rj.
-            fill(ri, rj) = 1 − [size(BBij) − size(ri) − size(ri)] / size(image)
+    """Fill similarity measures how well ri and rj fit into each other.
+    BBij is the bounding box around ri and rj.
+        fill(ri, rj) = 1 − [size(BBij) − size(ri) − size(ri)] / size(image)
     """
-    bbsize = (max(ri['box'][2], rj['box'][2]) - min(ri['box'][0], rj['box'][0])) * (
-                max(ri['box'][3], rj['box'][3]) - min(ri['box'][1], rj['box'][1]))
-    return 1.0 - (bbsize - ri['size'] - rj['size']) / imsize
+    bbsize = (max(ri["box"][2], rj["box"][2]) - min(ri["box"][0], rj["box"][0])) * (
+        max(ri["box"][3], rj["box"][3]) - min(ri["box"][1], rj["box"][1])
+    )
+    return 1.0 - (bbsize - ri["size"] - rj["size"]) / imsize
 
 
 def calculate_color_hist(mask, img):
-    """ Calculate colour histogram for the region.
-        The output will be an array with n_BINS * n_color_channels.
-        The number of channel is varied because of different
-        colour spaces.
+    """Calculate colour histogram for the region.
+    The output will be an array with n_BINS * n_color_channels.
+    The number of channel is varied because of different
+    colour spaces.
     """
     BINS = 25
     if len(img.shape) == 2:
@@ -527,13 +591,13 @@ def generate_lbp_image(img):
     lbp_img = np.zeros(img.shape)
     for channel in range(channel_nums):
         layer = img[:, :, channel]
-        lbp_img[:, :,channel] = local_binary_pattern(layer, 8, 1)
+        lbp_img[:, :, channel] = local_binary_pattern(layer, 8, 1)
     return lbp_img
 
 
 def calculate_texture_hist(mask, lbp_img):
-    """ Uses LBP like AlpacaDB's implementation.
-        Original paper uses to Gaussian derivatives.
+    """Uses LBP like AlpacaDB's implementation.
+    Original paper uses to Gaussian derivatives.
     """
     BINS = 10
     channel_nums = lbp_img.shape[2]
@@ -550,21 +614,20 @@ def calculate_texture_hist(mask, lbp_img):
 
 def calculate_sim(ri, rj, imsize, sim_strategy):
     """Calculate similarity between region ri and rj using diverse
-        combinations of similarity measures.
-        C: color, T: texture, S: size, F: fill.
+    combinations of similarity measures.
+    C: color, T: texture, S: size, F: fill.
     """
     sim = 0
 
-    if 'C' in sim_strategy:
+    if "C" in sim_strategy:
         sim += _calculate_color_sim(ri, rj)
-    if 'T' in sim_strategy:
+    if "T" in sim_strategy:
         sim += _calculate_texture_sim(ri, rj)
-    if 'S' in sim_strategy:
+    if "S" in sim_strategy:
         sim += _calculate_size_sim(ri, rj, imsize)
-    if 'F' in sim_strategy:
+    if "F" in sim_strategy:
         sim += _calculate_fill_sim(ri, rj, imsize)
     return sim
-
 
 
 #######################################
@@ -583,9 +646,9 @@ def _weight_mean_color(graph, src, dst, n):
     data (dict): A dictionary with the `"weight"` attribute set as the
         absolute difference of the mean color between node `dst` and `n`.
     """
-    diff = graph.nodes[dst]['mean color'] - graph.nodes[n]['mean color']
+    diff = graph.nodes[dst]["mean color"] - graph.nodes[n]["mean color"]
     diff = np.linalg.norm(diff)
-    return {'weight': diff}
+    return {"weight": diff}
 
 
 def merge_mean_color(graph, src, dst):
@@ -595,7 +658,8 @@ def merge_mean_color(graph, src, dst):
         graph (RAG): The graph under consideration.
         src, dst (int): The vertices in `graph` to be merged.
     """
-    graph.nodes[dst]['total color'] += graph.nodes[src]['total color']
-    graph.nodes[dst]['pixel count'] += graph.nodes[src]['pixel count']
-    graph.nodes[dst]['mean color'] = (graph.nodes[dst]['total color'] /
-                                      graph.nodes[dst]['pixel count'])
+    graph.nodes[dst]["total color"] += graph.nodes[src]["total color"]
+    graph.nodes[dst]["pixel count"] += graph.nodes[src]["pixel count"]
+    graph.nodes[dst]["mean color"] = (
+        graph.nodes[dst]["total color"] / graph.nodes[dst]["pixel count"]
+    )

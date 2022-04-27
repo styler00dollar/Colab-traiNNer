@@ -13,8 +13,10 @@ from . import thops
 
 class Conv2d(nn.Conv2d):
     pad_dict = {
-        "same": lambda kernel, stride: [((k - 1) * s + 1) // 2 for k, s in zip(kernel, stride)],
-        "valid": lambda kernel, stride: [0 for _ in kernel]
+        "same": lambda kernel, stride: [
+            ((k - 1) * s + 1) // 2 for k, s in zip(kernel, stride)
+        ],
+        "valid": lambda kernel, stride: [0 for _ in kernel],
     }
 
     @staticmethod
@@ -32,12 +34,25 @@ class Conv2d(nn.Conv2d):
                 raise ValueError("{} is not supported".format(padding))
         return padding
 
-    def __init__(self, in_channels, out_channels,
-                 kernel_size=[3, 3], stride=[1, 1],
-                 padding="same", do_actnorm=True, weight_std=0.05):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size=[3, 3],
+        stride=[1, 1],
+        padding="same",
+        do_actnorm=True,
+        weight_std=0.05,
+    ):
         padding = Conv2d.get_padding(padding, kernel_size, stride)
-        super().__init__(in_channels, out_channels, kernel_size, stride,
-                         padding, bias=(not do_actnorm))
+        super().__init__(
+            in_channels,
+            out_channels,
+            kernel_size,
+            stride,
+            padding,
+            bias=(not do_actnorm),
+        )
         # init weight with std
         self.weight.data.normal_(mean=0.0, std=weight_std)
         if not do_actnorm:
@@ -54,9 +69,15 @@ class Conv2d(nn.Conv2d):
 
 
 class Conv2dZeros(nn.Conv2d):
-    def __init__(self, in_channels, out_channels,
-                 kernel_size=[3, 3], stride=[1, 1],
-                 padding="same", logscale_factor=3):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size=[3, 3],
+        stride=[1, 1],
+        padding="same",
+        logscale_factor=3,
+    ):
         padding = Conv2d.get_padding(padding, kernel_size, stride)
         super().__init__(in_channels, out_channels, kernel_size, stride, padding)
         # logscale_factor
@@ -82,9 +103,13 @@ class GaussianDiag:
               Var = logs ** 2
         """
         if mean is None and logs is None:
-            return -0.5 * (x ** 2 + GaussianDiag.Log2PI)
+            return -0.5 * (x**2 + GaussianDiag.Log2PI)
         else:
-            return -0.5 * (logs * 2. + ((x - mean) ** 2) / torch.exp(logs * 2.) + GaussianDiag.Log2PI)
+            return -0.5 * (
+                logs * 2.0
+                + ((x - mean) ** 2) / torch.exp(logs * 2.0)
+                + GaussianDiag.Log2PI
+            )
 
     @staticmethod
     def logp(mean, logs, x):
@@ -94,17 +119,18 @@ class GaussianDiag:
     @staticmethod
     def sample(mean, logs, eps_std=None):
         eps_std = eps_std or 1
-        eps = torch.normal(mean=torch.zeros_like(mean),
-                           std=torch.ones_like(logs) * eps_std)
+        eps = torch.normal(
+            mean=torch.zeros_like(mean), std=torch.ones_like(logs) * eps_std
+        )
         return mean + torch.exp(logs) * eps
 
     @staticmethod
     def sample_eps(shape, eps_std, seed=None):
         if seed is not None:
             torch.manual_seed(seed)
-        eps = torch.normal(mean=torch.zeros(shape),
-                           std=torch.ones(shape) * eps_std)
+        eps = torch.normal(mean=torch.zeros(shape), std=torch.ones(shape) * eps_std)
         return eps
+
 
 # TODO: move to basic blocks, combine with SpaceToDepth/pixel shuffle
 def squeeze2d(input, factor=2):
@@ -122,10 +148,11 @@ def squeeze2d(input, factor=2):
     x = x.view(B, C * factor * factor, H // factor, W // factor)
     return x
 
+
 # TODO: move to basic blocks, combine with DepthToSpace/pixel unshuffle
 def unsqueeze2d(input, factor=2):
     assert factor >= 1 and isinstance(factor, int)
-    factor2 = factor ** 2
+    factor2 = factor**2
     if factor == 1:
         return input
     size = input.size()
@@ -138,6 +165,7 @@ def unsqueeze2d(input, factor=2):
     x = x.permute(0, 1, 4, 2, 5, 3).contiguous()
     x = x.view(B, C // (factor2), H * factor, W * factor)
     return x
+
 
 # TODO: move to basic blocks
 class SqueezeLayer(nn.Module):
