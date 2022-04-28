@@ -5,6 +5,7 @@ https://github.com/victorca25/BasicSR/blob/master/codes/models/modules/architect
 import math
 import torch
 import torch.nn as nn
+from torch.nn import functional as F
 
 # import torchvision
 from . import block as B
@@ -35,15 +36,31 @@ class RRDBNet(nn.Module):
         finalact=None,
         gaussian_noise=False,
         plus=False,
+        strided_conv=False,
     ):
         super(RRDBNet, self).__init__()
         n_upscale = int(math.log(upscale, 2))
         if upscale == 3:
             n_upscale = 1
 
-        fea_conv = B.conv_block(
-            in_nc, nf, kernel_size=3, norm_type=None, act_type=None, convtype=convtype
-        )
+        if strided_conv:
+            fea_conv = B.conv_block(
+                in_nc * 4,
+                nf,
+                kernel_size=3,
+                norm_type=None,
+                act_type=None,
+                convtype=convtype,
+            )
+        else:
+            fea_conv = B.conv_block(
+                in_nc,
+                nf,
+                kernel_size=3,
+                norm_type=None,
+                act_type=None,
+                convtype=convtype,
+            )
         rb_blocks = [
             RRDB(
                 nf,
@@ -90,9 +107,24 @@ class RRDBNet(nn.Module):
         HR_conv0 = B.conv_block(
             nf, nf, kernel_size=3, norm_type=None, act_type=act_type, convtype=convtype
         )
-        HR_conv1 = B.conv_block(
-            nf, out_nc, kernel_size=3, norm_type=None, act_type=None, convtype=convtype
-        )
+        if strided_conv:
+            HR_conv1 = B.conv_block(
+                nf,
+                out_nc * 4,
+                kernel_size=3,
+                norm_type=None,
+                act_type=None,
+                convtype=convtype,
+            )
+        else:
+            HR_conv1 = B.conv_block(
+                nf,
+                out_nc,
+                kernel_size=3,
+                norm_type=None,
+                act_type=None,
+                convtype=convtype,
+            )
 
         # Note: this option adds new parameters to the architecture, another option is to use "outm" in the forward
         # outact = B.act(finalact) if finalact is not None else None
@@ -110,8 +142,23 @@ class RRDBNet(nn.Module):
             outact
         )
 
+        if strided_conv:
+            self.strided_down_conv = nn.Conv2d(
+                in_nc, in_nc * 4, kernel_size=3, padding=1, stride=2
+            )
+            self.strided_upsampler = nn.PixelShuffle(2)
+
+        self.strided_conv = strided_conv
+
     def forward(self, x, outm=None):
+        if self.strided_conv:
+            x = self.strided_down_conv(x)
+
         x = self.model(x)
+
+        if self.strided_conv:
+            # x = self.strided_channel_conv(x)
+            x = self.strided_upsampler(x)
 
         if (
             outm == "scaltanh"
@@ -442,3 +489,68 @@ class RRDBM(nn.Module):
         out = self.RDB2(out)
         out = self.RDB3(out)
         return out * 0.2 + x
+
+
+####################
+# RRDBNet Generator (modified/"new" architecture) with feature maps output
+####################
+
+
+class MRRDBNet_FM(nn.Module):
+    def __init__(
+        self,
+        in_nc,
+        out_nc,
+        nf,
+        nb,
+        gc=32,
+        upscale=2,
+        act_type="relu",
+        convtype="Conv2D",
+    ):
+        super(MRRDBNet_FM, self).__init__()
+        self.conv_first = B.conv_block(
+            in_nc, nf, kernel_size=3, norm_type=None, act_type=None, convtype=convtype
+        )
+
+        self.rrdb_body = nn.ModuleList()
+        for _ in range(nb):
+            self.rrdb_body.append(RRDB, nf=nf, gc=gc)
+
+        self.trunk_conv = B.conv_block(
+            in_nc, nf, kernel_size=3, norm_type=None, act_type=None, convtype=convtype
+        )
+        #### upsampling
+        self.HRconv = B.conv_block(
+            in_nc, nf, kernel_size=3, norm_type=None, act_type=None, convtype=convtype
+        )
+        self.conv_last = B.conv_block(
+            in_nc, nf, kernel_size=3, norm_type=None, act_type=None, convtype=convtype
+        )
+
+        n_upscale = int(math.log(upscale, 2))
+        upsample_block = B.upconv_block
+        self.upsampler_body = nn.ModuleList()
+        for _ in range(n_upscale):
+            self.upsampler_body.append(
+                upsample_block(nf, nf, act_type=act_type, convtype=convtype)
+            )
+            self.upsampler_body.append(nn.LeakyReLU(negative_slope=0.2, inplace=True))
+
+    def forward(self, x):
+        fea = self.conv_first(x)
+
+        feature_maps = []
+        for i in range(0, len(self.rrdb_body)):
+            fea = self.rrdb_body[i](fea)
+            feature_maps.append(fea)
+
+        trunk = self.trunk_conv(fea)
+        fea = fea + trunk
+
+        for i in range(0, len(self.upsampler_body)):
+            fea = self.body[i](fea)
+
+        out = self.conv_last(self.lrelu(self.HRconv(fea)))
+
+        return out, feature_maps

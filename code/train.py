@@ -184,6 +184,12 @@ if __name__ == "__main__":
         model.netD.load_state_dict(torch.load(cfg["path"]["pretrain_model_D"]))
         print("Pretrain Discriminator pth loaded!")
 
+    if cfg["path"]["pretrain_model_G_teacher"]:
+        model.netG_teacher.load_state_dict(
+            torch.load(cfg["path"]["pretrain_model_G_teacher"]), strict=False
+        )
+        print("Teacher pth loaded!")
+
     #############################################
 
     #############################################
@@ -193,6 +199,7 @@ if __name__ == "__main__":
     if cfg["path"]["checkpoint_path"] is not None:
         # load from checkpoint (optional) (using a model as pretrain and disregarding other parameters)
         # model = model.load_from_checkpoint(checkpoint_path) # start training from checkpoint, warning: apperantly global_step will be reset to zero and overwriting validation images, you could manually make an offset
+        # model = model.load_from_checkpoint(cfg['path']['checkpoint_path'])
 
         # continue training with checkpoint (does restore values) (optional)
         # https://github.com/PyTorchLightning/pytorch-lightning/issues/2613

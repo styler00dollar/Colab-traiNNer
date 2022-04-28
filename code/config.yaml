@@ -94,11 +94,57 @@ datasets:
 
 path:
     pretrain_model_G: 
+    pretrain_model_G_teacher:
     pretrain_model_D: 
     checkpoint_path: 
     checkpoint_save_path: '/workspace/tensorrt/training/mat/'
     validation_output_path: '/workspace/tensorrt/training/mat/val/'
     log_path: '/workspace/tensorrt/training/mat/logs/'
+
+# using a teacher model to generate hr, has same configuration as normal netG
+# if teacher is used, same loss functions will be applied to both images
+# if you don't use a teacher, set netG to None
+network_G_teacher:
+    # CEM (for esrgan, not 1x)
+    CEM: False # uses hardcoded torch.cuda.FloatTensor
+
+    # comparing feature maps of teacher and student with l1
+    l1_feature_maps_weight: 1
+
+    #netG: MRRDBNet_FM # RRDB_net (original ESRGAN arch) | MRRDBNet_FM (modified/"new" arch) with feature map knowledge distillation
+    #norm_type: null
+    #mode: CNA
+    #nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
+    #nb: 3 # (default: 23, good: 8)
+    #in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
+    #out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
+    #gc: 32
+    #convtype: Conv2D # Conv2D | PartialConv2D | doconv | gated | TBC | dynamic | MBConv | CondConv | fft | WSConv
+    #nr: 3
+    ## for dynamic
+    #nof_kernels: 4
+    #reduce: 4
+    ## RRDB_net
+    #net_act: leakyrelu # swish | leakyrelu
+    #gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
+    #plus: false # true | false
+    #finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
+    #upsample_mode: 'upconv'
+    #strided_conv: False
+    ##group: 1 # unused for now
+
+    # RealESRGAN Anime Compact model (2021)
+    netG: SRVGGNetCompact
+    num_in_ch: 3
+    num_out_ch: 3
+    num_feat: 64
+    num_conv: 16
+    act_type: 'prelu'
+    conv_mode: 3 # 2 | 3
+    # only for rrdb
+    rrdb: False
+    rrdb_blocks: 2
+    convtype: "Conv2D"
 
 # Generator options:
 network_G:
@@ -109,26 +155,27 @@ network_G:
     finetune: False # Important for further rfr/dsnet training. Apply that after training for a while. https://github.com/jingyuanli001/RFR-Inpainting/issues/33
 
     # ESRGAN:
-    #netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDB_net (modified/"new" arch)
-    #norm_type: null
-    #mode: CNA
-    #nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
-    #nb: 3 # (default: 23, good: 8)
-    #in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
-    #out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
-    #gc: 32
-    #group: 1
-    # conv only applies to RRDB_net and not MRRDB_net
-    #convtype: Conv2D # Conv2D | PartialConv2D | doconv | gated | TBC | dynamic | MBConv | CondConv | fft | WSConv
-    #net_act: leakyrelu # swish | leakyrelu
-    #gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
-    #plus: false # true | false
-    #finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
-    #upsample_mode: 'upconv'
-    #nr: 3
+    netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDBNet_FM (modified/"new" arch) with feature map knowledge distillation
+    norm_type: null
+    mode: CNA
+    nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
+    nb: 3 # (default: 23, good: 8)
+    in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
+    out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
+    gc: 32
+    convtype: Conv2D # Conv2D | PartialConv2D | doconv | gated | TBC | dynamic | MBConv | CondConv | fft | WSConv
+    nr: 3
     # for dynamic
-    #nof_kernels: 4
-    #reduce: 4
+    nof_kernels: 4
+    reduce: 4
+    # RRDB_net
+    net_act: leakyrelu # swish | leakyrelu
+    gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
+    plus: false # true | false
+    finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
+    upsample_mode: 'upconv'
+    strided_conv: False
+    #group: 1 # unused for now
 
     # ASRGAN:
     #which_model_G: asr_resnet # asr_resnet | asr_cnn
@@ -342,6 +389,10 @@ network_G:
     #num_conv: 16
     #act_type: 'prelu'
     #conv_mode: 3 # 2 | 3
+    ## only for rrdb
+    #rrdb: False
+    #rrdb_blocks: 2
+    #convtype: "Conv2D"
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)

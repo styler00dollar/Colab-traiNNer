@@ -27,6 +27,7 @@ from loss.loss import (
     SPLoss,
     Contextual_Loss,
     StyleLoss,
+    ConsistencyLoss,
 )
 from piq import (
     SSIMLoss,
@@ -227,13 +228,14 @@ class AllLoss(pl.LightningModule):
             )
             del example_data
 
-        from arch.hrf_perceptual import ResNetPL
+        self.ConsistencyLoss = ConsistencyLoss()
 
+        from arch.hrf_perceptual import ResNetPL
         self.hrf_perceptual_loss = ResNetPL()
         for param in self.hrf_perceptual_loss.parameters():
             param.requires_grad = False
 
-        if cfg["train"]["force_fp16_hrf"] is True:
+        if cfg['train']['force_fp16_hrf'] is True:
             self.hrf_perceptual_loss = self.hrf_perceptual_loss.half()
 
         self.ColorLoss = ColorLoss()
@@ -309,7 +311,16 @@ class AllLoss(pl.LightningModule):
         self.cfg = cfg
 
     def forward(
-        self, out, hr_image, writer, global_step, optimizer_idx, netD, other=None
+        self,
+        out,
+        hr_image,
+        writer,
+        global_step,
+        optimizer_idx,
+        netD,
+        other=None,
+        other_teacher=None,
+        log_suffix="",
     ):
         if optimizer_idx == 0:
             # train generator
@@ -319,68 +330,78 @@ class AllLoss(pl.LightningModule):
                     out, hr_image
                 )
                 total_loss += L1Loss_forward
-                writer.add_scalar("loss/L1", L1Loss_forward, global_step)
+                writer.add_scalar("loss/L1" + log_suffix, L1Loss_forward, global_step)
 
             if self.cfg["train"]["HFEN_weight"] > 0:
                 HFENLoss_forward = self.cfg["train"]["HFEN_weight"] * self.HFENLoss(
                     out, hr_image
                 )
                 total_loss += HFENLoss_forward
-                writer.add_scalar("loss/HFEN", HFENLoss_forward, global_step)
+                writer.add_scalar(
+                    "loss/HFEN" + log_suffix, HFENLoss_forward, global_step
+                )
 
             if self.cfg["train"]["Elastic_weight"] > 0:
                 ElasticLoss_forward = self.cfg["train"][
                     "Elastic_weight"
                 ] * self.ElasticLoss(out, hr_image)
                 total_loss += ElasticLoss_forward
-                writer.add_scalar("loss/Elastic", ElasticLoss_forward, global_step)
+                writer.add_scalar(
+                    "loss/Elastic" + log_suffix, ElasticLoss_forward, global_step
+                )
 
             if self.cfg["train"]["Relative_l1_weight"] > 0:
                 RelativeL1_forward = self.cfg["train"][
                     "Relative_l1_weight"
                 ] * self.RelativeL1(out, hr_image)
                 total_loss += RelativeL1_forward
-                writer.add_scalar("loss/RelativeL1", RelativeL1_forward, global_step)
+                writer.add_scalar(
+                    "loss/RelativeL1" + log_suffix, RelativeL1_forward, global_step
+                )
 
             if self.cfg["train"]["L1CosineSim_weight"] > 0:
                 L1CosineSim_forward = self.cfg["train"][
                     "L1CosineSim_weight"
                 ] * self.L1CosineSim(out, hr_image)
                 total_loss += L1CosineSim_forward
-                writer.add_scalar("loss/L1CosineSim", L1CosineSim_forward, global_step)
+                writer.add_scalar(
+                    "loss/L1CosineSim" + log_suffix, L1CosineSim_forward, global_step
+                )
 
             if self.cfg["train"]["ClipL1_weight"] > 0:
                 ClipL1_forward = self.cfg["train"]["ClipL1_weight"] * self.ClipL1(
                     out, hr_image
                 )
                 total_loss += ClipL1_forward
-                writer.add_scalar("loss/ClipL1", ClipL1_forward, global_step)
+                writer.add_scalar(
+                    "loss/ClipL1" + log_suffix, ClipL1_forward, global_step
+                )
 
             if self.cfg["train"]["FFTLoss_weight"] > 0:
                 FFTloss_forward = self.cfg["train"]["FFTLoss_weight"] * self.FFTloss(
                     out, hr_image
                 )
                 total_loss += FFTloss_forward
-                writer.add_scalar("loss/FFT", FFTloss_forward, global_step)
+                writer.add_scalar("loss/FFT" + log_suffix, FFTloss_forward, global_step)
 
             if self.cfg["train"]["OFLoss_weight"] > 0:
                 OFLoss_forward = self.cfg["train"]["OFLoss_weight"] * self.OFLoss(out)
                 total_loss += OFLoss_forward
-                writer.add_scalar("loss/OF", OFLoss_forward, global_step)
+                writer.add_scalar("loss/OF" + log_suffix, OFLoss_forward, global_step)
 
             if self.cfg["train"]["GPLoss_weight"] > 0:
                 GPLoss_forward = self.cfg["train"]["GPLoss_weight"] * self.GPLoss(
                     out, hr_image
                 )
                 total_loss += GPLoss_forward
-                writer.add_scalar("loss/GP", GPLoss_forward, global_step)
+                writer.add_scalar("loss/GP" + log_suffix, GPLoss_forward, global_step)
 
             if self.cfg["train"]["CPLoss_weight"] > 0:
                 CPLoss_forward = self.cfg["train"]["CPLoss_weight"] * self.CPLoss(
                     out, hr_image
                 )
                 total_loss += CPLoss_forward
-                writer.add_scalar("loss/CP", CPLoss_forward, global_step)
+                writer.add_scalar("loss/CP" + log_suffix, CPLoss_forward, global_step)
 
             if self.cfg["train"]["Contextual_weight"] > 0:
                 Contextual_Loss_forward = self.cfg["train"][
@@ -388,7 +409,7 @@ class AllLoss(pl.LightningModule):
                 ] * self.Contextual_Loss(out, hr_image)
                 total_loss += Contextual_Loss_forward
                 writer.add_scalar(
-                    "loss/contextual", Contextual_Loss_forward, global_step
+                    "loss/contextual" + log_suffix, Contextual_Loss_forward, global_step
                 )
 
             if self.cfg["train"]["StyleLoss_weight"] > 0:
@@ -396,12 +417,12 @@ class AllLoss(pl.LightningModule):
                     out, hr_image
                 )
                 total_loss += style_forward
-                writer.add_scalar("loss/style", style_forward, global_step)
+                writer.add_scalar("loss/style" + log_suffix, style_forward, global_step)
 
             if self.cfg["train"]["TVLoss_weight"] > 0:
                 tv_forward = self.cfg["train"]["TVLoss_weight"] * self.TVLoss(out)
                 total_loss += tv_forward
-                writer.add_scalar("loss/tv", tv_forward, global_step)
+                writer.add_scalar("loss/tv" + log_suffix, tv_forward, global_step)
 
             if self.cfg["train"]["perceptual_weight"] > 0:
                 self.perceptual_loss.to(self.device)
@@ -436,7 +457,7 @@ class AllLoss(pl.LightningModule):
                         "perceptual_weight"
                     ] * self.perceptual_loss(in0=out, in1=hr_image)
                 writer.add_scalar(
-                    "loss/perceptual", perceptual_loss_forward, global_step
+                    "loss/perceptual" + log_suffix, perceptual_loss_forward, global_step
                 )
                 total_loss += perceptual_loss_forward
 
@@ -451,7 +472,9 @@ class AllLoss(pl.LightningModule):
                         "hrf_perceptual_weight"
                     ] * self.hrf_perceptual_loss(out, hr_image)
                 writer.add_scalar(
-                    "loss/hrf_perceptual", hrf_perceptual_loss_forward, global_step
+                    "loss/hrf_perceptual" + log_suffix,
+                    hrf_perceptual_loss_forward,
+                    global_step,
                 )
                 total_loss += hrf_perceptual_loss_forward
 
@@ -460,28 +483,32 @@ class AllLoss(pl.LightningModule):
                     out, hr_image
                 )
                 total_loss += MSE_forward
-                writer.add_scalar("loss/MSE", MSE_forward, global_step)
+                writer.add_scalar("loss/MSE" + log_suffix, MSE_forward, global_step)
 
             if self.cfg["train"]["BCE_weight"] > 0:
                 BCELogits_forward = self.cfg["train"]["BCE_weight"] * self.BCELogits(
                     out, hr_image
                 )
                 total_loss += BCELogits_forward
-                writer.add_scalar("loss/BCELogits", BCELogits_forward, global_step)
+                writer.add_scalar(
+                    "loss/BCELogits" + log_suffix, BCELogits_forward, global_step
+                )
 
             if self.cfg["train"]["Huber_weight"] > 0:
                 Huber_forward = self.cfg["train"]["Huber_weight"] * self.HuberLoss(
                     out, hr_image
                 )
                 total_loss += Huber_forward
-                writer.add_scalar("loss/Huber", Huber_forward, global_step)
+                writer.add_scalar("loss/Huber" + log_suffix, Huber_forward, global_step)
 
             if self.cfg["train"]["SmoothL1_weight"] > 0:
                 SmoothL1_forward = self.cfg["train"][
                     "SmoothL1_weight"
                 ] * self.SmoothL1Loss(out, hr_image)
                 total_loss += SmoothL1_forward
-                writer.add_scalar("loss/SmoothL1", SmoothL1_forward, global_step)
+                writer.add_scalar(
+                    "loss/SmoothL1" + log_suffix, SmoothL1_forward, global_step
+                )
 
             if self.cfg["train"]["Lap_weight"] > 0:
                 Lap_forward = (
@@ -496,7 +523,9 @@ class AllLoss(pl.LightningModule):
                     self.ColorLoss(out, hr_image)
                 )
                 total_loss += ColorLoss_forward
-                writer.add_scalar("loss/ColorLoss", ColorLoss_forward, global_step)
+                writer.add_scalar(
+                    "loss/ColorLoss" + log_suffix, ColorLoss_forward, global_step
+                )
 
             if self.cfg["train"]["FrobeniusNormLoss_weight"] > 0:
                 FrobeniusNormLoss_forward = self.cfg["train"][
@@ -504,7 +533,9 @@ class AllLoss(pl.LightningModule):
                 ] * self.FrobeniusNormLoss(out, hr_image)
                 total_loss += FrobeniusNormLoss_forward
                 writer.add_scalar(
-                    "loss/FrobeniusNormLoss", FrobeniusNormLoss_forward, global_step
+                    "loss/FrobeniusNormLoss" + log_suffix,
+                    FrobeniusNormLoss_forward,
+                    global_step,
                 )
 
             if self.cfg["train"]["GradientLoss_weight"] > 0:
@@ -513,7 +544,7 @@ class AllLoss(pl.LightningModule):
                 ] * self.GradientLoss(out, hr_image)
                 total_loss += GradientLoss_forward
                 writer.add_scalar(
-                    "loss/GradientLoss", GradientLoss_forward, global_step
+                    "loss/GradientLoss" + log_suffix, GradientLoss_forward, global_step
                 )
 
             if self.cfg["train"]["MultiscalePixelLoss_weight"] > 0:
@@ -522,7 +553,9 @@ class AllLoss(pl.LightningModule):
                 ] * self.MultiscalePixelLoss(out, hr_image)
                 total_loss += MultiscalePixelLoss_forward
                 writer.add_scalar(
-                    "loss/MultiscalePixelLoss", MultiscalePixelLoss_forward, global_step
+                    "loss/MultiscalePixelLoss" + log_suffix,
+                    MultiscalePixelLoss_forward,
+                    global_step,
                 )
 
             if self.cfg["train"]["SPLoss_weight"] > 0:
@@ -530,7 +563,9 @@ class AllLoss(pl.LightningModule):
                     self.SPLoss(out, hr_image)
                 )
                 total_loss += SPLoss_forward
-                writer.add_scalar("loss/SPLoss", SPLoss_forward, global_step)
+                writer.add_scalar(
+                    "loss/SPLoss" + log_suffix, SPLoss_forward, global_step
+                )
 
             if self.cfg["train"]["FFLoss_weight"] > 0:
                 FFLoss_forward = self.cfg["train"]["FFLoss_weight"] * self.FFLoss(
@@ -538,14 +573,18 @@ class AllLoss(pl.LightningModule):
                     hr_image.type(torch.cuda.FloatTensor),
                 )
                 total_loss += FFLoss_forward
-                writer.add_scalar("loss/FFLoss", FFLoss_forward, global_step)
+                writer.add_scalar(
+                    "loss/FFLoss" + log_suffix, FFLoss_forward, global_step
+                )
 
             if self.cfg["train"]["SSIMLoss_weight"] > 0:
                 SSIMLoss_forward = self.cfg["train"]["SSIMLoss_weight"] * self.SSIMLoss(
                     out, hr_image
                 )
                 total_loss += SSIMLoss_forward
-                writer.add_scalar("loss/SSIM", SSIMLoss_forward, global_step)
+                writer.add_scalar(
+                    "loss/SSIM" + log_suffix, SSIMLoss_forward, global_step
+                )
 
             if self.cfg["train"]["MultiScaleSSIMLoss_weight"] > 0:
                 MultiScaleSSIMLoss_forward = self.cfg["train"][
@@ -553,7 +592,9 @@ class AllLoss(pl.LightningModule):
                 ] * (self.MultiScaleSSIMLoss(out, hr_image))
                 total_loss += MultiScaleSSIMLoss_forward
                 writer.add_scalar(
-                    "loss/MultiScaleSSIM", MultiScaleSSIMLoss_forward, global_step
+                    "loss/MultiScaleSSIM" + log_suffix,
+                    MultiScaleSSIMLoss_forward,
+                    global_step,
                 )
 
             if self.cfg["train"]["VIFLoss_weight"] > 0:
@@ -561,21 +602,25 @@ class AllLoss(pl.LightningModule):
                     out, hr_image
                 )
                 total_loss += VIFLoss_forward
-                writer.add_scalar("loss/VIF", VIFLoss_forward, global_step)
+                writer.add_scalar("loss/VIF" + log_suffix, VIFLoss_forward, global_step)
 
             if self.cfg["train"]["FSIMLoss_weight"] > 0:
                 FSIMLoss_forward = self.cfg["train"]["FSIMLoss_weight"] * self.FSIMLoss(
                     out, hr_image
                 )
                 total_loss += FSIMLoss_forward
-                writer.add_scalar("loss/FSIM", FSIMLoss_forward, global_step)
+                writer.add_scalar(
+                    "loss/FSIM" + log_suffix, FSIMLoss_forward, global_step
+                )
 
             if self.cfg["train"]["GMSDLoss_weight"] > 0:
                 GMSDLoss_forward = self.cfg["train"]["GMSDLoss_weight"] * self.GMSDLoss(
                     out, hr_image
                 )
                 total_loss += GMSDLoss_forward
-                writer.add_scalar("loss/GMSD", GMSDLoss_forward, global_step)
+                writer.add_scalar(
+                    "loss/GMSD" + log_suffix, GMSDLoss_forward, global_step
+                )
 
             if self.cfg["train"]["MultiScaleGMSDLoss_weight"] > 0:
                 MultiScaleGMSDLoss_forward = self.cfg["train"][
@@ -583,7 +628,9 @@ class AllLoss(pl.LightningModule):
                 ] * self.MultiScaleGMSDLoss(out, hr_image)
                 total_loss += MultiScaleGMSDLoss_forward
                 writer.add_scalar(
-                    "loss/MultiScaleGMSD", MultiScaleGMSDLoss_forward, global_step
+                    "loss/MultiScaleGMSD" + log_suffix,
+                    MultiScaleGMSDLoss_forward,
+                    global_step,
                 )
 
             if self.cfg["train"]["VSILoss_weight"] > 0:
@@ -591,42 +638,50 @@ class AllLoss(pl.LightningModule):
                     self.VSILoss(out, hr_image)
                 )
                 total_loss += VSILoss_forward
-                writer.add_scalar("loss/VSI", VSILoss_forward, global_step)
+                writer.add_scalar("loss/VSI" + log_suffix, VSILoss_forward, global_step)
 
             if self.cfg["train"]["HaarPSILoss_weight"] > 0:
                 HaarPSILoss_forward = self.cfg["train"][
                     "HaarPSILoss_weight"
                 ] * self.HaarPSILoss(out, hr_image)
                 total_loss += HaarPSILoss_forward
-                writer.add_scalar("loss/HaarPSI", HaarPSILoss_forward, global_step)
+                writer.add_scalar(
+                    "loss/HaarPSI" + log_suffix, HaarPSILoss_forward, global_step
+                )
 
             if self.cfg["train"]["MDSILoss_weight"] > 0:
                 MDSILoss_forward = self.cfg["train"]["MDSILoss_weight"] * self.MDSILoss(
                     out, hr_image
                 )
                 total_loss += MDSILoss_forward
-                writer.add_scalar("loss/DSI", MDSILoss_forward, global_step)
+                writer.add_scalar(
+                    "loss/DSI" + log_suffix, MDSILoss_forward, global_step
+                )
 
             if self.cfg["train"]["BRISQUELoss_weight"] > 0:
                 BRISQUELoss_forward = self.cfg["train"][
                     "BRISQUELoss_weight"
                 ] * self.BRISQUELoss(out)
                 total_loss += BRISQUELoss_forward
-                writer.add_scalar("loss/BRISQUE", BRISQUELoss_forward, global_step)
+                writer.add_scalar(
+                    "loss/BRISQUE" + log_suffix, BRISQUELoss_forward, global_step
+                )
 
             if self.cfg["train"]["PieAPP_weight"] > 0:
                 PieAPP_forward = self.cfg["train"]["PieAPP_weight"] * self.PieAPP(
                     out, hr_image
                 )
                 total_loss += PieAPP_forward
-                writer.add_scalar("loss/PieAPP", PieAPP_forward, global_step)
+                writer.add_scalar(
+                    "loss/PieAPP" + log_suffix, PieAPP_forward, global_step
+                )
 
             if self.cfg["train"]["DISTS_weight"] > 0:
                 DISTS_forward = self.cfg["train"]["DISTS_weight"] * self.DISTS(
                     out, hr_image
                 )
                 total_loss += DISTS_forward
-                writer.add_scalar("loss/DISTS", DISTS_forward, global_step)
+                writer.add_scalar("loss/DISTS" + log_suffix, DISTS_forward, global_step)
 
             if self.cfg["train"]["IS_weight"] > 0:
                 if self.cfg["train"]["force_piq_fp16"] is True:
@@ -637,7 +692,7 @@ class AllLoss(pl.LightningModule):
                     i2 = self.piq_model(hr_image)
                 IS_forward = self.cfg["train"]["IS_weight"] * self.IS(i1, i2)
                 total_loss += IS_forward
-                writer.add_scalar("loss/IS", IS_forward, global_step)
+                writer.add_scalar("loss/IS" + log_suffix, IS_forward, global_step)
 
             if self.cfg["train"]["FID_weight"] > 0:
                 if self.cfg["train"]["force_piq_fp16"] is True:
@@ -648,7 +703,7 @@ class AllLoss(pl.LightningModule):
                     i2 = self.piq_model(hr_image)
                 FID_forward = self.cfg["train"]["FID_weight"] * self.FID(i1, i2)
                 total_loss += FID_forward
-                writer.add_scalar("loss/FID", FID_forward, global_step)
+                writer.add_scalar("loss/FID" + log_suffix, FID_forward, global_step)
 
             if self.cfg["train"]["KID_weight"] > 0:
                 if self.cfg["train"]["force_piq_fp16"] is True:
@@ -659,7 +714,7 @@ class AllLoss(pl.LightningModule):
                     i2 = self.piq_model(hr_image)
                 KID_forward = self.cfg["train"]["KID_weight"] * self.KID(i1, i2)
                 total_loss += KID_forward
-                writer.add_scalar("loss/KID", KID_forward, global_step)
+                writer.add_scalar("loss/KID" + log_suffix, KID_forward, global_step)
 
             if self.cfg["train"]["PR_weight"] > 0:
                 precision, recall = self.PR(
@@ -667,7 +722,7 @@ class AllLoss(pl.LightningModule):
                 )
                 PR_forward = self.cfg["train"]["PR_weight"] * (precision**-1)
                 total_loss += PR_forward
-                writer.add_scalar("loss/PR", PR_forward, global_step)
+                writer.add_scalar("loss/PR" + log_suffix, PR_forward, global_step)
 
             #########################
             # exotic loss
@@ -682,25 +737,27 @@ class AllLoss(pl.LightningModule):
                     other["other_img"], hr_image
                 )
                 total_loss += l1_stage1
-                writer.add_scalar("loss/l1_stage1", l1_stage1, global_step)
+                writer.add_scalar("loss/l1_stage1" + log_suffix, l1_stage1, global_step)
 
             # CSA Loss
             if self.cfg["network_G"]["netG"] == "CSA":
                 recon_loss = self.L1Loss(
                     other["coarse_result"], hr_image
                 ) + self.L1Loss(out, hr_image)
-                cons = ConsistencyLoss()
+                cons = self.ConsistencyLoss()
                 cons_loss = cons(other["csa"], other["csa_d"], hr_image, other["mask"])
-                writer.add_scalar("loss/recon_loss", recon_loss, global_step)
+                writer.add_scalar(
+                    "loss/recon_loss" + log_suffix, recon_loss, global_step
+                )
                 total_loss += recon_loss
-                writer.add_scalar("loss/cons_loss", cons_loss, global_step)
+                writer.add_scalar("loss/cons_loss" + log_suffix, cons_loss, global_step)
                 total_loss += cons_loss
 
             # EdgeConnect
             if self.cfg["network_G"]["netG"] == "EdgeConnect":
                 l1_edge = self.L1Loss(other["other_img"], other["edge"])
                 total_loss += l1_edge
-                writer.add_scalar("loss/l1_edge", l1_edge, global_step)
+                writer.add_scalar("loss/l1_edge" + log_suffix, l1_edge, global_step)
 
             # PVRS
             if self.cfg["network_G"]["netG"] == "PVRS":
@@ -711,8 +768,12 @@ class AllLoss(pl.LightningModule):
                 )
                 total_loss += edge_big_l1
                 total_loss += edge_small_l1
-                writer.add_scalar("loss/edge_big_l1", edge_big_l1, global_step)
-                writer.add_scalar("loss/edge_small_l1", edge_small_l1, global_step)
+                writer.add_scalar(
+                    "loss/edge_big_l1" + log_suffix, edge_big_l1, global_step
+                )
+                writer.add_scalar(
+                    "loss/edge_small_l1" + log_suffix, edge_small_l1, global_step
+                )
 
             # FRRN
             if self.cfg["network_G"]["netG"] == "FRRN":
@@ -723,15 +784,17 @@ class AllLoss(pl.LightningModule):
                         hr_image * other["mid_mask"][idx],
                     )
                 total_loss += mid_l1_loss
-                writer.add_scalar("loss/mid_l1_loss", mid_l1_loss, global_step)
+                writer.add_scalar(
+                    "loss/mid_l1_loss" + log_suffix, mid_l1_loss, global_step
+                )
 
-            writer.add_scalar("loss/g_loss", total_loss, global_step)
+            writer.add_scalar("loss/g_loss" + log_suffix, total_loss, global_step)
 
             # srflow
             if self.cfg["network_G"]["netG"] == "srflow":
                 nll_loss = torch.mean(nll)
-                total_loss += cfg["network_G"]["nll_weight"] * nll_loss
-                writer.add_scalar("loss/nll_loss", nll_loss, global_step)
+                total_loss += self.cfg["network_G"]["nll_weight"] * nll_loss
+                writer.add_scalar("loss/nll_loss" + log_suffix, nll_loss, global_step)
 
             # CTSDG
             if self.cfg["network_G"]["netG"] == "CTSDG":
@@ -740,14 +803,16 @@ class AllLoss(pl.LightningModule):
                     * self.cfg["train"]["CTSDG_edge_weight"]
                 )
                 total_loss += edge_loss
-                writer.add_scalar("loss/edge_loss", edge_loss, global_step)
+                writer.add_scalar("loss/edge_loss" + log_suffix, edge_loss, global_step)
 
                 projected_loss = (
                     self.L1Loss(other["projected_image"], hr_image)
                     * self.cfg["train"]["CTSDG_projected_weight"]
                 )
                 total_loss += projected_loss
-                writer.add_scalar("loss/projected_loss", projected_loss, global_step)
+                writer.add_scalar(
+                    "loss/projected_loss" + log_suffix, projected_loss, global_step
+                )
 
             # rife
             if self.cfg["network_G"]["netG"] == "rife":
@@ -756,8 +821,25 @@ class AllLoss(pl.LightningModule):
                     * self.cfg["train"]["SOBEL_weight"]
                 )
                 total_loss += sobel_loss
-                writer.add_scalar("loss/sobel_loss", sobel_loss, global_step)
+                writer.add_scalar(
+                    "loss/sobel_loss" + log_suffix, sobel_loss, global_step
+                )
 
+            # feature match loss for knowledge destillation
+            if (
+                self.cfg["network_G_teacher"]["netG"]
+                in ("MRRDBNet_FM", "SRVGGNetCompact")
+                and log_suffix == "_teacher"
+            ):
+                fm_loss = 0
+                for i, fm in enumerate(other["feature_maps"]):
+                    # sometimes the features dont exactly match, to avoid crashing, a check
+                    if fm.shape == other_teacher["feature_maps"][i].shape:
+                        fm_loss += self.l1(fm, other_teacher["feature_maps"][i])
+                fm_loss = (
+                    fm_loss * self.cfg["network_G_teacher"]["l1_feature_maps_weight"]
+                )
+                writer.add_scalar("loss/fm_loss" + log_suffix, fm_loss, global_step)
             #########################
 
             # replicating realesrgan strategy, using normal gt for discriminator
@@ -829,7 +911,9 @@ class AllLoss(pl.LightningModule):
                             ] * self.discriminator_criterion(netD(out), fake)
 
                 total_loss += d_loss_fool
-                writer.add_scalar("loss/d_loss_fool", d_loss_fool, global_step)
+                writer.add_scalar(
+                    "loss/d_loss_fool" + log_suffix, d_loss_fool, global_step
+                )
 
             if (
                 self.cfg["network_D"]["netD"] == "FFCNLayerDiscriminator"
@@ -855,7 +939,7 @@ class AllLoss(pl.LightningModule):
                     ] * feature_matching_loss(FFCN_feature, FFCN_feature_orig, hr_image)
                 total_loss += feature_matching_loss_forward
                 writer.add_scalar(
-                    "loss/feature_matching_loss",
+                    "loss/feature_matching_loss" + log_suffix,
                     feature_matching_loss_forward,
                     global_step,
                 )
@@ -889,7 +973,7 @@ class AllLoss(pl.LightningModule):
                                     [other["hr_image1"], hr_image, other["hr_image3"]],
                                     dim=1,
                                 ),
-                                cfg["train"]["policy"],
+                                self.cfg["train"]["policy"],
                             )
                         ),
                         valid,
@@ -942,7 +1026,7 @@ class AllLoss(pl.LightningModule):
                     discr_out_fake = netD(fake_out)
                     discr_out_real = netD(real_out)
                 else:
-                    if cfg["network_D"]["netD"] == "FFCNLayerDiscriminator":
+                    if self.cfg["network_D"]["netD"] == "FFCNLayerDiscriminator":
                         discr_out_fake, _ = netD(out)
                         discr_out_real, _ = netD(hr_image)
                     else:
@@ -957,6 +1041,6 @@ class AllLoss(pl.LightningModule):
                 (dis_real_loss + dis_fake_loss) / 2
             )
 
-            writer.add_scalar("loss/d_loss", d_loss, global_step)
+            writer.add_scalar("loss/d_loss" + log_suffix, d_loss, global_step)
 
             return d_loss

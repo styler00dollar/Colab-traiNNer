@@ -7,6 +7,8 @@ from init import weights_init
 import os
 import numpy as np
 from tensorboardX import SummaryWriter
+from generate import generate
+from check_arch import check_arch
 
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
@@ -22,7 +24,13 @@ class CustomTrainClass(pl.LightningModule):
 
         from generator import CreateGenerator
 
-        self.netG = CreateGenerator(cfg)
+        self.netG = CreateGenerator(cfg["network_G"], cfg["scale"])
+
+        if cfg["network_G_teacher"]["netG"] != None:
+            print("Using Teacher!")
+            self.netG_teacher = CreateGenerator(cfg["network_G_teacher"], cfg["scale"])
+            for param in self.netG_teacher.parameters():
+                param.requires_grad = False
 
         if (
             cfg["path"]["checkpoint_path"] is None
@@ -128,296 +136,94 @@ class CustomTrainClass(pl.LightningModule):
         # if more than one output, fills dict with data, otherwise give empty dict to loss calc
         other = dict()
 
-        # if inpainting
-        if cfg["network_G"]["netG"] in (  # real inpainting generators
-            "lama",
-            "MST",
-            "MANet",
-            "context_encoder",
-            "DFNet",
-            "AdaFill",
-            "MEDFE",
-            "RFR",
-            "LBAM",
-            "DMFN",
-            "Partial",
-            "RN",
-            "DSNet",
-            "DSNetRRDB",
-            "DSNetDeoldify",
-            "EdgeConnect",
-            "CSA",
-            "deepfillv1",
-            "deepfillv2",
-            "Adaptive",
-            "Global",
-            "Pluralistic",
-            "crfill",
-            "DeepDFNet",
-            "pennet",
-            "FRRN",
-            "PRVS",
-            "CRA",
-            "atrous",
-            "lightweight_gan",
-            "CTSDG",
-            "misf",
-            "mat",
-            # sr genrators
-            "restormer",
-            "SRVGGNetCompact",
-            "ESRT",
-            "swinir",
-            "lightweight_gan",
-            "RRDB_net",
-            "GLEAN",
-            "GPEN",
-            "comodgan",
-            "GFPGAN",
-            "swinir2",
-        ) and cfg["datasets"]["train"]["mode"] in ("DS_inpaint", "DS_inpaint_TF"):
+        arch, edge, grayscale, landmarks = check_arch(cfg)
+
+        # inpainting
+        if arch == "inpainting" and edge:
+            other["edge"] = train_batch[3]
+        if arch == "inpainting" and grayscale:
+            other["grayscale"] = train_batch[4]
+        if arch == "inpainting":
             lr_image = train_batch[0]
             hr_image = train_batch[2]
             other["mask"] = train_batch[1]
 
-            if cfg["network_G"]["netG"] in ("PRVS", "CTSDG", "EdgeConnect", "misf"):
-                other["edge"] = train_batch[3]
-            if cfg["network_G"]["netG"] in ("EdgeConnect", "misf"):
-                other["grayscale"] = train_batch[4]
-
-        # if super resolution
-        elif cfg["network_G"]["netG"] in (
-            "restormer",
-            "SRVGGNetCompact",
-            "ESRT",
-            "swinir",
-            "lightweight_gan",
-            "RRDB_net",
-            "GLEAN",
-            "GPEN",
-            "comodgan",
-            "ASRGAN",
-            "PPON",
-            "sr_resnet",
-            "PAN",
-            "sisr",
-            "USRNet",
-            "srflow",
-            "DFDNet",
-            "GFPGAN",
-            "GPEN",
-            "comodgan",
-            "ESRT",
-            "SRVGGNetCompact",
-            "swinir2",
-        ) and cfg["datasets"]["train"]["mode"] in ("DS_lrhr", "DS_realesrgan"):
-            if cfg["datasets"]["train"]["mode"] == "DS_realesrgan":
-                lr_image, hr_image, other["gt"] = self.RealESRGANDatasetApply.forward(
-                    train_batch[0],
-                    train_batch[1],
-                    train_batch[2],
-                    train_batch[3],
-                    self.device,
-                )
-                # hotfix: at the end of one epoch it can happen that only 3d tensor gets returned
-                if lr_image.dim() == 3:
-                    lr_image = lr_image.unsqueeze(0)
-                    hr_image = hr_image.unsqueeze(0)
-                    other["gt"] = other["gt"].unsqueeze(0)
-            else:
-                lr_image = train_batch[1]
-                hr_image = train_batch[2]
-            if cfg["network_G"]["netG"] == "DFDNet":
-                other["landmarks"] = train_batch[3]
-
-        # if interpolation
-        elif cfg["network_G"]["netG"] in (
-            "CDFI",
-            "sepconv_enhanced",
-            "CAIN",
-            "rife",
-            "RRIN",
-            "ABME",
-            "EDSC",
-            "sepconv_rt",
-        ):
+        # interpolation
+        elif arch == "interpolation":
             other["hr_image1"] = train_batch[0]
             other["hr_image3"] = train_batch[1]
             hr_image = train_batch[2]
 
-        # train generator
-        ############################
-        if cfg["network_G"]["netG"] == "CTSDG":
-            # input_image, input_edge, mask
-            out, other["projected_image"], other["projected_edge"] = self.netG(
-                lr_image, other["edge"], other["mask"]
+        # sr
+        if arch == "sr" and cfg["datasets"]["train"]["mode"] == "DS_realesrgan":
+            lr_image, hr_image, other["gt"] = self.RealESRGANDatasetApply.forward(
+                train_batch[0],
+                train_batch[1],
+                train_batch[2],
+                train_batch[3],
+                self.device,
             )
+            # hotfix: at the end of one epoch it can happen that only 3d tensor gets returned
+            if lr_image.dim() == 3:
+                lr_image = lr_image.unsqueeze(0)
+                hr_image = hr_image.unsqueeze(0)
+                other["gt"] = other["gt"].unsqueeze(0)
+        else:
+            lr_image = train_batch[1]
+            hr_image = train_batch[2]
+        if arch == "sr" and landmarks:
+            other["landmarks"] = train_batch[3]
 
-        if cfg["network_G"]["netG"] in (
-            "lama",
-            "MST",
-            "MANet",
-            "context_encoder",
-            "DFNet",
-            "AdaFill",
-            "MEDFE",
-            "RFR",
-            "LBAM",
-            "DMFN",
-            "Partial",
-            "RN",
-            "RN",
-            "DSNet",
-            "DSNetRRDB",
-            "DSNetDeoldify",
-            "mat",
-        ):
-            # generate fake (1 output)
-            out = self.netG(lr_image, other["mask"])
+        if cfg["network_G_teacher"]["netG"] != None:
+            # creating dict for teacher, currently only using same lr data
+            other_teacher = other.copy()
 
-        ############################
-        if cfg["network_G"]["netG"] in ("deepfillv1", "deepfillv2", "Adaptive"):
-            # generate fake (2 outputs)
-            out, other["other_img"] = self.netG(lr_image, other["mask"])
+        total_loss = 0
 
-        ############################
-        # exotic generators
-        # CSA
-        if cfg["network_G"]["netG"] == "CSA":
-            other["coarse_result"], out, other["csa"], other["csa_d"] = self.netG(
-                lr_image, other["mask"]
-            )
-
-        # EdgeConnect / misf
-        if cfg["network_G"]["netG"] in ("EdgeConnect", "misf"):
-            out, other["other_img"] = self.netG(
-                lr_image, other["edge"], other["grayscale"], other["mask"]
-            )
-
-        # PVRS
-        if cfg["network_G"]["netG"] == "PVRS":
-            out, _, other["edge_small"], other["edge_big"] = self.netG(
-                lr_image, other["mask"], other["edge"]
-            )
-
-        # FRRN
-        if cfg["network_G"]["netG"] == "FRRN":
-            out, other["mid_x"], other["mid_mask"] = self.netG(lr_image, other["mask"])
-
-        # if inpaint, masking, taking original content from HR
-        if cfg["network_G"]["netG"] in (
-            "CTSDG",
-            "lama",
-            "MST",
-            "MANet",
-            "context_encoder",
-            "DFNet",
-            "AdaFill",
-            "MEDFE",
-            "RFR",
-            "LBAM",
-            "DMFN",
-            "Partial",
-            "RN",
-            "RN",
-            "DSNet",
-            "DSNetRRDB",
-            "DSNetDeoldify",
-            "deepfillv1",
-            "deepfillv2",
-            "Adaptive",
-            "CSA",
-            "EdgeConnect",
-            "PVRS",
-            "FRRN",
-            "misf",
-            "mat",
-        ):
-            out = lr_image * other["mask"] + out * (1 - other["mask"])
-
-        # deoldify
-        if cfg["network_G"]["netG"] == "deoldify":
-            out = self.netG(lr_image)
-
-        ############################
-        # if frame interpolation
-        if cfg["network_G"]["netG"] in (
-            "CDFI",
-            "sepconv_enhanced",
-            "CAIN",
-            "RRIN",
-            "ABME",
-            "EDSC",
-            "sepconv_rt",
-        ):
-            out = self.netG(other["hr_image1"], other["hr_image3"])
-
-        if cfg["network_G"]["netG"] == "rife":
-            out, other["flow"] = self.netG(
-                other["hr_image1"], other["hr_image3"], training=True
-            )
-
-        # ESRT / swinir / lightweight_gan / RRDB_net / GLEAN / GPEN / comodgan
-        if cfg["network_G"]["netG"] in (
-            "restormer",
-            "SRVGGNetCompact",
-            "ESRT",
-            "swinir",
-            "lightweight_gan",
-            "RRDB_net",
-            "GLEAN",
-            "GPEN",
-            "comodgan",
-            "swinir2",
-        ):
-            if cfg["datasets"]["train"]["mode"] in ("DS_inpaint", "DS_inpaint_TF"):
-                out = self.netG(torch.cat([lr_image, other["mask"]], 1))
-                out = lr_image * other["mask"] + out * (1 - other["mask"])
-            else:
-                # normal dataloader
-                out = self.netG(lr_image)
-                # # unpad images if using CEM
-                if cfg["network_G"]["CEM"] is True:
-                    out = self.CEM_net.HR_unpadder(out)
-                    hr_image = self.CEM_net.HR_unpadder(hr_image)
-
-        # GFPGAN
-        if cfg["network_G"]["netG"] == "GFPGAN":
-            if cfg["datasets"]["train"]["mode"] in ("DS_inpaint", "DS_inpaint_TF"):
-                out, _ = self.netG(torch.cat([lr_image, other["mask"]], 1))
-                out = lr_image * other["mask"] + out * (1 - other["mask"])
-            else:
-                out, _ = self.netG(lr_image)
-
-        if cfg["network_G"]["netG"] == "srflow":
-            # freeze rrdb in the beginning
-            if self.trainer.global_step < cfg["network_G"]["freeze_iter"]:
-                self.netG.set_rrdb_training(False)
-            else:
-                self.netG.set_rrdb_training(True)
-            z, nll, y_logits = self.netG(gt=hr_image, lr=lr_image, reverse=False)
-            out, other["logdet"] = self.netG(
-                lr=lr_image, z=z, eps_std=0, reverse=True, reverse_with_grad=True
-            )
-            # out = torch.clamp(out, 0, 1)  # forcing out to be between 0 and 1
-
-        # DFDNet
-        if cfg["network_G"]["netG"] == "DFDNet":
-            out = self.netG(lr_image, part_locations=other["landmarks"])
-            # range [-1, 1] to [0, 1]
-            out = out + 1
-            out = out - out.min()
-            out = out / (out.max() - out.min())
-
-        total_loss = self.loss(
-            out,
-            hr_image,
-            writer,
-            self.trainer.global_step,
-            optimizer_idx,
-            self.netD,
-            other,
+        out, other = generate(
+            cfg=cfg,
+            lr_image=lr_image,
+            hr_image=hr_image,
+            netG=self.netG,
+            other=other,
+            global_step=self.trainer.global_step,
+            arch=arch,
+            arch_name=cfg["network_G"]["netG"],
         )
+
+        total_loss += self.loss(
+            out=out,
+            hr_image=hr_image,
+            writer=writer,
+            global_step=self.trainer.global_step,
+            optimizer_idx=optimizer_idx,
+            netD=self.netD,
+            other=other,
+        )
+
+        if cfg["network_G_teacher"]["netG"] != None:
+            out_teacher, other_teacher = generate(
+                cfg=cfg,
+                lr_image=lr_image,
+                hr_image=hr_image,
+                netG=self.netG_teacher,
+                other=other_teacher,
+                global_step=self.trainer.global_step,
+                arch=arch,
+                arch_name=cfg["network_G_teacher"]["netG"],
+            )
+
+            total_loss += self.loss(
+                out=out,
+                hr_image=out_teacher,
+                writer=writer,
+                global_step=self.trainer.global_step,
+                optimizer_idx=optimizer_idx,
+                netD=self.netD,
+                other=other,
+                other_teacher=other_teacher,
+                log_suffix="_teacher",
+            )
 
         return total_loss
 
@@ -438,253 +244,44 @@ class CustomTrainClass(pl.LightningModule):
             return [opt_g], []
 
     def validation_step(self, train_batch, train_idx):
-        # different networks require different data and
-        # have different data loaders
+        arch, edge, grayscale, landmarks = check_arch(cfg)
+        other = dict()
 
-        # if inpainting
-        if cfg["network_G"]["netG"] in (  # real inpainting generators
-            "lama",
-            "MST",
-            "MANet",
-            "context_encoder",
-            "DFNet",
-            "AdaFill",
-            "MEDFE",
-            "RFR",
-            "LBAM",
-            "DMFN",
-            "Partial",
-            "RN",
-            "DSNet",
-            "DSNetRRDB",
-            "DSNetDeoldify",
-            "EdgeConnect",
-            "CSA",
-            "deepfillv1",
-            "deepfillv2",
-            "Adaptive",
-            "Global",
-            "Pluralistic",
-            "crfill",
-            "DeepDFNet",
-            "pennet",
-            "FRRN",
-            "PRVS",
-            "CRA",
-            "atrous",
-            "lightweight_gan",
-            "CTSDG",
-            "misf",
-            "mat",
-            # sr genrators
-            "restormer",
-            "SRVGGNetCompact",
-            "ESRT",
-            "swinir",
-            "lightweight_gan",
-            "RRDB_net",
-            "GLEAN",
-            "GPEN",
-            "comodgan",
-            "GFPGAN",
-            "swinir2",
-        ) and cfg["datasets"]["train"]["mode"] in ("DS_inpaint", "DS_inpaint_TF"):
+        # inpainting
+        if arch == "inpainting" and edge:
+            other["edge"] = train_batch[3]
+        if arch == "inpainting" and grayscale:
+            other["grayscale"] = train_batch[4]
+        if arch == "inpainting":
             lr_image = train_batch[0]
-            mask = train_batch[1]
-            path = train_batch[2]
-            if cfg["network_G"]["netG"] in ("PRVS", "CTSDG", "EdgeConnect", "misf"):
-                edge = train_batch[3]
-            if cfg["network_G"]["netG"] in ("EdgeConnect", "misf"):
-                grayscale = train_batch[4]
+            other["mask"] = train_batch[1]
 
-        # if super resolution
-        elif cfg["network_G"]["netG"] in (
-            "restormer",
-            "SRVGGNetCompact",
-            "ESRT",
-            "swinir",
-            "lightweight_gan",
-            "RRDB_net",
-            "GLEAN",
-            "GPEN",
-            "comodgan",
-            "swinir2",
-        ):
+        # interpolation
+        elif arch == "interpolation":
+            other["hr_image1"], other["hr_image3"] = train_batch[0]
+            hr_image = None  # middle frame gets generated and does not exist
+
+        # sr
+        elif arch == "sr":
             lr_image = train_batch[0]
             hr_image = train_batch[1]
-            path = train_batch[2]
-            if cfg["network_G"]["netG"] == "DFDNet":
-                landmarks = train_batch[3]
-        # if interpolation
-        elif cfg["network_G"]["netG"] in (
-            "CDFI",
-            "sepconv_enhanced",
-            "CAIN",
-            "rife",
-            "RRIN",
-            "ABME",
-            "EDSC",
-            "sepconv_rt",
-        ):
-            hr_image1, hr_image3 = train_batch[0]
-            path = train_batch[2]
+            if arch == "sr" and landmarks:
+                other["landmarks"] = train_batch[3]
+
+        path = train_batch[2]
 
         #########################
 
-        if cfg["network_G"]["netG"] == "CTSDG":
-            out, _, _ = self.netG(lr_image, edge, mask)
-            out = lr_image * mask + out * (1 - mask)
-
-        # if frame interpolation
-        if cfg["network_G"]["netG"] in (
-            "CDFI",
-            "sepconv_enhanced",
-            "CAIN",
-            "RRIN",
-            "ABME",
-            "EDSC",
-            "sepconv_rt",
-        ):
-            out = self.netG(hr_image1, hr_image3)
-
-        if cfg["network_G"]["netG"] == "rife":
-            out, _ = self.netG(hr_image1, hr_image3, training=True)
-
-        #########################
-
-        if cfg["network_G"]["netG"] in (
-            "lama",
-            "MST",
-            "MANet",
-            "context_encoder",
-            "aotgan",
-            "DFNet",
-            "AdaFill",
-            "MEDFE",
-            "RFR",
-            "LBAM",
-            "DMFN",
-            "Partial",
-            "RN",
-            "RN",
-            "DSNet",
-            "DSNetRRDB",
-            "DSNetDeoldify",
-            "mat",
-        ):
-            out = self.netG(lr_image, mask)
-
-        if cfg["network_G"]["netG"] in ("deepfillv1", "deepfillv2", "Adaptive"):
-            out, _ = self(lr_image, mask)
-
-        # CSA
-        if cfg["network_G"]["netG"] == "CSA":
-            _, out, _, _ = self(lr_image, mask)
-
-        # EdgeConnect / misf
-        if cfg["network_G"]["netG"] in ("EdgeConnect", "misf"):
-            out, _ = self.netG(lr_image, edge, grayscale, mask)
-
-        # PVRS
-        if cfg["network_G"]["netG"] == "PVRS":
-            out, _, _, _ = self.netG(lr_image, mask, edge)
-
-        # FRRN
-        if cfg["network_G"]["netG"] == "FRRN":
-            out, _, _ = self(lr_image, mask)
-
-        # if inpaint, masking, taking original content from HR
-        if cfg["network_G"]["netG"] in (
-            "CTSDG",
-            "lama",
-            "MST",
-            "MANet",
-            "context_encoder",
-            "DFNet",
-            "AdaFill",
-            "MEDFE",
-            "RFR",
-            "LBAM",
-            "DMFN",
-            "Partial",
-            "RN",
-            "RN",
-            "DSNet",
-            "DSNetRRDB",
-            "DSNetDeoldify",
-            "deepfillv1",
-            "deepfillv2",
-            "Adaptive",
-            "CSA",
-            "EdgeConnect",
-            "PVRS",
-            "FRRN",
-            "misf",
-        ):
-            out = lr_image * mask + out * (1 - mask)
-
-        # deoldify
-        if cfg["network_G"]["netG"] == "deoldify":
-            out = self.netG(lr_image)
-
-        ############################
-        # ESRGAN / GLEAN / GPEN / comodgan / lightweight_gan / ESRT / SRVGGNetCompact
-        if cfg["network_G"]["netG"] in (
-            "restormer",
-            "SRVGGNetCompact",
-            "ESRT",
-            "swinir",
-            "lightweight_gan",
-            "RRDB_net",
-            "GLEAN",
-            "GPEN",
-            "comodgan",
-            "swinir2",
-        ):
-            if cfg["datasets"]["train"]["mode"] in ("DS_inpaint", "DS_inpaint_TF"):
-                # masked test with inpaint dataloader
-                out = self.netG(torch.cat([lr_image, mask], 1))
-                out = lr_image * mask + out * (1 - mask)
-            else:
-                # normal dataloader
-                out = self.netG(lr_image)
-
-        # GFPGAN
-        if cfg["network_G"]["netG"] == "GFPGAN":
-            if cfg["datasets"]["train"]["mode"] in ("DS_inpaint", "DS_inpaint_TF"):
-                # masked test with inpaint dataloader
-                out, _ = self.netG(torch.cat([lr_image, mask], 1))
-                out = lr_image * mask + out * (1 - mask)
-            else:
-                out, _ = self.netG(lr_image)
-
-        if cfg["network_G"]["netG"] == "srflow":
-            from arch.SRFlowNet_arch import get_z
-
-            # freeze rrdb in the beginning
-            if self.trainer.global_step < cfg["network_G"]["freeze_iter"]:
-                self.netG.set_rrdb_training(False)
-            else:
-                self.netG.set_rrdb_training(True)
-
-            z = get_z(
-                self,
-                heat=0,
-                seed=None,
-                batch_size=lr_image.shape[0],
-                lr_shape=lr_image.shape,
-            )
-            out, logdet = self.netG(
-                lr=lr_image, z=z, eps_std=0, reverse=True, reverse_with_grad=True
-            )
-
-        # DFDNet
-        if cfg["network_G"]["netG"] == "DFDNet":
-            out = self.netG(lr_image, part_locations=landmarks)
-            # range [-1, 1] to [0, 1]
-            out = out + 1
-            out = out - out.min()
-            out = out / (out.max() - out.min())
+        out, _ = generate(
+            cfg,
+            lr_image,
+            hr_image,
+            self.netG,
+            other,
+            self.trainer.global_step,
+            arch,
+            cfg["network_G"]["netG"],
+        )
 
         # Validation metrics work, but they need an origial source image.
         if "PSNR" in cfg["train"]["metrics"]:
@@ -717,12 +314,7 @@ class CustomTrainClass(pl.LightningModule):
             filename = os.path.splitext(filename_with_extention)[0]
 
             # currently only supports batch_size 1
-            if cfg["network_G"]["netG"] in (
-                "sepconv_enhanced",
-                "CAIN",
-                "rife",
-                "sepconv_rt",
-            ):
+            if arch == "interpolation":
                 out = out.data.mul(255).mul(255 / 255).clamp(0, 255).round()
                 out = out.squeeze(0).permute(1, 2, 0).cpu().numpy()  # *255
                 out = out.astype(np.uint8)
