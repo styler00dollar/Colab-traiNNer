@@ -394,6 +394,17 @@ network_G:
     #rrdb_blocks: 2
     #convtype: "Conv2D"
 
+    # ELAN (2022)
+    #netG: 
+    #scale: 4
+    #colors: 3
+    #window_sizes: [4, 8, 16]
+    #m_elan: 24
+    #c_elan: 60
+    #n_share: 1
+    #r_expand: 2
+    #rgb_range: 255
+
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
     #netG: DFNet

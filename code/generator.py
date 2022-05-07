@@ -567,6 +567,20 @@ def CreateGenerator(cfg, scale):
             img_channels=cfg["img_channels"],
         )
 
+    elif cfg["netG"] == "elan":
+        from arch.elan_arch import ELAN
+
+        netG = ELAN(
+            scale=cfg["scale"],
+            colors=cfg["colors"],
+            window_sizes=cfg["window_sizes"],
+            m_elan=cfg["wm_elan_dim"],
+            c_elan=cfg["c_elan"],
+            n_share=cfg["n_share"],
+            r_expand=cfg["r_expand"],
+            rgb_range=cfg["rgb_range"],
+        )
+
     ############################
 
     if cfg["CEM"] is True:

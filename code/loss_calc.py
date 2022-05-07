@@ -231,11 +231,12 @@ class AllLoss(pl.LightningModule):
         self.ConsistencyLoss = ConsistencyLoss()
 
         from arch.hrf_perceptual import ResNetPL
+
         self.hrf_perceptual_loss = ResNetPL()
         for param in self.hrf_perceptual_loss.parameters():
             param.requires_grad = False
 
-        if cfg['train']['force_fp16_hrf'] is True:
+        if cfg["train"]["force_fp16_hrf"] is True:
             self.hrf_perceptual_loss = self.hrf_perceptual_loss.half()
 
         self.ColorLoss = ColorLoss()
