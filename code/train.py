@@ -186,7 +186,7 @@ if __name__ == "__main__":
 
     if cfg["path"]["pretrain_model_G_teacher"]:
         model.netG_teacher.load_state_dict(
-            torch.load(cfg["path"]["pretrain_model_G_teacher"]), strict=False
+            torch.load(cfg["path"]["pretrain_model_G_teacher"]), strict=True
         )
         print("Teacher pth loaded!")
 
