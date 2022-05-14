@@ -565,6 +565,7 @@ def CreateGenerator(cfg, scale):
             w_dim=cfg["w_dim"],
             img_resolution=cfg["img_resolution"],
             img_channels=cfg["img_channels"],
+            noise_mode=cfg["noise_mode"],
         )
 
     elif cfg["netG"] == "elan":
@@ -574,11 +575,25 @@ def CreateGenerator(cfg, scale):
             scale=cfg["scale"],
             colors=cfg["colors"],
             window_sizes=cfg["window_sizes"],
-            m_elan=cfg["wm_elan_dim"],
+            m_elan=cfg["m_elan"],
             c_elan=cfg["c_elan"],
             n_share=cfg["n_share"],
             r_expand=cfg["r_expand"],
             rgb_range=cfg["rgb_range"],
+            conv=cfg["conv"],
+        )
+
+    elif cfg["netG"] == "lft":
+        from arch.lft_arch import LFT
+
+        netG = LFT(
+            channels=cfg["channels"],
+            angRes=cfg["angRes"],
+            scale_factor=cfg["scale"],
+            layer_num=cfg["layer_num"],
+            temperature=cfg["temperature"],
+            num_heads=cfg["num_heads"],
+            dropout=cfg["dropout"],
         )
 
     ############################

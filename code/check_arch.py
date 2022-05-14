@@ -46,6 +46,8 @@ def check_arch(cfg):
         "comodgan",
         "GFPGAN",
         "swinir2",
+        "elan",
+        "lft",
     ) and cfg["datasets"]["train"]["mode"] in ("DS_inpaint", "DS_inpaint_TF"):
         if cfg["network_G"]["netG"] in ("PRVS", "CTSDG"):
             # arch, edge, grayscale, landmarks
@@ -82,6 +84,8 @@ def check_arch(cfg):
         "SRVGGNetCompact",
         "swinir2",
         "MRRDBNet_FM",
+        "elan",
+        "lft",
     ) and cfg["datasets"]["train"]["mode"] in ("DS_lrhr", "DS_realesrgan"):
         if cfg["network_G"]["netG"] == "DFDNet":
             # arch, edge, grayscale, landmarks

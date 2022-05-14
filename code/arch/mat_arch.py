@@ -2641,11 +2641,13 @@ class Generator(pl.LightningModule):
         img_channels,  # Number of input color channels.
         synthesis_kwargs={},  # Arguments for SynthesisNetwork.
         mapping_kwargs={},  # Arguments for MappingNetwork.
+        noise_mode="const",
     ):
         super().__init__()
         self.z_dim = z_dim
         self.c_dim = c_dim
         self.w_dim = w_dim
+        self.noise_mode = noise_mode
         self.img_resolution = img_resolution
         self.img_channels = img_channels
 
@@ -2667,14 +2669,15 @@ class Generator(pl.LightningModule):
         self,
         images_in,
         masks_in,
-        c=None,
         truncation_psi=1,
         truncation_cutoff=None,
         skip_w_avg_update=False,
-        noise_mode="random",
         return_stg1=False,
     ):
+        images_in = (images_in * 2) - 1  # adjusting range to -1/1
+        masks_in = 1 - masks_in  # adjust masks to match official pretrain
         z = torch.randn(images_in.size(0), self.img_resolution).to(self.device)
+        c = torch.zeros([1, self.c_dim], device="cuda")
 
         ws = self.mapping(
             z,
@@ -2685,11 +2688,11 @@ class Generator(pl.LightningModule):
         )
 
         if not return_stg1:
-            img = self.synthesis(images_in, masks_in, ws, noise_mode=noise_mode)
+            img = self.synthesis(images_in, masks_in, ws, noise_mode=self.noise_mode)
             return img
         else:
             img, out_stg1 = self.synthesis(
-                images_in, masks_in, ws, noise_mode=noise_mode, return_stg1=True
+                images_in, masks_in, ws, noise_mode=self.noise_mode, return_stg1=True
             )
             return img, out_stg1
 

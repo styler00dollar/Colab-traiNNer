@@ -12,6 +12,14 @@ import numbers
 from torch.nn.utils import weight_norm
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
+import yaml
+
+with open("config.yaml", "r") as ymlfile:
+    cfg = yaml.safe_load(ymlfile)
+
+if cfg["network_G"]["conv"] == "fft":
+    from .lama_arch import FourierUnit
+
 
 class MeanShift(nn.Conv2d):
     def __init__(
@@ -285,6 +293,7 @@ class ELAN(nn.Module):
         n_share=1,
         r_expand=2,
         rgb_range=255,
+        conv="Conv2D",
     ):
         super(ELAN, self).__init__()
 
@@ -299,9 +308,25 @@ class ELAN(nn.Module):
         self.add_mean = MeanShift(rgb_range, sign=1)
 
         # define head module
-        m_head = [
-            nn.Conv2d(self.colors, self.c_elan, kernel_size=3, stride=1, padding=1)
-        ]
+        if conv == "Conv2D":
+            m_head = [
+                nn.Conv2d(self.colors, self.c_elan, kernel_size=3, stride=1, padding=1)
+            ]
+        elif conv == "fft":
+            m_head = [
+                FourierUnit(
+                    in_channels=self.colors,
+                    out_channels=self.c_elan,
+                    groups=1,
+                    spatial_scale_factor=None,
+                    spatial_scale_mode="bilinear",
+                    spectral_pos_encoding=False,
+                    use_se=False,
+                    se_kwargs=None,
+                    ffc3d=False,
+                    fft_norm="ortho",
+                )
+            ]
 
         # define body module
         m_body = []
@@ -329,16 +354,17 @@ class ELAN(nn.Module):
                     )
                 )
         # define tail module
-        m_tail = [
-            nn.Conv2d(
-                self.c_elan,
-                self.colors * self.scale * self.scale,
-                kernel_size=3,
-                stride=1,
-                padding=1,
-            ),
-            nn.PixelShuffle(self.scale),
-        ]
+        if conv == "Conv2D" or "fft":
+            m_tail = [
+                nn.Conv2d(
+                    self.c_elan,
+                    self.colors * self.scale * self.scale,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                ),
+                nn.PixelShuffle(self.scale),
+            ]
 
         self.head = nn.Sequential(*m_head)
         self.body = nn.Sequential(*m_body)

@@ -395,7 +395,7 @@ network_G:
     #convtype: "Conv2D"
 
     # ELAN (2022)
-    #netG: 
+    #netG: elan
     #scale: 4
     #colors: 3
     #window_sizes: [4, 8, 16]
@@ -404,6 +404,16 @@ network_G:
     #n_share: 1
     #r_expand: 2
     #rgb_range: 255
+    #conv: fft # Conv2D | fft
+
+    # LFT (2022)
+    #netG: lft
+    #channels: 64
+    #angRes: 5
+    #layer_num: 4
+    #temperature: 10000
+    #num_heads: 8
+    #dropout: 0.
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
@@ -561,12 +571,13 @@ network_G:
     #netG: MST
 
     # mat (2022) (compiling)
-    netG: mat
-    z_dim: 512
-    c_dim: 0
-    w_dim: 512
-    img_resolution: 512
-    img_channels: 3
+    #netG: mat
+    #z_dim: 512
+    #c_dim: 0
+    #w_dim: 512
+    #img_resolution: 512
+    #img_channels: 3
+    #noise_mode: const # const | random
 
     # ----Interpolation Generators----
     # cain (2020)
