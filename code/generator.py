@@ -572,7 +572,7 @@ def CreateGenerator(cfg, scale):
         from arch.elan_arch import ELAN
 
         netG = ELAN(
-            scale=cfg["scale"],
+            scale=scale,
             colors=cfg["colors"],
             window_sizes=cfg["window_sizes"],
             m_elan=cfg["m_elan"],
@@ -589,11 +589,21 @@ def CreateGenerator(cfg, scale):
         netG = LFT(
             channels=cfg["channels"],
             angRes=cfg["angRes"],
-            scale_factor=cfg["scale"],
+            scale_factor=scale,
             layer_num=cfg["layer_num"],
             temperature=cfg["temperature"],
             num_heads=cfg["num_heads"],
             dropout=cfg["dropout"],
+        )
+
+    elif cfg["netG"] == "swift":
+        from arch.swift_arch import Swift
+
+        netG = Swift(
+            in_channels=cfg["in_channels"],
+            num_channels=cfg["num_channels"],
+            num_blocks=cfg["num_blocks"],
+            upscale_factor=scale,
         )
 
     ############################

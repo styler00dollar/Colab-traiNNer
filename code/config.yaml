@@ -21,20 +21,20 @@ datasets:
     # DS_realesrgan: will use the realesrgan dataloader (only uses hr folder)
     # pip install --extra-index-url https://developer.download.nvidia.com/compute/redist --upgrade nvidia-dali-cuda110
 
-    mode: DS_inpaint # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr | DS_realesrgan
+    mode: DS_realesrgan # DS_video | DS_video_direct | DS_inpaint_TF | DS_inpaint  | DS_lrhr | DS_realesrgan
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
-    dataroot_HR: '/workspace/tensorrt/training/data/inpaint_image_512px/' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/workspace/tensorrt/training/data/inpaint_image_512px/' # Original, with a single directory
+    dataroot_HR: '/workspace/tensorrt/training/data/esrgan_dataset/' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/workspace/tensorrt/training/data/esrgan_dataset/' # Original, with a single directory
     loading_backend: 'OpenCV' # 'PIL' | 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, turboJPEG only for DS_video, 'PIL' for DS_inpaint_TF
 
-    n_workers: 0 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
+    n_workers: 16 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     pipeline_threads: 16 # only for DS_video_direct
-    batch_size: 1 # 6
+    batch_size: 6 # 6
     
     # does not apply to video dataloaders, look into python file instead
-    HR_size: 512 # The resolution the network will get. Random crop gets applied if that resolution does not match.
+    HR_size: 256 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
     masks: '/workspace/tensorrt/training/data/inpaint_mask/' # only for inpainting
@@ -89,17 +89,17 @@ datasets:
 
   val:
     loading_backend: 'OpenCV' # 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, currently only for DS_video
-    dataroot_HR: '/workspace/tensorrt/training/data/inpaint_val_512px'
-    dataroot_LR: '/workspace/tensorrt/training/data/inpaint_val_512px' # Inpainting will use this directory as input
+    dataroot_HR: '/workspace/tensorrt/training/val_input/'
+    dataroot_LR: '/workspace/tensorrt/training/val_input/' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: 
+    pretrain_model_G:
     pretrain_model_G_teacher:
-    pretrain_model_D: 
+    pretrain_model_D:
     checkpoint_path: 
-    checkpoint_save_path: '/workspace/tensorrt/training/mat/'
-    validation_output_path: '/workspace/tensorrt/training/mat/val/'
-    log_path: '/workspace/tensorrt/training/mat/logs/'
+    checkpoint_save_path: '/workspace/tensorrt/training/swift/'
+    validation_output_path: '/workspace/tensorrt/training/swift/val/'
+    log_path: '/workspace/tensorrt/training/swift/logs/'
 
 # using a teacher model to generate hr, has same configuration as normal netG
 # if teacher is used, same loss functions will be applied to both images
@@ -110,6 +110,8 @@ network_G_teacher:
 
     # comparing feature maps of teacher and student with l1
     l1_feature_maps_weight: 1
+
+    netG: 
 
     #netG: MRRDBNet_FM # RRDB_net (original ESRGAN arch) | MRRDBNet_FM (modified/"new" arch) with feature map knowledge distillation
     #norm_type: null
@@ -134,17 +136,17 @@ network_G_teacher:
     ##group: 1 # unused for now
 
     # RealESRGAN Anime Compact model (2021)
-    netG: SRVGGNetCompact
-    num_in_ch: 3
-    num_out_ch: 3
-    num_feat: 64
-    num_conv: 16
-    act_type: 'prelu'
-    conv_mode: 3 # 2 | 3
+    #netG: SRVGGNetCompact
+    #num_in_ch: 3
+    #num_out_ch: 3
+    #num_feat: 64
+    #num_conv: 16
+    #act_type: 'prelu'
+    #conv_mode: 3 # 2 | 3
     # only for rrdb
-    rrdb: False
-    rrdb_blocks: 2
-    convtype: "Conv2D"
+    #rrdb: False
+    #rrdb_blocks: 2
+    #convtype: "Conv2D"
 
 # Generator options:
 network_G:
@@ -155,26 +157,26 @@ network_G:
     finetune: False # Important for further rfr/dsnet training. Apply that after training for a while. https://github.com/jingyuanli001/RFR-Inpainting/issues/33
 
     # ESRGAN:
-    netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDBNet_FM (modified/"new" arch) with feature map knowledge distillation
-    norm_type: null
-    mode: CNA
-    nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
-    nb: 3 # (default: 23, good: 8)
-    in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
-    out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
-    gc: 32
-    convtype: Conv2D # Conv2D | PartialConv2D | doconv | gated | TBC | dynamic | MBConv | CondConv | fft | WSConv
-    nr: 3
+    #netG: RRDB_net # RRDB_net (original ESRGAN arch) | MRRDBNet_FM (modified/"new" arch) with feature map knowledge distillation
+    #norm_type: null
+    #mode: CNA
+    #nf: 64 # of discrim filters in the first conv layer (default: 64, good: 32)
+    #nb: 3 # (default: 23, good: 8)
+    #in_nc: 3 # of input image channels: 3 for RGB and 1 for grayscale
+    #out_nc: 3 # of output image channels: 3 for RGB and 1 for grayscale
+    #gc: 32
+    #convtype: Conv2D # Conv2D | PartialConv2D | doconv | gated | TBC | dynamic | MBConv | CondConv | fft | WSConv
+    #nr: 3
     # for dynamic
-    nof_kernels: 4
-    reduce: 4
+    #nof_kernels: 4
+    #reduce: 4
     # RRDB_net
-    net_act: leakyrelu # swish | leakyrelu
-    gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
-    plus: false # true | false
-    finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
-    upsample_mode: 'upconv'
-    strided_conv: False
+    #net_act: leakyrelu # swish | leakyrelu
+    #gaussian: false # true | false # esrgan plus, does not work on TPU because of cuda()
+    #plus: false # true | false
+    #finalact: None #tanh # Test. Activation function to make outputs fit in [-1, 1] range. Default = None. Coordinate with znorm.
+    #upsample_mode: 'upconv'
+    #strided_conv: False
     #group: 1 # unused for now
 
     # ASRGAN:
@@ -414,6 +416,12 @@ network_G:
     #temperature: 10000
     #num_heads: 8
     #dropout: 0.
+
+    # swift (2021)
+    netG: swift
+    in_channels: 3
+    num_channels: 64 
+    num_blocks: 16
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
