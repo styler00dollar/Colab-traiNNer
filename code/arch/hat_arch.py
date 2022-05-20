@@ -1,3 +1,4 @@
+# https://github.com/chxy95/HAT/blob/main/hat/archs/hat_arch.py
 import math
 import torch
 import torch.nn as nn
