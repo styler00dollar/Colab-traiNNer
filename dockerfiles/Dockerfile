@@ -34,4 +34,4 @@ RUN wget https://download.pytorch.org/models/vgg16-397923af.pth -P /root/.cache/
     wget https://github.com/styler00dollar/Colab-traiNNer/releases/download/models/encoder_epoch_20.pth -P /workspace/tensorrt/Colab-traiNNer/code/
 
 # hotfix
-RUN pip install torchmetrics==0.7.3 && pip3 cache purge
+RUN pip install torchmetrics==0.7.3 gdown && pip3 cache purge

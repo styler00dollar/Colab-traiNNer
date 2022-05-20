@@ -31,10 +31,10 @@ datasets:
 
     n_workers: 16 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     pipeline_threads: 16 # only for DS_video_direct
-    batch_size: 6 # 6
+    batch_size: 1 # 6
     
     # does not apply to video dataloaders, look into python file instead
-    HR_size: 256 # The resolution the network will get. Random crop gets applied if that resolution does not match.
+    HR_size: 128 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
     masks: '/workspace/tensorrt/training/data/inpaint_mask/' # only for inpainting
@@ -97,9 +97,9 @@ path:
     pretrain_model_G_teacher:
     pretrain_model_D:
     checkpoint_path: 
-    checkpoint_save_path: '/workspace/tensorrt/training/swift/'
-    validation_output_path: '/workspace/tensorrt/training/swift/val/'
-    log_path: '/workspace/tensorrt/training/swift/logs/'
+    checkpoint_save_path: '/workspace/tensorrt/training/hat/'
+    validation_output_path: '/workspace/tensorrt/training/hat/val/'
+    log_path: '/workspace/tensorrt/training/hat/logs/'
 
 # using a teacher model to generate hr, has same configuration as normal netG
 # if teacher is used, same loss functions will be applied to both images
@@ -418,10 +418,37 @@ network_G:
     #dropout: 0.
 
     # swift (2021)
-    netG: swift
-    in_channels: 3
-    num_channels: 64 
-    num_blocks: 16
+    #netG: swift
+    #in_channels: 3
+    #num_channels: 64 
+    #num_blocks: 16
+
+    # hat (2022)
+    netG: hat
+    img_size: 64
+    patch_size: 1
+    in_chans: 3
+    embed_dim: 96
+    depths: [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
+    num_heads: [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
+    window_size: 16
+    compress_ratio: 3
+    squeeze_factor: 30
+    conv_scale: 0.01
+    overlap_ratio: 0.5
+    mlp_ratio: 4.
+    qkv_bias: True
+    qk_scale:
+    drop_rate: 0.
+    attn_drop_rate: 0.
+    drop_path_rate: 0.1
+    ape: False
+    patch_norm: True
+    use_checkpoint: False
+    img_range: 1.
+    upsampler: 'pixelshuffle'
+    resi_connection: '1conv'
+    conv: fft # fft | Conv2D
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
