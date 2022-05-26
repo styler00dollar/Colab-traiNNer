@@ -450,6 +450,13 @@ network_G:
     resi_connection: '1conv'
     conv: fft # fft | Conv2D
 
+    # RLFN (2022)
+    #netG: RLFN
+    #in_nc: 3
+    #out_nc: 3
+    #nf: 46 
+    #mf: 48
+
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
     #netG: DFNet

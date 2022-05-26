@@ -637,6 +637,17 @@ def CreateGenerator(cfg, scale):
             conv=cfg["conv"],
         )
 
+    elif cfg["netG"] == "RLFN":
+        from arch.RLFN_arch import RLFN
+
+        netG = RLFN(
+            in_nc=cfg["in_nc"],
+            out_nc=cfg["out_nc"], 
+            nf=cfg["nf"],
+            mf=cfg["mf"],
+            upscale=scale,
+        )
+
     ############################
 
     if cfg["CEM"] is True:
