@@ -11,7 +11,7 @@ RUN pip install https://download.pytorch.org/whl/cu115/torch-1.11.0%2Bcu115-cp38
     pip install https://github.com/pytorch/TensorRT/releases/download/v1.1.0/torch_tensorrt-1.1.0-cp38-cp38-linux_x86_64.whl && \
 
 # other dependencies
-    pip install git+https://github.com/styler00dollar/pytorch-lightning.git@fc86f4ca817d5ba1702a210a898ac2729c870112 \
+    pip install pip install git+https://github.com/PyTorchLightning/pytorch-lightning.git \
     git+https://github.com/vballoli/nfnets-pytorch \
     basicsr albumentations IPython scipy pandas opencv-python pillow wget tfrecord x-transformers adamp efficientnet_pytorch \
         tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf \

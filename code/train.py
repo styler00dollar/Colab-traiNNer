@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 import torch
 import yaml
-from checkpoint import CheckpointEveryNSteps
+from checkpoint import CheckpointOnInterrupt
 from data.dataloader import DataModule
 
 with open("config.yaml", "r") as ymlfile:
@@ -43,18 +43,16 @@ if __name__ == "__main__":
     if cfg["use_tpu"] == False and cfg["use_amp"] == False:
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
-            stochastic_weight_avg=cfg["use_swa"],
             log_every_n_steps=50,
             resume_from_checkpoint=cfg["path"]["checkpoint_path"],
-            check_val_every_n_epoch=9999999,
+            check_val_every_n_epoch=None,
+            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]/2),
             logger=None,
             gpus=cfg["gpus"],
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
-            progress_bar_refresh_rate=cfg["progress_bar_refresh_rate"],
             default_root_dir=cfg["default_root_dir"],
             callbacks=[
-                CheckpointEveryNSteps(
-                    save_step_frequency=cfg["datasets"]["train"]["save_step_frequency"],
+                CheckpointOnInterrupt(
                     save_path=cfg["path"]["checkpoint_save_path"],
                 )
             ],
@@ -64,20 +62,18 @@ if __name__ == "__main__":
     if cfg["use_tpu"] == False and cfg["use_amp"] == True:
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
-            stochastic_weight_avg=cfg["use_swa"],
             log_every_n_steps=50,
             resume_from_checkpoint=cfg["path"]["checkpoint_path"],
-            check_val_every_n_epoch=9999999,
+            check_val_every_n_epoch=None,
+            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]/2),
             logger=None,
             gpus=cfg["gpus"],
             precision=16,
             amp_level="O1",
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
-            progress_bar_refresh_rate=cfg["progress_bar_refresh_rate"],
             default_root_dir=cfg["default_root_dir"],
             callbacks=[
-                CheckpointEveryNSteps(
-                    save_step_frequency=cfg["datasets"]["train"]["save_step_frequency"],
+                CheckpointOnInterrupt(
                     save_path=cfg["path"]["checkpoint_save_path"],
                 )
             ],
@@ -88,19 +84,17 @@ if __name__ == "__main__":
     if cfg["use_tpu"] == False and cfg["gpus"] > 1 and cfg["use_amp"] == False:
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
-            stochastic_weight_avg=cfg["use_swa"],
             log_every_n_steps=50,
             resume_from_checkpoint=cfg["path"]["checkpoint_path"],
-            check_val_every_n_epoch=9999999,
+            check_val_every_n_epoch=None,
+            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]/2),
             logger=None,
             gpus=cfg["gpus"],
             distributed_backend=cfg["distributed_backend"],
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
-            progress_bar_refresh_rate=cfg["progress_bar_refresh_rate"],
             default_root_dir=cfg["default_root_dir"],
             callbacks=[
-                CheckpointEveryNSteps(
-                    save_step_frequency=cfg["datasets"]["train"]["save_step_frequency"],
+                CheckpointOnInterrupt(
                     save_path=cfg["path"]["checkpoint_save_path"],
                 )
             ],
@@ -109,20 +103,18 @@ if __name__ == "__main__":
     if cfg["use_tpu"] == False and cfg["gpus"] > 1 and cfg["use_amp"] == True:
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
-            stochastic_weight_avg=cfg["use_swa"],
             log_every_n_steps=50,
             resume_from_checkpoint=cfg["path"]["checkpoint_path"],
-            check_val_every_n_epoch=9999999,
+            check_val_every_n_epoch=None,
+            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]/2),
             logger=None,
             gpus=cfg["gpus"],
             precision=16,
             distributed_backend=cfg["distributed_backend"],
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
-            progress_bar_refresh_rate=cfg["progress_bar_refresh_rate"],
             default_root_dir=cfg["default_root_dir"],
             callbacks=[
-                CheckpointEveryNSteps(
-                    save_step_frequency=cfg["datasets"]["train"]["save_step_frequency"],
+                CheckpointOnInterrupt(
                     save_path=cfg["path"]["checkpoint_save_path"],
                 )
             ],
@@ -132,18 +124,16 @@ if __name__ == "__main__":
     if cfg["use_tpu"] == True and cfg["use_amp"] == False:
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
-            stochastic_weight_avg=cfg["use_swa"],
             log_every_n_steps=50,
             resume_from_checkpoint=cfg["path"]["checkpoint_path"],
-            check_val_every_n_epoch=9999999,
+            check_val_every_n_epoch=None,
+            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]/2),
             logger=None,
             tpu_cores=cfg["tpu_cores"],
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
-            progress_bar_refresh_rate=cfg["progress_bar_refresh_rate"],
             default_root_dir=cfg["default_root_dir"],
             callbacks=[
-                CheckpointEveryNSteps(
-                    save_step_frequency=cfg["datasets"]["train"]["save_step_frequency"],
+                CheckpointOnInterrupt(
                     save_path=cfg["path"]["checkpoint_save_path"],
                 )
             ],
@@ -152,19 +142,17 @@ if __name__ == "__main__":
     if cfg["use_tpu"] == True and cfg["use_amp"] == True:
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
-            stochastic_weight_avg=cfg["use_swa"],
             log_every_n_steps=50,
             resume_from_checkpoint=cfg["path"]["checkpoint_path"],
-            check_val_every_n_epoch=9999999,
+            check_val_every_n_epoch=None,
+            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]/2),
             logger=None,
             tpu_cores=cfg["tpu_cores"],
             precision=16,
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
-            progress_bar_refresh_rate=cfg["progress_bar_refresh_rate"],
             default_root_dir=cfg["default_root_dir"],
             callbacks=[
-                CheckpointEveryNSteps(
-                    save_step_frequency=cfg["datasets"]["train"]["save_step_frequency"],
+                CheckpointOnInterrupt(
                     save_path=cfg["path"]["checkpoint_save_path"],
                 )
             ],
