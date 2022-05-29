@@ -326,7 +326,7 @@ class CustomTrainClass(pl.LightningModule):
                         str(self.trainer.global_step) + ".webp",
                     ),
                     out,
-                    [int(cv2.IMWRITE_WEBP_QUALITY), 100])
+                    [int(cv2.IMWRITE_WEBP_QUALITY), 100],
                 )
             else:
                 save_image(
