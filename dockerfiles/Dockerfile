@@ -15,7 +15,7 @@ RUN pip install https://download.pytorch.org/whl/cu115/torch-1.11.0%2Bcu115-cp38
     git+https://github.com/vballoli/nfnets-pytorch \
     basicsr albumentations IPython scipy pandas opencv-python pillow wget tfrecord x-transformers adamp efficientnet_pytorch \
         tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf \
-    git+https://github.com/styler00dollar/piq.git && pip3 cache purge
+    git+https://github.com/styler00dollar/piq.git bagua-cuda115 && pip3 cache purge
 
 # optional stuff, skip these for faster install if you dont need them
 RUN pip install mmcv-full==1.5.0 -f https://download.openmmlab.com/mmcv/dist/cu115/torch1.11.0/index.html && \

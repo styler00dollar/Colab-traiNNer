@@ -1,7 +1,7 @@
 name: template
 scale: 4 
 gpus: 1 # amount of gpus, 0 = cpu
-distributed_backend: ddp # dp, ddp (for multi-gpu training)
+strategy: ddp # dp, ddp, ddp_spawn, ddp2, horovod, bagua
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
 use_amp: False

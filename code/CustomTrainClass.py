@@ -323,10 +323,9 @@ class CustomTrainClass(pl.LightningModule):
                     os.path.join(
                         validation_output,
                         filename,
-                        str(self.trainer.global_step) + ".webp",
+                        str(self.trainer.global_step) + ".png",
                     ),
                     out,
-                    [int(cv2.IMWRITE_WEBP_QUALITY), 100],
                 )
             else:
                 save_image(
@@ -334,7 +333,7 @@ class CustomTrainClass(pl.LightningModule):
                     os.path.join(
                         validation_output,
                         filename,
-                        str(self.trainer.global_step) + ".webp",
+                        str(self.trainer.global_step) + ".png",
                     ),
                 )
 
