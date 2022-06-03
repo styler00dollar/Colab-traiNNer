@@ -1,6 +1,6 @@
 def generate(
     cfg,
-    lr_image,
+    lr_image=None,
     hr_image=None,
     netG=None,
     other=None,

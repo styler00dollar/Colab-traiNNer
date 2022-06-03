@@ -259,7 +259,8 @@ class CustomTrainClass(pl.LightningModule):
         # interpolation
         elif arch == "interpolation":
             other["hr_image1"], other["hr_image3"] = train_batch[0]
-            hr_image = None  # middle frame gets generated and does not exist
+            lr_image = None
+            hr_image = None
 
         # sr
         elif arch == "sr":

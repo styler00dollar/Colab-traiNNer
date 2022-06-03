@@ -46,7 +46,7 @@ if __name__ == "__main__":
             log_every_n_steps=50,
             resume_from_checkpoint=cfg["path"]["checkpoint_path"],
             check_val_every_n_epoch=None,
-            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]/2),
+            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]),
             logger=None,
             gpus=cfg["gpus"],
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
@@ -66,7 +66,7 @@ if __name__ == "__main__":
             log_every_n_steps=50,
             resume_from_checkpoint=cfg["path"]["checkpoint_path"],
             check_val_every_n_epoch=None,
-            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]/2),
+            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]),
             logger=None,
             gpus=cfg["gpus"],
             precision=16,
@@ -87,7 +87,7 @@ if __name__ == "__main__":
             log_every_n_steps=50,
             resume_from_checkpoint=cfg["path"]["checkpoint_path"],
             check_val_every_n_epoch=None,
-            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]/2),
+            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]),
             logger=None,
             gpus=cfg["gpus"],
             strategy=cfg["distributed_backend"],
@@ -107,7 +107,7 @@ if __name__ == "__main__":
             log_every_n_steps=50,
             resume_from_checkpoint=cfg["path"]["checkpoint_path"],
             check_val_every_n_epoch=None,
-            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]/2),
+            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]),
             logger=None,
             gpus=cfg["gpus"],
             precision=16,
@@ -128,7 +128,7 @@ if __name__ == "__main__":
             log_every_n_steps=50,
             resume_from_checkpoint=cfg["path"]["checkpoint_path"],
             check_val_every_n_epoch=None,
-            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]/2),
+            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]),
             logger=None,
             tpu_cores=cfg["tpu_cores"],
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
@@ -147,7 +147,7 @@ if __name__ == "__main__":
             log_every_n_steps=50,
             resume_from_checkpoint=cfg["path"]["checkpoint_path"],
             check_val_every_n_epoch=None,
-            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]/2),
+            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]),
             logger=None,
             tpu_cores=cfg["tpu_cores"],
             precision=16,
@@ -192,7 +192,7 @@ if __name__ == "__main__":
         # model = model.load_from_checkpoint(cfg['path']['checkpoint_path'])
 
         # continue training with checkpoint (does restore values) (optional)
-        # https://github.com/PyTorchLightning/pytorch-lightning/issues/2613
+        # https://github.com/PyTorchLightning/pytorch-lightning/issues613
         # https://pytorch-lightning.readthedocs.io/en/0.6.0/pytorch_lightning.trainer.training_io.html
         # https://github.com/PyTorchLightning/pytorch-lightning/issues/4333
         # dict_keys(['epoch', 'global_step', 'pytorch-lightning_version', 'callbacks', 'optimizer_states', 'lr_schedulers', 'state_dict', 'hparams_name', 'hyper_parameters'])
