@@ -546,6 +546,7 @@ def CreateGenerator(cfg, scale):
             mlp_ratio=cfg["mlp_ratio"],
             upsampler=cfg["upsampler"],
             use_deformable_block=cfg["use_deformable_block"],
+            first_conv=cfg["first_conv"],
         )
 
     elif cfg["netG"] == "misf":
