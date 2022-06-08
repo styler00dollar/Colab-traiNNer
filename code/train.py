@@ -61,7 +61,9 @@ if __name__ == "__main__":
     # https://nvidia.github.io/apex/amp.html?highlight=opt_level#o1-mixed-precision-recommended-for-typical-use
     if cfg["use_tpu"] == False and cfg["use_amp"] == True:
         trainer = pl.Trainer(
-            plugins=pl.plugins.precision.NativeMixedPrecisionPlugin(precision="16", device="cuda"), 
+            plugins=pl.plugins.precision.NativeMixedPrecisionPlugin(
+                precision="16", device="cuda"
+            ),
             num_sanity_val_steps=0,
             log_every_n_steps=50,
             resume_from_checkpoint=cfg["path"]["checkpoint_path"],
@@ -102,7 +104,9 @@ if __name__ == "__main__":
 
     if cfg["use_tpu"] == False and cfg["gpus"] > 1 and cfg["use_amp"] == True:
         trainer = pl.Trainer(
-            plugins=pl.plugins.precision.NativeMixedPrecisionPlugin(precision="16", device="cuda"),
+            plugins=pl.plugins.precision.NativeMixedPrecisionPlugin(
+                precision="16", device="cuda"
+            ),
             num_sanity_val_steps=0,
             log_every_n_steps=50,
             resume_from_checkpoint=cfg["path"]["checkpoint_path"],
@@ -142,7 +146,9 @@ if __name__ == "__main__":
 
     if cfg["use_tpu"] == True and cfg["use_amp"] == True:
         trainer = pl.Trainer(
-            plugins=pl.plugins.precision.NativeMixedPrecisionPlugin(precision="16", device="cuda"),
+            plugins=pl.plugins.precision.NativeMixedPrecisionPlugin(
+                precision="16", device="cuda"
+            ),
             num_sanity_val_steps=0,
             log_every_n_steps=50,
             resume_from_checkpoint=cfg["path"]["checkpoint_path"],

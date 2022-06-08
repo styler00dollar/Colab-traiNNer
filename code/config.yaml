@@ -457,6 +457,11 @@ network_G:
     #nf: 46 
     #mf: 48
 
+    # SCET (2022)
+    #netG: SCET
+    #hiddenDim: 32
+    #mlpDim: 128
+
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
     #netG: DFNet

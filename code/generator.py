@@ -643,10 +643,19 @@ def CreateGenerator(cfg, scale):
 
         netG = RLFN(
             in_nc=cfg["in_nc"],
-            out_nc=cfg["out_nc"], 
+            out_nc=cfg["out_nc"],
             nf=cfg["nf"],
             mf=cfg["mf"],
             upscale=scale,
+        )
+
+    elif cfg["netG"] == "SCET":
+        from arch.scet_arch import SCET
+
+        netG = SCET(
+            hiddenDim=cfg["hiddenDim"],
+            mlpDim=cfg["mlpDim"],
+            scaleFactor=scale,
         )
 
     ############################

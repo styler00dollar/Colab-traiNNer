@@ -2686,17 +2686,17 @@ class Generator(pl.LightningModule):
             truncation_cutoff=truncation_cutoff,
             skip_w_avg_update=skip_w_avg_update,
         )
-        
+
         if not return_stg1:
             img = self.synthesis(images_in, masks_in, ws, noise_mode=self.noise_mode)
-            img = (img/2)+0.5
+            img = (img / 2) + 0.5
             return img
         else:
             img, out_stg1 = self.synthesis(
                 images_in, masks_in, ws, noise_mode=self.noise_mode, return_stg1=True
             )
-            img = (img/2)+0.5
-            out_stg1 = (out_stg1/2)+0.5
+            img = (img / 2) + 0.5
+            out_stg1 = (out_stg1 / 2) + 0.5
             return img, out_stg1
 
 

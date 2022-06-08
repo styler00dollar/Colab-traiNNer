@@ -3,6 +3,7 @@ def CreateOptimizer(cfg, input_G, input_D=None):
     if cfg["network_G"]["finetune"] is None or cfg["network_G"]["finetune"] is False:
         if cfg["train"]["scheduler"] == "Adam":
             import torch
+
             opt_g = torch.optim.Adam(input_G, lr=cfg["train"]["lr_g"])
             if cfg["network_D"]["netD"] is not None:
                 opt_d = torch.optim.Adam(input_D, lr=cfg["train"]["lr_d"])

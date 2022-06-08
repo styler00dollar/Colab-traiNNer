@@ -7,7 +7,7 @@ model2 = torch.load("Checkpoint_0_0_G.pth")
 
 for k in model1.keys():
     try:
-        if 'upsampler.0' in k:
+        if "upsampler.0" in k:
             continue
 
         print(f"setting {k}")
