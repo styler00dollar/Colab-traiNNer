@@ -7,7 +7,7 @@ use_tpu: False
 use_amp: False
 use_swa: False
 progress_bar_refresh_rate: 20
-default_root_dir: '/content/'
+default_root_dir: '/workspace/tensorrt/training/scet/'
 
 # Dataset options:
 datasets:
@@ -25,8 +25,8 @@ datasets:
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
-    dataroot_HR: '/workspace/tensorrt/training/data/esrgan_dataset/' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/workspace/tensorrt/training/data/esrgan_dataset/' # Original, with a single directory
+    dataroot_HR: '/workspace/tensorrt/training/dataset/upscaling/' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/workspace/tensorrt/training/dataset/upscaling/' # Original, with a single directory
     loading_backend: 'OpenCV' # 'PIL' | 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, turboJPEG only for DS_video, 'PIL' for DS_inpaint_TF
 
     n_workers: 16 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
@@ -97,9 +97,9 @@ path:
     pretrain_model_G_teacher:
     pretrain_model_D:
     checkpoint_path: 
-    checkpoint_save_path: '/workspace/tensorrt/training/hat/'
-    validation_output_path: '/workspace/tensorrt/training/hat/val/'
-    log_path: '/workspace/tensorrt/training/hat/logs/'
+    checkpoint_save_path: '/workspace/tensorrt/training/scet/'
+    validation_output_path: '/workspace/tensorrt/training/scet/val/'
+    log_path: '/workspace/tensorrt/training/scet/logs/'
 
 # using a teacher model to generate hr, has same configuration as normal netG
 # if teacher is used, same loss functions will be applied to both images
@@ -424,31 +424,31 @@ network_G:
     #num_blocks: 16
 
     # hat (2022)
-    netG: hat
-    img_size: 64
-    patch_size: 1
-    in_chans: 3
-    embed_dim: 180
-    depths: [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
-    num_heads: [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
-    window_size: 16
-    compress_ratio: 3
-    squeeze_factor: 30
-    conv_scale: 0.01
-    overlap_ratio: 0.5
-    mlp_ratio: 2
-    qkv_bias: True
-    qk_scale:
-    drop_rate: 0.
-    attn_drop_rate: 0.
-    drop_path_rate: 0.1
-    ape: False
-    patch_norm: True
-    use_checkpoint: False
-    img_range: 1.
-    upsampler: 'pixelshuffle'
-    resi_connection: '1conv'
-    conv: fft # fft | Conv2D
+    #netG: hat
+    #img_size: 64
+    #patch_size: 1
+    #in_chans: 3
+    #embed_dim: 180
+    #depths: [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
+    #num_heads: [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
+    #window_size: 16
+    #compress_ratio: 3
+    #squeeze_factor: 30
+    #conv_scale: 0.01
+    #overlap_ratio: 0.5
+    #mlp_ratio: 2
+    #qkv_bias: True
+    #qk_scale:
+    #drop_rate: 0.
+    #attn_drop_rate: 0.
+    #drop_path_rate: 0.1
+    #ape: False
+    #patch_norm: True
+    #use_checkpoint: False
+    #img_range: 1.
+    #upsampler: 'pixelshuffle'
+    #resi_connection: '1conv'
+    #conv: fft # fft | Conv2D
 
     # RLFN (2022)
     #netG: RLFN
@@ -458,9 +458,10 @@ network_G:
     #mf: 48
 
     # SCET (2022)
-    #netG: SCET
-    #hiddenDim: 32
-    #mlpDim: 128
+    netG: SCET
+    hiddenDim: 32
+    mlpDim: 128
+    conv: fft # Conv2D | fft
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)

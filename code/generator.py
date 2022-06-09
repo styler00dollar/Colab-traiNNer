@@ -656,6 +656,7 @@ def CreateGenerator(cfg, scale):
             hiddenDim=cfg["hiddenDim"],
             mlpDim=cfg["mlpDim"],
             scaleFactor=scale,
+            conv=cfg["conv"],
         )
 
     ############################

@@ -6,7 +6,7 @@ Simply download the `.ipynb` and open it inside your Google Drive or click [here
 
 You can also use the code locally. Install commands for local usage:
 ```
-pip install pip install git+https://github.com/PyTorchLightning/pytorch-lightning.git \
+pip install git+https://github.com/PyTorchLightning/pytorch-lightning.git \
     git+https://github.com/vballoli/nfnets-pytorch \
     basicsr albumentations IPython scipy pandas opencv-python pillow wget tfrecord x-transformers adamp efficientnet_pytorch \
         tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf \

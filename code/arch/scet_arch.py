@@ -18,6 +18,14 @@ try:
 except ImportError:
     exit_with_error("Please install mmedit, mmcv, torch to run this example.")
 
+import yaml
+
+with open("config.yaml", "r") as ymlfile:
+    cfg = yaml.safe_load(ymlfile)
+
+if cfg["network_G"]["conv"] == "fft":
+    from .lama_arch import FourierUnit
+
 # LayerNorm
 
 
@@ -262,9 +270,23 @@ class SCPA(nn.Module):
 
 @BACKBONES.register_module()
 class SCET(nn.Module):
-    def __init__(self, hiddenDim=32, mlpDim=128, scaleFactor=2):
+    def __init__(self, hiddenDim=32, mlpDim=128, scaleFactor=2, conv="Conv2D"):
         super().__init__()
-        self.conv3 = nn.Conv2d(3, hiddenDim, kernel_size=3, padding=1)
+        if conv == "Conv2D":
+            self.conv3 = nn.Conv2d(3, hiddenDim, kernel_size=3, padding=1)
+        elif conv == "fft":
+            self.conv3 = FourierUnit(
+                in_channels=3,
+                out_channels=hiddenDim,
+                groups=1,
+                spatial_scale_factor=None,
+                spatial_scale_mode="bilinear",
+                spectral_pos_encoding=False,
+                use_se=False,
+                se_kwargs=None,
+                ffc3d=False,
+                fft_norm="ortho",
+            )
 
         lamRes = torch.nn.Parameter(torch.ones(1))
         lamX = torch.nn.Parameter(torch.ones(1))
