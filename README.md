@@ -71,6 +71,8 @@ If you do not want to use specific losses, just leave the number 0. Finally, adj
 
 If you want to start training locally, just do `python train.py`. If you want to visualize the training loss with graphs, go into the log folder and use `tensorboard --logdir .`. It will create an URL that you can open in your browser. (Only works locally, download logs to do this if you use Colab.)
 
+During training you will only save `.ckpt` files. If you want to extract the generator and discriminator as a `.pth` file, then you need to use [this script](https://github.com/styler00dollar/Colab-traiNNer/blob/master/code/scripts/extract_models.py).
+
 I also created a dockerfile, which can be used to train with. Sadly it's very hard to make a perfect docker file, so there currently isn't a perfect one. They should cover nearly all dependencies.
 ```
 # install docker, command for arch
