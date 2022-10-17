@@ -138,6 +138,13 @@ def CreateOptimizer(cfg, input_G, input_D=None):
                     eps=cfg["train"]["eps"],
                 )
 
+        if cfg["train"]["scheduler"] == "Adan":
+            from arch.optimizer.adan import Adan
+
+            opt_g = Adan(input_G, lr=cfg["train"]["lr_g"])
+            if cfg["network_D"]["netD"] is not None:
+                opt_d = Adan(input_G, lr=cfg["train"]["lr_g"])
+
     if cfg["train"]["AGC"] is True:
         from nfnets.agc import AGC
 
