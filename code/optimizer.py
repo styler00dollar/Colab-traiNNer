@@ -145,6 +145,13 @@ def CreateOptimizer(cfg, input_G, input_D=None):
             if cfg["network_D"]["netD"] is not None:
                 opt_d = Adan(input_D, lr=cfg["train"]["lr_d"])
 
+        if cfg["train"]["scheduler"] == "Lamb":
+            from arch.optimizer.lamb import Lamb
+
+            opt_g = Lamb(input_G, lr=cfg["train"]["lr_g"])
+            if cfg["network_D"]["netD"] is not None:
+                opt_d = Lamb(input_D, lr=cfg["train"]["lr_d"])
+
     if cfg["train"]["AGC"] is True:
         from nfnets.agc import AGC
 
