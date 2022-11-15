@@ -143,7 +143,7 @@ def CreateOptimizer(cfg, input_G, input_D=None):
 
             opt_g = Adan(input_G, lr=cfg["train"]["lr_g"])
             if cfg["network_D"]["netD"] is not None:
-                opt_d = Adan(input_G, lr=cfg["train"]["lr_g"])
+                opt_d = Adan(input_D, lr=cfg["train"]["lr_d"])
 
     if cfg["train"]["AGC"] is True:
         from nfnets.agc import AGC
