@@ -2,6 +2,9 @@ version: '3'
 
 services:
   vsgan_tensorrt:
+    shm_size: "16G"
+    tmpfs:
+    - /tmp:size=16G
     stdin_open: true # docker run -i
     tty: true        # docker run -t
     image: styler00dollar/trainner:latest
