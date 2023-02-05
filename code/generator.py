@@ -659,6 +659,16 @@ def CreateGenerator(cfg, scale):
             conv=cfg["conv"],
         )
 
+    elif cfg["netG"] == "GMFSS_union":
+        from arch.GMFSS_union_arch import GMFSS_union
+
+        netG = GMFSS_union()
+
+    elif cfg["netG"] == "UpCunet2x_fast":
+        from arch.cugan_arch import UpCunet2x_fast
+
+        netG = UpCunet2x_fast()
+
     ############################
 
     if cfg["CEM"] is True:

@@ -1,8 +1,11 @@
 import pytorch_lightning as pl
 import torch
 import yaml
-from checkpoint import CheckpointOnInterrupt
 from data.dataloader import DataModule
+
+import torch
+
+torch.set_float32_matmul_precision("medium")
 
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
@@ -51,11 +54,6 @@ if __name__ == "__main__":
             gpus=cfg["gpus"],
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
             default_root_dir=cfg["default_root_dir"],
-            callbacks=[
-                CheckpointOnInterrupt(
-                    save_path=cfg["path"]["checkpoint_save_path"],
-                )
-            ],
         )
     # GPU with AMP (amp_level='O1' = mixed precision, 'O2' = Almost FP16, 'O3' = FP16)
     # https://nvidia.github.io/apex/amp.html?highlight=opt_level#o1-mixed-precision-recommended-for-typical-use
@@ -74,11 +72,6 @@ if __name__ == "__main__":
             precision=16,
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
             default_root_dir=cfg["default_root_dir"],
-            callbacks=[
-                CheckpointOnInterrupt(
-                    save_path=cfg["path"]["checkpoint_save_path"],
-                )
-            ],
         )
 
     # 2+ cfg['gpus'] (locally, not inside Google Colab)
@@ -95,11 +88,6 @@ if __name__ == "__main__":
             strategy=cfg["distributed_backend"],
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
             default_root_dir=cfg["default_root_dir"],
-            callbacks=[
-                CheckpointOnInterrupt(
-                    save_path=cfg["path"]["checkpoint_save_path"],
-                )
-            ],
         )
 
     if cfg["use_tpu"] == False and cfg["gpus"] > 1 and cfg["use_amp"] == True:
@@ -118,11 +106,6 @@ if __name__ == "__main__":
             strategy=cfg["distributed_backend"],
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
             default_root_dir=cfg["default_root_dir"],
-            callbacks=[
-                CheckpointOnInterrupt(
-                    save_path=cfg["path"]["checkpoint_save_path"],
-                )
-            ],
         )
 
     # TPU
@@ -137,11 +120,6 @@ if __name__ == "__main__":
             tpu_cores=cfg["tpu_cores"],
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
             default_root_dir=cfg["default_root_dir"],
-            callbacks=[
-                CheckpointOnInterrupt(
-                    save_path=cfg["path"]["checkpoint_save_path"],
-                )
-            ],
         )
 
     if cfg["use_tpu"] == True and cfg["use_amp"] == True:
@@ -159,11 +137,6 @@ if __name__ == "__main__":
             precision=16,
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
             default_root_dir=cfg["default_root_dir"],
-            callbacks=[
-                CheckpointOnInterrupt(
-                    save_path=cfg["path"]["checkpoint_save_path"],
-                )
-            ],
         )
 
     # Loading a pretrain pth

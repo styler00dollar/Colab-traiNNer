@@ -37,6 +37,7 @@ class CustomTrainClass(pl.LightningModule):
             and cfg["network_G"]["netG"] != "GLEAN"
             and cfg["network_G"]["netG"] != "srflow"
             and cfg["network_G"]["netG"] != "GFPGAN"
+            and cfg["network_G"]["netG"] != "GMFSS_union"
         ):
             if self.global_step == 0:
                 weights_init(self.netG, "kaiming")
@@ -341,6 +342,7 @@ class CustomTrainClass(pl.LightningModule):
             counter += 1
 
     def validation_epoch_end(self, val_step_outputs):
+        self.save_checkpoint()
 
         if "PSNR" in cfg["train"]["metrics"]:
             val_psnr = np.mean(self.val_psnr)
@@ -358,3 +360,57 @@ class CustomTrainClass(pl.LightningModule):
             val_lpips = np.mean(self.val_lpips)
             writer.add_scalar("metrics/LPIPS", val_lpips, self.trainer.global_step)
             self.val_lpips = []
+
+    def save_checkpoint(self):
+        # todo: read from config
+        self.prefix = "Checkpoint"
+        self.save_path = "/workspace/tensorrt/train/"
+
+        epoch = self.trainer.current_epoch
+        global_step = self.trainer.global_step
+        ckpt_path = os.path.join(
+            self.save_path, f"{self.prefix}_{epoch}_{global_step}.ckpt"
+        )
+        self.trainer.save_checkpoint(ckpt_path)
+        print("Checkpoint " + f"{self.prefix}_{epoch}_{global_step}.ckpt" + " saved.")
+
+        torch.save(
+            self.trainer.model.netG.state_dict(),
+            os.path.join(
+                cfg["path"]["checkpoint_save_path"],
+                f"{self.prefix}_{epoch}_{global_step}_G.pth",
+            ),
+        )
+        if cfg["network_D"]["netD"] != None:
+            torch.save(
+                self.trainer.model.netD.state_dict(),
+                os.path.join(
+                    cfg["path"]["checkpoint_save_path"],
+                    f"{self.prefix}_{epoch}_{global_step}_D.pth",
+                ),
+            )
+            print(
+                "Checkpoint "
+                + f"{self.prefix}_{epoch}_{global_step}_G.pth"
+                + " and "
+                + f"{self.prefix}_{epoch}_{global_step}_D.pth"
+                + " saved"
+            )
+        else:
+            print("Checkpoint " + f"{self.prefix}_{epoch}_{global_step}_G.pth saved")
+
+        if cfg["network_G"]["netG"] == "CAIN":
+            traced_model = torch.jit.trace(
+                self.trainer.model.netG,
+                (
+                    torch.randn(1, 3, 256, 256).cuda(),
+                    torch.randn(1, 3, 256, 256).cuda(),
+                ),
+            )
+            torch.jit.save(
+                traced_model,
+                os.path.join(
+                    cfg["path"]["checkpoint_save_path"],
+                    f"{self.prefix}_{epoch}_{global_step}_G.pt",
+                ),
+            )

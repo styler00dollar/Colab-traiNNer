@@ -70,6 +70,7 @@ def generate(
         "hat",
         "RLFN",
         "SCET",
+        "UpCunet2x_fast",
     ):
         if cfg["datasets"]["train"]["mode"] in ("DS_inpaint", "DS_inpaint_TF"):
             # masked test with inpaint dataloader

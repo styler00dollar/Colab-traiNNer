@@ -1,13 +1,13 @@
 name: template
-scale: 4 
+scale: 2
 gpus: 1 # amount of gpus, 0 = cpu
 strategy: ddp # dp, ddp, ddp_spawn, ddp2, horovod, bagua
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
-use_amp: False
+use_amp: True
 use_swa: False
 progress_bar_refresh_rate: 20
-default_root_dir: '/workspace/tensorrt/training/scet/'
+default_root_dir: '/home/user/Schreibtisch/Colab-traiNNer/train/'
 
 # Dataset options:
 datasets:
@@ -25,22 +25,22 @@ datasets:
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
-    dataroot_HR: '/workspace/tensorrt/training/dataset/upscaling/' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/workspace/tensorrt/training/dataset/upscaling/' # Original, with a single directory
+    dataroot_HR: '/workspace/tensorrt/train/esrgan_dataset' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/workspace/tensorrt/train/esrgan_dataset' # Original, with a single directory
     loading_backend: 'OpenCV' # 'PIL' | 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, turboJPEG only for DS_video, 'PIL' for DS_inpaint_TF
 
     n_workers: 16 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
     pipeline_threads: 16 # only for DS_video_direct
-    batch_size: 1 # 6
+    batch_size: 10 # 6
     
     # does not apply to video dataloaders, look into python file instead
-    HR_size: 128 # The resolution the network will get. Random crop gets applied if that resolution does not match.
+    HR_size: 256 # The resolution the network will get. Random crop gets applied if that resolution does not match.
     image_channels: 3 # number of channels to load images in
 
     masks: '/workspace/tensorrt/training/data/inpaint_mask/' # only for inpainting
     mask_invert_ratio: 0.3 # 0.3 = 30% of masks will be inverted
     max_epochs: 2000
-    save_step_frequency: 5000 # also validation frequency
+    save_step_frequency: 50 # also validation frequency
 
     # if edge data is required
     canny_min: 100
@@ -89,17 +89,17 @@ datasets:
 
   val:
     loading_backend: 'OpenCV' # 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, currently only for DS_video
-    dataroot_HR: '/workspace/tensorrt/training/val_input/'
-    dataroot_LR: '/workspace/tensorrt/training/val_input/' # Inpainting will use this directory as input
+    dataroot_HR: '/workspace/tensorrt/train/sr_input_720p_padded'
+    dataroot_LR: '/workspace/tensorrt/train/sr_input_720p_padded' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G:
+    pretrain_model_G: #'/workspace/tensorrt/lite/cugan_2x_fast_pretrain.pth'
     pretrain_model_G_teacher:
     pretrain_model_D:
-    checkpoint_path: 
-    checkpoint_save_path: '/workspace/tensorrt/training/scet/'
-    validation_output_path: '/workspace/tensorrt/training/scet/val/'
-    log_path: '/workspace/tensorrt/training/scet/logs/'
+    checkpoint_path:  #"/home/user/Schreibtisch/Colab-traiNNer/train/rvp2.1_resnet3d/epoch=33-step=129990.ckpt"
+    checkpoint_save_path: '/workspace/tensorrt/train/'
+    validation_output_path: '/workspace/tensorrt/train/val/'
+    log_path: '/workspace/tensorrt/train/logs/'
 
 # using a teacher model to generate hr, has same configuration as normal netG
 # if teacher is used, same loss functions will be applied to both images
@@ -178,6 +178,9 @@ network_G:
     #upsample_mode: 'upconv'
     #strided_conv: False
     #group: 1 # unused for now
+
+    # CUGAN
+    netG: UpCunet2x_fast
 
     # ASRGAN:
     #which_model_G: asr_resnet # asr_resnet | asr_cnn
@@ -458,10 +461,10 @@ network_G:
     #mf: 48
 
     # SCET (2022)
-    netG: SCET
-    hiddenDim: 32
-    mlpDim: 128
-    conv: fft # Conv2D | fft
+    #netG: SCET
+    #hiddenDim: 32
+    #mlpDim: 128
+    #conv: fft # Conv2D | fft
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
@@ -631,8 +634,8 @@ network_G:
     # cain (2020)
     #netG: CAIN
     #depth: 3
-    #conv: WSConv # doconv | conv2d | gated | TBC | dynamic | MBConv | Involution | CondConv | fft | WSConv
-    # Warning: Configure OutlookAttention dimension according to resolution manually (160 for 720p)
+    #conv: dynamic # doconv | conv2d | gated | TBC | dynamic | MBConv | Involution | CondConv | fft | WSConv
+    ## Warning: Configure OutlookAttention dimension according to resolution manually (160 for 720p)
     #attention: CA # CA | OutlookAttention | A2Atttention | CBAM | CoTAttention | CoordAttention | ECAAttention | HaloAttention | ParNetAttention | TripletAttention | SKAttention | SGE | SEAttention | PolarizedSelfAttention
     #RG: 2 # ResidualGroup amount
     ## for dynamic
@@ -682,6 +685,12 @@ network_G:
     #bias: False
     #LayerNorm_type: 'WithBias' # 'WithBias' | 'BiasFree'
 
+    # GMFSS_union
+    #netG: GMFSS_union
+
+
+
+
 # Discriminator options:
 network_D:
     discriminator_criterion: MSE # MSE
@@ -692,7 +701,7 @@ network_D:
     # needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
     WSConv_replace: True
 
-    #netD: # in case there is no discriminator, leave it empty
+    netD: # in case there is no discriminator, leave it empty
 
     # VGG
     #netD: VGG
@@ -924,10 +933,10 @@ network_D:
     #netD: hrt
 
     # Attention U-Net (from asergan) (2021)
-    netD: attention_unet
-    num_in_ch: 3
-    num_feat: 64
-    skip_connection: True
+    #netD: attention_unet
+    #num_in_ch: 3
+    #num_feat: 64
+    #skip_connection: True
 
     # U-Net (from RealESRGAN) (2021)
     #netD: unet
@@ -938,7 +947,7 @@ network_D:
 train: 
     # Adam8bit needs "pip install bitsandbytes-cuda111"
     # SGD_AGC needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
-    scheduler: AdamP # Adam, AdamP, Adam, SGDP, MADGRAD, Adam8bit, SGD_AGC, cosangulargrad [maybe broken], tanangulargrad [maybe broken], Adan
+    scheduler: Adan # Adam, AdamP, Adam, SGDP, MADGRAD, Adam8bit, SGD_AGC, cosangulargrad [maybe broken], tanangulargrad [maybe broken], Adan
     # ACG needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
     AGC: False # currently only for generator, only works with certain optimizers
     lr_g: 0.0001 # 0.00005
@@ -1020,7 +1029,7 @@ train:
     p: 1
 
     # Contextual_Loss (3-channel input)
-    Contextual_weight: 0.5
+    Contextual_weight: 0
     crop_quarter: False
     max_1d_size: 100
     distance_type: 'cosine' # ["11", "l2", "consine"]
@@ -1040,7 +1049,7 @@ train:
     StyleLoss_weight: 0
 
     # PerceptualLoss
-    perceptual_weight: 1
+    perceptual_weight: 0
     net: PNetLin # PNetLin, DSSIM (?)
     pnet_type: 'vgg' # alex, squeeze, vgg
     pnet_rand: False
