@@ -29,7 +29,6 @@ class ResNet(nn.Module):
         self.fc = nn.Linear(self.in_channels, output_dim)
 
     def get_resnet_layer(self, block, n_blocks, channels, stride=1):
-
         layers = []
 
         if self.in_channels != block.expansion * channels:
@@ -47,7 +46,6 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -66,7 +64,6 @@ class ResNet(nn.Module):
 
 
 class BasicBlock(nn.Module):
-
     expansion = 1
 
     def __init__(self, in_channels, out_channels, stride=1, downsample=False):
@@ -101,7 +98,6 @@ class BasicBlock(nn.Module):
         self.downsample = downsample
 
     def forward(self, x):
-
         i = x
 
         x = self.conv1(x)
@@ -132,7 +128,6 @@ resnet34_config = ResNetConfig(
 
 
 class Bottleneck(nn.Module):
-
     expansion = 4
 
     def __init__(self, in_channels, out_channels, stride=1, downsample=False):
@@ -180,7 +175,6 @@ class Bottleneck(nn.Module):
         self.downsample = downsample
 
     def forward(self, x):
-
         i = x
 
         x = self.conv1(x)

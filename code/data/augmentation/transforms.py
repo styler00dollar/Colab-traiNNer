@@ -1570,7 +1570,6 @@ class RandomPerspective:
         resample="BILINEAR",
         fillcolor=(0, 0, 0),
     ):
-
         assert all(
             [
                 isinstance(anglex, (tuple, list)) or anglex >= 0,
@@ -1937,7 +1936,6 @@ class RandomSpeckleNoise(RandomGaussianNoise):
         prob_color: float = 0.5,
         sigma_calc: str = "var",
     ):
-
         super(RandomSpeckleNoise, self).__init__(
             p=p,
             mean=mean,
@@ -2121,7 +2119,6 @@ class BlurBase:
         sigmaY=None,
         init_params: bool = False,
     ):
-
         if not isinstance(p, numbers.Number) or p < 0:
             raise ValueError("p should be a positive value")
         self.p = p
@@ -2336,7 +2333,6 @@ class RandomMotionBlur:
         per_channel: bool = False,
         init_params: bool = False,
     ):
-
         if not isinstance(p, numbers.Number) or p < 0:
             raise ValueError("p should be a positive value")
         self.p = p
@@ -2410,7 +2406,6 @@ class RandomComplexMotionBlur:
         complexity: float = 0,
         eps: float = 0.1,
     ):
-
         if not isinstance(p, numbers.Number) or p < 0:
             raise ValueError("p should be a positive value")
         self.p = p
@@ -2451,7 +2446,6 @@ class RandomComplexMotionBlur:
         self.params = self.get_params()
 
     def get_params(self, imgdim=None):
-
         if imgdim and (self.SIZE[0] > imgdim or self.SIZE[1] > imgdim):
             dim_size = int(np.random.uniform(3, imgdim / 2))
             SIZE = (dim_size, dim_size)
@@ -2779,7 +2773,6 @@ class ApplyKernel:
         permute: bool = True,
         center: bool = False,
     ):
-
         self.scale = scale
         self.center = center
         if size:
@@ -2844,7 +2837,6 @@ class ApplyKernel:
 
 class ApplyDownscale:
     def __init__(self, scale: int = 1, filter_type: str = "INTER_NEAREST"):
-
         self.scale = scale
         self.filter_type = filter_type
 
@@ -2886,7 +2878,6 @@ class RandomAnIsoBlur(ApplyKernel):
         noise=None,
         scale: int = 1,
     ):
-
         if not isinstance(p, numbers.Number) or p < 0:
             raise ValueError("p should be a positive value")
         self.p = p
@@ -2969,7 +2960,6 @@ class RandomSincBlur(ApplyKernel):
         kernel_size: int = 21,
         min_cutoff=None,
     ):
-
         if not isinstance(p, numbers.Number) or p < 0:
             raise ValueError("p should be a positive value")
         self.p = p

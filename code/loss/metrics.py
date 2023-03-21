@@ -101,7 +101,6 @@ class CFMatrix(object):
         return "ConfusionMatrix"
 
     def __call__(self, y_pred, y_true, threshold=0.5):
-
         """
         args:
             y_true : 4-d ndarray in [batch_size, chs, img_rows, img_cols]
@@ -259,7 +258,6 @@ class F1Score(object):
         return "F1Sc"
 
     def __call__(self, y_pred, y_true, threshold=0.5):
-
         """
         args:
             y_true : 4-d ndarray in [batch_size, chs, img_rows, img_cols]
@@ -309,7 +307,6 @@ class Kappa(object):
         return "Kapp"
 
     def __call__(self, y_pred, y_true, threshold=0.5):
-
         """
         args:
             y_true : 4-d ndarray in [batch_size, chs, img_rows, img_cols]

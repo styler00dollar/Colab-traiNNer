@@ -65,7 +65,6 @@ class UpFirDn2dBackward(Function):
     def forward(
         ctx, grad_output, kernel, grad_kernel, up, down, pad, g_pad, in_size, out_size
     ):
-
         up_x, up_y = up
         down_x, down_y = down
         g_pad_x0, g_pad_x1, g_pad_y0, g_pad_y1 = g_pad
@@ -1533,7 +1532,6 @@ class GFPGANv1(nn.Module):
         narrow=1,
         sft_half=False,
     ):
-
         super(GFPGANv1, self).__init__()
         self.input_is_latent = input_is_latent
         self.different_w = different_w

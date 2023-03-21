@@ -47,7 +47,6 @@ def get_img_list(path):
 
 
 def gen_miss(img, mask, output):
-
     imgs = get_img_list(img)
     masks = get_img_list(mask)
     print("Total images:", len(imgs), len(masks))
@@ -66,7 +65,6 @@ def gen_miss(img, mask, output):
 
 
 def merge_imgs(dirs, output, row=1, gap=2, res=512):
-
     image_list = [get_img_list(path) for path in dirs]
     img_count = [len(image) for image in image_list]
     print("Total images:", img_count)

@@ -121,7 +121,6 @@ class PConvLayer(pl.LightningModule):
             self.act = nn.Tanh()
 
     def forward(self, x, mask):
-
         x, mask_update = self.conv(x, mask)
         if self.use_norm:
             x = self.norm(x)

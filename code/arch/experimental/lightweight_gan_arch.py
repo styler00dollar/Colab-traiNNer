@@ -348,7 +348,7 @@ class Generator(pl.LightningModule):
 
         self.num_layers_spatial_res = 1
 
-        for (res, (chan_in, chan_out)) in zip(self.res_layers, in_out_features):
+        for res, (chan_in, chan_out) in zip(self.res_layers, in_out_features):
             image_width = 2**res
 
             attn = None
@@ -444,8 +444,7 @@ class Generator(pl.LightningModule):
         residuals = dict()
 
         count = 0
-        for (res, (up, sle, attn)) in zip(self.res_layers, self.layers):
-
+        for res, (up, sle, attn) in zip(self.res_layers, self.layers):
             if exists(attn):
                 x = attn(x) + x
 
@@ -551,7 +550,7 @@ class SimpleFontGenerator512(pl.LightningModule):
 
         self.num_layers_spatial_res = 1
 
-        for (res, (chan_in, chan_out)) in zip(self.res_layers, in_out_features):
+        for res, (chan_in, chan_out) in zip(self.res_layers, in_out_features):
             # hotfix, output should have same amount of output channels
             # if chan_out == 3:
             #  chan_out = self.init_channel
@@ -709,7 +708,7 @@ class SimpleFontGenerator512(pl.LightningModule):
         # x = z
 
         count = 0
-        for (res, (up, sle, attn)) in zip(self.res_layers, self.layers):
+        for res, (up, sle, attn) in zip(self.res_layers, self.layers):
             if exists(attn):
                 x = attn(x) + x
             x = up(x)  # 32 -> 3 channels in the end
@@ -817,8 +816,7 @@ class SimpleFontGenerator256(pl.LightningModule):
 
         self.num_layers_spatial_res = 1
 
-        for (res, (chan_in, chan_out)) in zip(self.res_layers, in_out_features):
-
+        for res, (chan_in, chan_out) in zip(self.res_layers, in_out_features):
             image_width = 2**res
 
             attn = None
@@ -934,7 +932,7 @@ class SimpleFontGenerator256(pl.LightningModule):
         residuals = dict()
 
         count = 0
-        for (res, (up, sle, attn)) in zip(self.res_layers, self.layers):
+        for res, (up, sle, attn) in zip(self.res_layers, self.layers):
             if exists(attn):
                 x = attn(x) + x
 

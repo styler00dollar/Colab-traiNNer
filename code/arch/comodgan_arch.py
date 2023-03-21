@@ -514,7 +514,6 @@ class G_synthesis_co_mod_gan(nn.Module):
         noise_injection=True,
         **kwargs,
     ):
-
         resolution_log2 = int(np.log2(resolution))
         assert resolution == 2**resolution_log2 and resolution >= 4
 

@@ -31,7 +31,6 @@ import torch.nn.functional as F
 
 
 def extract_patches(x, kernel_size=3, stride=1):
-
     if kernel_size != 1:
         x = nn.ZeroPad2d(1)(x)
     x = x.permute(0, 2, 3, 1)
@@ -51,7 +50,6 @@ class RAL(nn.Module):
         self.softmax_scale = softmax_scale
 
     def forward(self, background, foreground):
-
         # accelerated calculation
         foreground = F.interpolate(
             foreground,
@@ -101,7 +99,6 @@ class RAL(nn.Module):
         for foreground_item, foreground_patches_item, background_patches_item in zip(
             foreground_list, foreground_patches_list, background_patches_list
         ):
-
             foreground_patches_item = foreground_patches_item[0]
             foreground_patches_item_normed = foreground_patches_item / torch.max(
                 torch.sqrt(
@@ -152,7 +149,6 @@ class MSFA(nn.Module):
         self.dilation_rate_list = dilation_rate_list
 
         for _, dilation_rate in enumerate(dilation_rate_list):
-
             self.__setattr__(
                 "dilated_conv_{:d}".format(_),
                 nn.Sequential(
@@ -176,7 +172,6 @@ class MSFA(nn.Module):
         )
 
     def forward(self, x):
-
         weight_map = self.weight_calc(x)
 
         x_feature_list = []
@@ -221,7 +216,6 @@ class CFA(nn.Module):
         )
 
     def forward(self, background, foreground):
-
         output = self.ral(background, foreground)
         output = self.msfa(output)
 
@@ -258,7 +252,6 @@ class BiGFF(nn.Module):
         self.texture_gamma = nn.Parameter(torch.zeros(1))
 
     def forward(self, texture_feature, structure_feature):
-
         energy = torch.cat((texture_feature, structure_feature), dim=1)
 
         gate_structure_to_texture = self.structure_gate(energy)
@@ -276,7 +269,6 @@ class BiGFF(nn.Module):
 
 class PartialConv2d(nn.Conv2d):
     def __init__(self, *args, **kwargs):
-
         # whether the mask is multi-channel or not
         if "multi_channel" in kwargs:
             self.multi_channel = kwargs["multi_channel"]
@@ -311,7 +303,6 @@ class PartialConv2d(nn.Conv2d):
         self.mask_ratio = None
 
     def forward(self, input, mask=None):
-
         if mask is not None or self.last_size != (
             input.data.shape[2],
             input.data.shape[3],
@@ -440,7 +431,6 @@ class PConvBNActiv(nn.Module):
             self.activation = nn.LeakyReLU(negative_slope=0.2)
 
     def forward(self, images, masks):
-
         images, masks = self.conv(images, masks)
         if hasattr(self, "bn"):
             images = self.bn(images)
@@ -465,7 +455,6 @@ class Bottleneck(nn.Module):
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
-
         residual = x
 
         out = self.relu(self.bn1(self.conv1(x)))
@@ -485,7 +474,6 @@ class Feature2Structure(nn.Module):
         self.out_layer = nn.Sequential(nn.Conv2d(64, 1, 1), nn.Sigmoid())
 
     def forward(self, structure_feature):
-
         x = self.structure_resolver(structure_feature)
         structure = self.out_layer(x)
         return structure
@@ -499,7 +487,6 @@ class Feature2Texture(nn.Module):
         self.out_layer = nn.Sequential(nn.Conv2d(64, 3, 1), nn.Tanh())
 
     def forward(self, texture_feature):
-
         x = self.texture_resolver(texture_feature)
         texture = self.out_layer(x)
         return texture

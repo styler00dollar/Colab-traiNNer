@@ -303,7 +303,6 @@ class NoiseInjection(nn.Module):
         self.weight = nn.Parameter(torch.zeros(1))
 
     def forward(self, image, noise=None):
-
         if noise is not None:
             # test
             if cfg["network_G"]["pooling"] == True:

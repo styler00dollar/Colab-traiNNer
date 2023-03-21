@@ -131,7 +131,6 @@ class FlowStep(nn.Module):
         return z, logdet
 
     def reverse_flow(self, z, logdet, rrdbResults=None):
-
         need_features = self.affine_need_features()
 
         # 1.coupling

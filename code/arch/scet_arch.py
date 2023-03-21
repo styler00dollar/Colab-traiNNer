@@ -343,7 +343,6 @@ class SCET(nn.Module):
 
 
 if __name__ == "__main__":
-
     from torchstat import stat
     import time
     import torchsummary

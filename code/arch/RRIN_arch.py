@@ -126,7 +126,6 @@ class Net(nn.Module):
         self.final = UNet(9, 3, 4)
 
     def process(self, x0, x1, t):
-
         x = torch.cat((x0, x1), 1)
         Flow = self.Flow_L(x)
         Flow_0_1, Flow_1_0 = Flow[:, :2, :, :], Flow[:, 2:4, :, :]
@@ -146,7 +145,6 @@ class Net(nn.Module):
         return output
 
     def forward(self, input0, input1, t=0.5):
-
         output = self.process(input0, input1, t)
         compose = torch.cat((input0, input1, output), 1)
         final = self.final(compose) + output

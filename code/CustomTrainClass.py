@@ -341,7 +341,7 @@ class CustomTrainClass(pl.LightningModule):
 
             counter += 1
 
-    def validation_epoch_end(self, val_step_outputs):
+    def on_validation_epoch_end(self):
         self.save_checkpoint()
 
         if "PSNR" in cfg["train"]["metrics"]:
@@ -364,12 +364,12 @@ class CustomTrainClass(pl.LightningModule):
     def save_checkpoint(self):
         # todo: read from config
         self.prefix = "Checkpoint"
-        self.save_path = "/workspace/tensorrt/train/"
 
         epoch = self.trainer.current_epoch
         global_step = self.trainer.global_step
         ckpt_path = os.path.join(
-            self.save_path, f"{self.prefix}_{epoch}_{global_step}.ckpt"
+            cfg["path"]["checkpoint_save_path"],
+            f"{self.prefix}_{epoch}_{global_step}.ckpt",
         )
         self.trainer.save_checkpoint(ckpt_path)
         print("Checkpoint " + f"{self.prefix}_{epoch}_{global_step}.ckpt" + " saved.")

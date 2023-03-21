@@ -93,6 +93,7 @@ if cfg["network_G"]["attention"] == "SEAttention":
 if cfg["network_G"]["attention"] == "PolarizedSelfAttention":
     from .attention.PolarizedSelfAttention import SequentialPolarizedSelfAttention
 
+
 # https://github.com/fangwei123456/PixelUnshuffle-pytorch/blob/master/PixelUnshuffle/__init__.py
 def pixel_unshuffle(input, downscale_factor):
     """

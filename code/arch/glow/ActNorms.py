@@ -137,7 +137,6 @@ class MaskedActNorm2d(ActNorm2d):
         super().__init__(num_features, scale)
 
     def forward(self, input, mask, logdet=None, reverse=False):
-
         assert mask.dtype == torch.bool
         output, logdet_out = super().forward(input, logdet, reverse)
 

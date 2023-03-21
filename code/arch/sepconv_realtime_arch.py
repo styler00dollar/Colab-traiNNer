@@ -455,7 +455,6 @@ class DownSampleBlock(nn.Module):
     """
 
     def __init__(self, in_channels, out_channels):
-
         super().__init__()
 
         # Padding set to 'same' to ensure that the height/width remains the same as the input
@@ -510,7 +509,6 @@ class UpSampleBlock(nn.Module):
     """
 
     def __init__(self, in_channels, out_channels):
-
         super().__init__()
 
         # Padding set to 'same' to ensure that the height/width remains the same as the input
@@ -563,7 +561,6 @@ class FeatureExtractorNet(nn.Module):
     """
 
     def __init__(self, device):
-
         super().__init__()
 
         # Series of down-sampling blocks

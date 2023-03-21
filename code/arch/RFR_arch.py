@@ -115,7 +115,6 @@ class AttentionModule(pl.LightningModule):
 
 class PartialConv2d(nn.Conv2d):
     def __init__(self, *args, **kwargs):
-
         # whether the mask is multi-channel or not
         if "multi_channel" in kwargs:
             self.multi_channel = kwargs["multi_channel"]
@@ -150,7 +149,6 @@ class PartialConv2d(nn.Conv2d):
         self.mask_ratio = None
 
     def forward(self, input, mask=None):
-
         if mask is not None or self.last_size != (
             input.data.shape[2],
             input.data.shape[3],
@@ -307,7 +305,6 @@ class RFRModule(pl.LightningModule):
         self.dec_1 = nn.Sequential(*block)
 
     def forward(self, input, mask):
-
         h_dict = {}  # for the output of enc_N
 
         h_dict["h_0"] = input

@@ -765,6 +765,7 @@ def noise_dither_fs(img: np.ndarray, sampling_f=1) -> np.ndarray:
     Returns:
         numpy ndarray: version of the image with dithering applied.
     """
+
     # for Floyd-Steinberg dithering noise
     def minmax(v):
         v = min(v, 255)
@@ -892,6 +893,7 @@ def noise_dither_fs_bw(img: np.ndarray, sampling_f=1) -> np.ndarray:
     """
     https://github.com/QunixZ/Image_Dithering_Implements/blob/master/HW1.py
     """
+
     # for Floyd-Steinberg dithering noise
     def minmax(v):
         v = min(v, 255)

@@ -314,7 +314,6 @@ def superpixels(
 def segmentation_reduction(
     img, labels, n_segments, reduction=None, kind="mix", cs=None
 ):
-
     if reduction == "selective":
         # selective search
         img_cvtcolor = label2rgb(

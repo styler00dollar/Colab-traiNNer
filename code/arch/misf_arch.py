@@ -174,7 +174,6 @@ class KPN(nn.Module):
 
     # 前向传播函数
     def forward(self, data_with_est, x):
-
         conv1 = self.conv1(data_with_est)  # 64*256*256
         conv2 = self.conv2(F.avg_pool2d(conv1, kernel_size=2, stride=2))  # 128*128*128
 

@@ -19,6 +19,7 @@ import torch.nn.init as init
 logger = logging.getLogger("base")
 import pytorch_lightning as pl
 
+
 # -----------------------------------------------
 #                Normal ConvBlock
 # -----------------------------------------------
@@ -468,6 +469,7 @@ def deepfillv2_weights_init(net, init_type="kaiming", init_gain=0.02):
 # -----------------------------------------------
 # Input: masked image + mask
 # Output: filled image
+
 
 # https://github.com/zhaoyuzhi/deepfillv2/blob/62dad2c601400e14d79f4d1e090c2effcb9bf3eb/deepfillv2/train.py
 class GatedGenerator(pl.LightningModule):

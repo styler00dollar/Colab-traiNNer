@@ -37,7 +37,6 @@ class Adan(Optimizer):
             loss = closure()
 
         for group in self.param_groups:
-
             lr = group["lr"]
             beta1, beta2, beta3 = group["betas"]
             weight_decay = group["weight_decay"]

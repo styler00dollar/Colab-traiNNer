@@ -83,7 +83,10 @@ def BatchAug(
     elif aug == "rgb":
         img1_aug, img2_aug = rgb(img1.clone(), img2.clone(), prob=prob)
     elif aug == "mixup":
-        img1_aug, img2_aug, = mixup(
+        (
+            img1_aug,
+            img2_aug,
+        ) = mixup(
             img1.clone(),
             img2.clone(),
             prob=prob,

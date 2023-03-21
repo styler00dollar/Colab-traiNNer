@@ -669,6 +669,16 @@ def CreateGenerator(cfg, scale):
 
         netG = UpCunet2x_fast()
 
+    elif cfg["netG"] == "SAFMN":
+        from arch.safmn_arch import SAFMN
+
+        netG = SAFMN(
+            dim=cfg["dim"],
+            n_blocks=cfg["n_blocks"],
+            ffn_scale=cfg["ffn_scale"],
+            upscaling_factor=scale,
+        )
+
     ############################
 
     if cfg["CEM"] is True:

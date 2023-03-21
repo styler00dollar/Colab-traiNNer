@@ -177,7 +177,6 @@ class RN_L(pl.LightningModule):
         self.rn = RN_binarylabel(feature_channels)  # need no external parameters
 
     def forward(self, x):
-
         sa_map, gamma, beta = self.sa(x)  # (B,1,M,N)
 
         # m = sa_map.detach()

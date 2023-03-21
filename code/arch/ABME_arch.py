@@ -222,7 +222,6 @@ class BilateralCorrelation(nn.Module):
 
 
 class CorrelationFunction(Function):
-
     # def __init__(self, pad_size=3, kernel_size=3, max_displacement=20, stride1=1, stride2=2, corr_multiply=1):
     #     super(CorrelationFunction, self).__init__()
     #     self.pad_size = pad_size
@@ -323,7 +322,6 @@ class Correlation(Module):
         self.corr_multiply = corr_multiply
 
     def forward(self, input1, input2):
-
         input1 = input1.contiguous()
         input2 = input2.contiguous()
         # result = CorrelationFunction(self.pad_size, self.kernel_size, self.max_displacement,self.stride1, self.stride2, self.corr_multiply)(input1, input2)
@@ -1491,7 +1489,6 @@ class ABME(nn.Module):
         self.SynNet = SynthesisNet()
 
     def forward(self, frame1, frame3):
-
         H = frame1.shape[2]
         W = frame1.shape[3]
         # 4K video requires GPU memory of more than 24GB. We recommend crop it into 4 regions with some margin.

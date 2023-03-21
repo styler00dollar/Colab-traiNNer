@@ -19,6 +19,7 @@ from torch import nn
 from torchvision import models
 import pytorch_lightning as pl
 
+
 # asymmetric gaussian shaped activation function g_A
 class GaussActivation(pl.LightningModule):
     def __init__(self, a, mu, sigma1, sigma2):
@@ -30,7 +31,6 @@ class GaussActivation(pl.LightningModule):
         self.sigma2 = Parameter(torch.tensor(sigma2, dtype=torch.float32))
 
     def forward(self, inputFeatures):
-
         self.a.data = torch.clamp(self.a.data, 1.01, 6.0)
         self.mu.data = torch.clamp(self.mu.data, 0.1, 3.0)
         self.sigma1.data = torch.clamp(self.sigma1.data, 0.5, 2.0)
@@ -192,6 +192,7 @@ from torch import nn
 # from models.ActivationFunction import GaussActivation, MaskUpdate
 # from models.weightInitial import weights_init
 
+
 # learnable forward attention conv layer
 class ForwardAttentionLayer(pl.LightningModule):
     def __init__(
@@ -323,6 +324,7 @@ from torchvision import models
 # from models.forwardAttentionLayer import ForwardAttention
 # from models.reverseAttentionLayer import ReverseAttention, ReverseMaskConv
 # from models.weightInitial import weights_init
+
 
 # VGG16 feature extract
 class VGG16FeatureExtractor(pl.LightningModule):

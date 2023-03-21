@@ -234,7 +234,6 @@ class Restormer(nn.Module):
         LayerNorm_type="WithBias",  ## Other option 'BiasFree'
         dual_pixel_task=False,  ## True for dual-pixel defocus deblurring only. Also set inp_channels=6
     ):
-
         super(Restormer, self).__init__()
 
         self.patch_embed = OverlapPatchEmbed(inp_channels, dim)
@@ -374,7 +373,6 @@ class Restormer(nn.Module):
         )
 
     def forward(self, inp_img):
-
         inp_enc_level1 = self.patch_embed(inp_img)
         out_enc_level1 = self.encoder_level1(inp_enc_level1)
 

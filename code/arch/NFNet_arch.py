@@ -74,6 +74,7 @@ nfnet_params = {
     },
 }
 
+
 # These extra constant values ensure that the activations
 # are variance preserving
 class VPGELU(nn.Module):
@@ -141,7 +142,7 @@ class NFNet(nn.Module):
             [1, 2, 2, 2],  # stride pattern
         )
 
-        for (block_width, stage_depth, expand_ratio, group_size, stride) in block_args:
+        for block_width, stage_depth, expand_ratio, group_size, stride in block_args:
             for block_index in range(stage_depth):
                 beta = 1.0 / expected_std
 
@@ -239,7 +240,6 @@ class NFBlock(nn.Module):
         stochdepth_rate: float = None,
         activation: str = "gelu",
     ):
-
         super(NFBlock, self).__init__()
 
         self.in_channels = in_channels
@@ -345,7 +345,6 @@ class WSConv2D(nn.Conv2d):
         bias: bool = True,
         padding_mode: str = "zeros",
     ):
-
         super(WSConv2D, self).__init__(
             in_channels,
             out_channels,

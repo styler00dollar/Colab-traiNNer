@@ -17,6 +17,7 @@ import torch.nn as nn
 # Basic blocks
 ####################
 
+
 # Swish activation funtion
 def swish_func(x, beta=1.0):
     """
@@ -55,7 +56,6 @@ def swish_func(x, beta=1.0):
 
 # Swish module
 class Swish(nn.Module):
-
     __constants__ = ["beta", "slope", "inplace"]
 
     def __init__(self, beta=1.0, slope=1.67653251702, inplace=False):

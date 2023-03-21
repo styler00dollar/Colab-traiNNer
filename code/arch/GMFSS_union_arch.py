@@ -683,7 +683,6 @@ class FeatureTransformer(nn.Module):
         attn_num_splits=None,
         **kwargs,
     ):
-
         b, c, h, w = feature0.shape
         assert self.d_model == c
 
@@ -1136,7 +1135,6 @@ class GMFlow(nn.Module):
         pred_bidir_flow=False,
         **kwargs,
     ):
-
         img0, img1 = normalize_img(img0, img1)  # [B, 3, H, W]
 
         # resolution low to high

@@ -47,11 +47,11 @@ if __name__ == "__main__":
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
             log_every_n_steps=50,
-            resume_from_checkpoint=cfg["path"]["checkpoint_path"],
             check_val_every_n_epoch=None,
             val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]),
             logger=None,
-            gpus=cfg["gpus"],
+            accelerator="gpu",
+            devices=cfg["gpus"],
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
             default_root_dir=cfg["default_root_dir"],
         )
@@ -59,16 +59,13 @@ if __name__ == "__main__":
     # https://nvidia.github.io/apex/amp.html?highlight=opt_level#o1-mixed-precision-recommended-for-typical-use
     if cfg["use_tpu"] == False and cfg["use_amp"] == True:
         trainer = pl.Trainer(
-            plugins=pl.plugins.precision.NativeMixedPrecisionPlugin(
-                precision="16", device="cuda"
-            ),
             num_sanity_val_steps=0,
             log_every_n_steps=50,
-            resume_from_checkpoint=cfg["path"]["checkpoint_path"],
             check_val_every_n_epoch=None,
             val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]),
             logger=None,
-            gpus=cfg["gpus"],
+            accelerator="gpu",
+            devices=cfg["gpus"],
             precision=16,
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
             default_root_dir=cfg["default_root_dir"],
@@ -84,7 +81,8 @@ if __name__ == "__main__":
             check_val_every_n_epoch=None,
             val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]),
             logger=None,
-            gpus=cfg["gpus"],
+            accelerator="gpu",
+            devices=cfg["gpus"],
             strategy=cfg["distributed_backend"],
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
             default_root_dir=cfg["default_root_dir"],
@@ -101,7 +99,8 @@ if __name__ == "__main__":
             check_val_every_n_epoch=None,
             val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]),
             logger=None,
-            gpus=cfg["gpus"],
+            accelerator="gpu",
+            devices=cfg["gpus"],
             precision=16,
             strategy=cfg["distributed_backend"],
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
@@ -110,34 +109,12 @@ if __name__ == "__main__":
 
     # TPU
     if cfg["use_tpu"] == True and cfg["use_amp"] == False:
-        trainer = pl.Trainer(
-            num_sanity_val_steps=0,
-            log_every_n_steps=50,
-            resume_from_checkpoint=cfg["path"]["checkpoint_path"],
-            check_val_every_n_epoch=None,
-            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]),
-            logger=None,
-            tpu_cores=cfg["tpu_cores"],
-            max_epochs=cfg["datasets"]["train"]["max_epochs"],
-            default_root_dir=cfg["default_root_dir"],
-        )
+        print("Currently not supported")
+        return
 
     if cfg["use_tpu"] == True and cfg["use_amp"] == True:
-        trainer = pl.Trainer(
-            plugins=pl.plugins.precision.NativeMixedPrecisionPlugin(
-                precision="16", device="cuda"
-            ),
-            num_sanity_val_steps=0,
-            log_every_n_steps=50,
-            resume_from_checkpoint=cfg["path"]["checkpoint_path"],
-            check_val_every_n_epoch=None,
-            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]),
-            logger=None,
-            tpu_cores=cfg["tpu_cores"],
-            precision=16,
-            max_epochs=cfg["datasets"]["train"]["max_epochs"],
-            default_root_dir=cfg["default_root_dir"],
-        )
+        print("Currently not supported")
+        return
 
     # Loading a pretrain pth
     if cfg["path"]["pretrain_model_G"]:
@@ -189,4 +166,7 @@ if __name__ == "__main__":
 
     #############################################
 
-    trainer.fit(model, dm)
+    if cfg["path"]["checkpoint_path"]:
+        trainer.fit(model, dm, ckpt_path=cfg["path"]["checkpoint_path"])
+    else:
+        trainer.fit(model, dm)

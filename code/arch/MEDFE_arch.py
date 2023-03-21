@@ -68,12 +68,10 @@ class InnerCos(pl.LightningModule):
         return self.output
 
     def backward(self, retain_graph=True):
-
         self.loss.backward(retain_graph=retain_graph)
         return self.loss
 
     def __repr__(self):
-
         return self.__class__.__name__
 
 
@@ -114,7 +112,6 @@ def gussin(v):
     v = v
     for i in range(32):
         for k in range(32):
-
             out = []
             for x in range(32):
                 row = []
@@ -154,7 +151,6 @@ def cal_feat_mask(inMask, conv_layers, threshold):
         convs.append(conv)
     lnet = nn.Sequential(*convs)
     if inMask.is_cuda:
-
         lnet = lnet.cuda()
     output = lnet(inMask)
     output = (output > threshold).float().mul_(1)
@@ -370,7 +366,6 @@ class Selfpatch(object):
             if interpolate:
                 raise NotImplementedError
         else:
-
             conv_dec = nn.ConvTranspose2d(
                 npatches, C, kernel_size=patch_size, stride=stride, bias=False
             )
@@ -523,7 +518,6 @@ class ConvDown(pl.LightningModule):
             nf_mult_prev = nf_mult
             if nums == 8:
                 if in_c == 512:
-
                     nfmult = 1
                 else:
                     nf_mult = 2
@@ -531,7 +525,6 @@ class ConvDown(pl.LightningModule):
             else:
                 nf_mult = min(2**i, 8)
             if kernel != 1:
-
                 if activ == False and layers == 1:
                     sequence += [
                         nn.Conv2d(
@@ -559,7 +552,6 @@ class ConvDown(pl.LightningModule):
                     ]
 
             else:
-
                 sequence += [
                     nn.Conv2d(
                         in_c,

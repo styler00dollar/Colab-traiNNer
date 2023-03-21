@@ -347,6 +347,7 @@ def Center_Mass(kernel, ds_factor):
     padding_diff = np.round(np.abs(y_pad)) - np.round(np.abs(x_pad))
     pre_x_pad, post_x_pad = np.maximum(0, -x_pad), np.maximum(0, x_pad)
     pre_y_pad, post_y_pad = np.maximum(0, -y_pad), np.maximum(0, y_pad)
+
     # # Making sure final kernel size-1 is an integer multiplication of ds_factor (Otherwise I get an error later because of padding issues, I'm not sure why...):
     # global_padding = 2*ds_factor-np.mod(Round_2_Int(pre_y_pad+post_y_pad+kernel_size)-1,2*ds_factor)
     # pre_y_pad, post_y_pad = pre_y_pad+global_padding/2,post_y_pad+global_padding/2

@@ -17,7 +17,6 @@ from torch.autograd import Variable
 
 class PartialConv2d(nn.Conv2d):
     def __init__(self, *args, **kwargs):
-
         # whether the mask is multi-channel or not
         if "multi_channel" in kwargs:
             self.multi_channel = kwargs["multi_channel"]

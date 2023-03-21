@@ -360,6 +360,7 @@ import torch.nn.functional as F
 import numpy as np
 from torch.autograd import Variable
 
+
 # from .spectral import SpectralNorm
 # from .networks import GatedConv2dWithActivation, GatedDeConv2dWithActivation, SNConvWithActivation, get_pad
 class Self_Attn(pl.LightningModule):

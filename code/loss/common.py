@@ -630,7 +630,6 @@ def patchify_tensor(features, patch_size, overlap=10):
 
 
 def recompose_tensor(patches, full_height, full_width, overlap=10):
-
     batch_size, channels, patch_size, _ = patches.size()
     effective_patch_size = patch_size - overlap
     n_patches_height = full_height // effective_patch_size

@@ -937,7 +937,6 @@ class PerceptualLoss(nn.Module):
             features_target = target
 
         for layer in self.vgg[:30]:
-
             features_input = layer(features_input)
             features_target = layer(features_target)
 

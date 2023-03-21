@@ -7,7 +7,7 @@ use_tpu: False
 use_amp: True
 use_swa: False
 progress_bar_refresh_rate: 20
-default_root_dir: '/home/user/Schreibtisch/Colab-traiNNer/train/'
+default_root_dir: '/home/user/Schreibtisch/Colab-traiNNer/train'
 
 # Dataset options:
 datasets:
@@ -25,8 +25,8 @@ datasets:
     amount_files: 7 # tfrecord files do not store amount of images and are infinite, specify the images inside of it
 
     tfrecord_path: "/content/tfrecord/tfrecord-r09.tfrecords"
-    dataroot_HR: '/workspace/tensorrt/train/esrgan_dataset' # Original, with a single directory. Inpainting will use this directory as source image.
-    dataroot_LR: '/workspace/tensorrt/train/esrgan_dataset' # Original, with a single directory
+    dataroot_HR: '/home/user/Schreibtisch/Colab-traiNNer/train/data' # Original, with a single directory. Inpainting will use this directory as source image.
+    dataroot_LR: '/home/user/Schreibtisch/Colab-traiNNer/train/data' # Original, with a single directory
     loading_backend: 'OpenCV' # 'PIL' | 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, turboJPEG only for DS_video, 'PIL' for DS_inpaint_TF
 
     n_workers: 16 # 0 to disable CPU multithreading, or an integrer representing CPU threads to use for dataloading
@@ -89,17 +89,17 @@ datasets:
 
   val:
     loading_backend: 'OpenCV' # 'OpenCV' | 'turboJPEG' # install needed for turboJPEG, currently only for DS_video
-    dataroot_HR: '/workspace/tensorrt/train/sr_input_720p_padded'
-    dataroot_LR: '/workspace/tensorrt/train/sr_input_720p_padded' # Inpainting will use this directory as input
+    dataroot_HR: '/home/user/Schreibtisch/Colab-traiNNer/train/val_input'
+    dataroot_LR: '/home/user/Schreibtisch/Colab-traiNNer/train/val_input' # Inpainting will use this directory as input
 
 path:
     pretrain_model_G: #'/workspace/tensorrt/lite/cugan_2x_fast_pretrain.pth'
     pretrain_model_G_teacher:
     pretrain_model_D:
     checkpoint_path:  #"/home/user/Schreibtisch/Colab-traiNNer/train/rvp2.1_resnet3d/epoch=33-step=129990.ckpt"
-    checkpoint_save_path: '/workspace/tensorrt/train/'
-    validation_output_path: '/workspace/tensorrt/train/val/'
-    log_path: '/workspace/tensorrt/train/logs/'
+    checkpoint_save_path: '/home/user/Schreibtisch/GIT/Colab-traiNNer/train'
+    validation_output_path: '/home/user/Schreibtisch/GIT/Colab-traiNNer/train/val/'
+    log_path: '/home/user/Schreibtisch/GIT/Colab-traiNNer/train/logs/'
 
 # using a teacher model to generate hr, has same configuration as normal netG
 # if teacher is used, same loss functions will be applied to both images
@@ -180,7 +180,13 @@ network_G:
     #group: 1 # unused for now
 
     # CUGAN
-    netG: UpCunet2x_fast
+    #netG: UpCunet2x_fast
+
+    # SAFMN (2023)
+    netG: SAFMN
+    dim: 36
+    n_blocks: 8
+    ffn_scale: 2.0
 
     # ASRGAN:
     #which_model_G: asr_resnet # asr_resnet | asr_cnn

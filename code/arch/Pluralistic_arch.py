@@ -905,7 +905,6 @@ def define_e(
     init_type="orthogonal",
     gpu_ids=[],
 ):
-
     net = ResEncoder(
         input_nc, ngf, z_nc, img_f, L, layers, norm, activation, use_spect, use_coord
     )
@@ -929,7 +928,6 @@ def define_g(
     init_type="orthogonal",
     gpu_ids=[],
 ):
-
     net = ResGenerator(
         output_nc,
         ngf,
@@ -962,7 +960,6 @@ def define_d(
     init_type="orthogonal",
     gpu_ids=[],
 ):
-
     if model_type == "ResDis":
         net = ResDiscriminator(
             input_nc,

@@ -283,7 +283,6 @@ class FlowUpsamplerNet(nn.Module):
         eps_std=None,
         y_onehot=None,
     ):
-
         if reverse:
             epses_copy = [eps for eps in epses] if isinstance(epses, list) else epses
 

@@ -1511,7 +1511,6 @@ class WindowAttention(nn.Module):
         attn_drop=0.0,
         proj_drop=0.0,
     ):
-
         super().__init__()
         self.dim = dim
         self.window_size = window_size  # Wh, Ww
@@ -1860,7 +1859,6 @@ class BasicLayer(nn.Module):
         downsample=None,
         use_checkpoint=False,
     ):
-
         super().__init__()
         self.dim = dim
         self.input_resolution = input_resolution

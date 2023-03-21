@@ -89,7 +89,6 @@ class ARFB(nn.Module):
         self.lamX = reScale[1]
 
     def forward(self, x):
-
         x_ru1 = self.RU1(x)
         x_ru2 = self.RU2(x_ru1)
         x_ru = torch.cat((x_ru1, x_ru2), 1)

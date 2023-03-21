@@ -291,7 +291,6 @@ class DFNet(pl.LightningModule):
         self.de = []
         self.fuse = []
         for i, k_de in enumerate(de_ksize):
-
             c_from_up = self.en[-1].c_out if i == 0 else self.de[-1].c_out
             c_out = c_from_down = self.en[-i - 1].c_in
             layer_idx = self.n_de - i - 1
@@ -322,7 +321,6 @@ class DFNet(pl.LightningModule):
                 self.__setattr__("fuse_{}".format(i), fuse)
 
     def forward(self, img_miss, mask):
-
         out = torch.cat([img_miss, mask], dim=1)
         out_en = [out]
 

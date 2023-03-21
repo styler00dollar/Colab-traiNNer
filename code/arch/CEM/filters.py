@@ -9,6 +9,7 @@ https://github.com/victorca25/BasicSR/blob/c594cada9422f6f3447fbeb2b2e21e4407ab1
     Multiple image filters used by different functions. Can also be used as augmentations.
 """
 
+
 # TODO: Could also automatically detect the possible range with min and max, like in def ssim()
 def denorm(x, min_max=(-1.0, 1.0)):
     """
@@ -278,7 +279,6 @@ def get_log_kernel_5x5():
 # Note: Kornia suggests their laplacian kernel can also be used to generate LoG kernel:
 # https://torchgeometry.readthedocs.io/en/latest/_modules/kornia/filters/laplacian.html
 def get_log_kernel2d(kernel_size=5, sigma=None, dim=2):  # sigma=0.6; kernel_size=5
-
     # either kernel_size or sigma are required:
     if not kernel_size and sigma:
         kernel_size = get_kernel_size(sigma)
@@ -1074,7 +1074,6 @@ class GuidedFilter(nn.Module):
             self.conv_a = None
 
     def forward(self, x, y, x_HR=None):
-
         n_x, c_x, h_x, w_x = x.size()
         n_y, c_y, h_y, w_y = y.size()
         assert n_x == n_y

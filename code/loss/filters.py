@@ -255,7 +255,6 @@ def get_log_kernel_5x5():
 # Note: Kornia suggests their laplacian kernel can also be used to generate LoG kernel:
 # https://torchgeometry.readthedocs.io/en/latest/_modules/kornia/filters/laplacian.html
 def get_log_kernel2d(kernel_size=5, sigma=None, dim=2):  # sigma=0.6; kernel_size=5
-
     # either kernel_size or sigma are required:
     if not kernel_size and sigma:
         kernel_size = get_kernel_size(sigma)

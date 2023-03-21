@@ -882,7 +882,6 @@ class ConvDownLayer(nn.Sequential):
         bias=True,
         act_cfg=dict(type="fused_bias"),
     ):
-
         layers = []
 
         if downsample:
@@ -970,7 +969,6 @@ class ModMBStddevLayer(nn.Module):
         self.sync_groups = group_size if sync_groups is None else sync_groups
 
     def forward(self, x):
-
         # batch size should be smaller than or equal to group size. Otherwise,
         # batch size should be divisible by the group size.
         assert x.shape[0] <= self.group_size or x.shape[0] % self.group_size == 0, (
@@ -2154,7 +2152,6 @@ class GLEANStyleGANv2(nn.Module):
         pretrained=None,
         bgr2rgb=False,
     ):
-
         super().__init__()
 
         # input size must be strictly smaller than output size
@@ -2298,7 +2295,6 @@ class GLEANStyleGANv2(nn.Module):
             injected_noise[2::2],
             self.generator.to_rgbs,
         ):
-
             # feature fusion by channel-wise concatenation
             if out.size(2) <= self.in_size:
                 fusion_index = (_index - 1) // 2
@@ -2365,7 +2361,6 @@ class RRDBFeatureExtractor(nn.Module):
     def __init__(
         self, in_channels=3, mid_channels=64, num_blocks=23, growth_channels=32
     ):
-
         super().__init__()
 
         self.conv_first = nn.Conv2d(in_channels, mid_channels, 3, 1, 1)
