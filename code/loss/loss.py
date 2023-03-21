@@ -1560,3 +1560,232 @@ class SOBEL(nn.Module):
         L1X, L1Y = torch.abs(pred_X - gt_X), torch.abs(pred_Y - gt_Y)
         loss = L1X + L1Y
         return loss
+
+
+###############
+# Canny Loss
+# https://github.com/DCurro/CannyEdgePytorch
+###############
+from scipy.signal import gaussian
+
+
+class Canny(nn.Module):
+    def __init__(self, threshold=5.0, use_cuda=True):
+        super(Canny, self).__init__()
+
+        self.threshold = threshold
+
+        self.device = torch.device("cuda" if use_cuda else "cpu")
+
+        filter_size = 5
+        generated_filters = gaussian(filter_size, std=1.0).reshape([1, filter_size])
+
+        self.gaussian_filter_horizontal = nn.Conv2d(
+            in_channels=1,
+            out_channels=1,
+            kernel_size=(1, filter_size),
+            padding=(0, filter_size // 2),
+        )
+        self.gaussian_filter_horizontal.weight.data.copy_(
+            torch.from_numpy(generated_filters)
+        )
+        self.gaussian_filter_horizontal.bias.data.copy_(
+            torch.from_numpy(np.array([0.0]))
+        )
+        self.gaussian_filter_vertical = nn.Conv2d(
+            in_channels=1,
+            out_channels=1,
+            kernel_size=(filter_size, 1),
+            padding=(filter_size // 2, 0),
+        )
+        self.gaussian_filter_vertical.weight.data.copy_(
+            torch.from_numpy(generated_filters.T)
+        )
+        self.gaussian_filter_vertical.bias.data.copy_(torch.from_numpy(np.array([0.0])))
+
+        sobel_filter = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
+
+        self.sobel_filter_horizontal = nn.Conv2d(
+            in_channels=1,
+            out_channels=1,
+            kernel_size=sobel_filter.shape,
+            padding=sobel_filter.shape[0] // 2,
+        )
+        self.sobel_filter_horizontal.weight.data.copy_(torch.from_numpy(sobel_filter))
+        self.sobel_filter_horizontal.bias.data.copy_(torch.from_numpy(np.array([0.0])))
+        self.sobel_filter_vertical = nn.Conv2d(
+            in_channels=1,
+            out_channels=1,
+            kernel_size=sobel_filter.shape,
+            padding=sobel_filter.shape[0] // 2,
+        )
+        self.sobel_filter_vertical.weight.data.copy_(torch.from_numpy(sobel_filter.T))
+        self.sobel_filter_vertical.bias.data.copy_(torch.from_numpy(np.array([0.0])))
+
+        # filters were flipped manually
+        filter_0 = np.array([[0, 0, 0], [0, 1, -1], [0, 0, 0]])
+
+        filter_45 = np.array([[0, 0, 0], [0, 1, 0], [0, 0, -1]])
+
+        filter_90 = np.array([[0, 0, 0], [0, 1, 0], [0, -1, 0]])
+
+        filter_135 = np.array([[0, 0, 0], [0, 1, 0], [-1, 0, 0]])
+
+        filter_180 = np.array([[0, 0, 0], [-1, 1, 0], [0, 0, 0]])
+
+        filter_225 = np.array([[-1, 0, 0], [0, 1, 0], [0, 0, 0]])
+
+        filter_270 = np.array([[0, -1, 0], [0, 1, 0], [0, 0, 0]])
+
+        filter_315 = np.array([[0, 0, -1], [0, 1, 0], [0, 0, 0]])
+
+        all_filters = np.stack(
+            [
+                filter_0,
+                filter_45,
+                filter_90,
+                filter_135,
+                filter_180,
+                filter_225,
+                filter_270,
+                filter_315,
+            ]
+        )
+
+        self.directional_filter = nn.Conv2d(
+            in_channels=1,
+            out_channels=8,
+            kernel_size=filter_0.shape,
+            padding=filter_0.shape[-1] // 2,
+        )
+        self.directional_filter.weight.data.copy_(
+            torch.from_numpy(all_filters[:, None, ...])
+        )
+        self.directional_filter.bias.data.copy_(
+            torch.from_numpy(np.zeros(shape=(all_filters.shape[0],)))
+        )
+
+        self.gaussian_filter_horizontal = self.gaussian_filter_horizontal.to(
+            self.device
+        )
+        self.gaussian_filter_vertical = self.gaussian_filter_vertical.to(self.device)
+        self.sobel_filter_horizontal = self.sobel_filter_horizontal.to(self.device)
+        self.sobel_filter_vertical = self.sobel_filter_vertical.to(self.device)
+        self.directional_filter = self.directional_filter.to(self.device)
+
+    def forward(self, img):
+        img_r = img[:, 0:1]
+        img_g = img[:, 1:2]
+        img_b = img[:, 2:3]
+
+        blur_horizontal = self.gaussian_filter_horizontal(img_r)
+        blurred_img_r = self.gaussian_filter_vertical(blur_horizontal)
+        blur_horizontal = self.gaussian_filter_horizontal(img_g)
+        blurred_img_g = self.gaussian_filter_vertical(blur_horizontal)
+        blur_horizontal = self.gaussian_filter_horizontal(img_b)
+        blurred_img_b = self.gaussian_filter_vertical(blur_horizontal)
+
+        blurred_img = torch.stack([blurred_img_r, blurred_img_g, blurred_img_b], dim=1)
+        blurred_img = torch.stack([torch.squeeze(blurred_img)])
+
+        grad_x_r = self.sobel_filter_horizontal(blurred_img_r)
+        grad_y_r = self.sobel_filter_vertical(blurred_img_r)
+        grad_x_g = self.sobel_filter_horizontal(blurred_img_g)
+        grad_y_g = self.sobel_filter_vertical(blurred_img_g)
+        grad_x_b = self.sobel_filter_horizontal(blurred_img_b)
+        grad_y_b = self.sobel_filter_vertical(blurred_img_b)
+
+        # COMPUTE THICK EDGES
+
+        grad_mag = torch.sqrt(grad_x_r**2 + grad_y_r**2)
+        grad_mag = grad_mag + torch.sqrt(grad_x_g**2 + grad_y_g**2)
+        grad_mag = grad_mag + torch.sqrt(grad_x_b**2 + grad_y_b**2)
+        grad_orientation = torch.atan2(
+            grad_y_r + grad_y_g + grad_y_b, grad_x_r + grad_x_g + grad_x_b
+        ) * (180.0 / 3.14159)
+        grad_orientation += 180.0
+        grad_orientation = torch.round(grad_orientation / 45.0) * 45.0
+
+        # THIN EDGES (NON-MAX SUPPRESSION)
+
+        all_filtered = self.directional_filter(grad_mag)
+
+        inidices_positive = (grad_orientation / 45) % 8
+        inidices_negative = ((grad_orientation / 45) + 4) % 8
+
+        height = inidices_positive.size()[2]
+        width = inidices_positive.size()[3]
+        pixel_count = height * width
+        batch_size = inidices_positive.size()[0]
+        pixel_range = (
+            torch.arange(pixel_count)
+            .view(1, -1)
+            .repeat(batch_size, 1)
+            .float()
+            .to(self.device)
+        )
+
+        indices_positive = inidices_positive.view(batch_size, 1, height, width).long()
+        channel_select_filtered_positive = all_filtered.gather(
+            1, indices_positive
+        ).squeeze(1)
+
+        indices_negative = inidices_negative.view(batch_size, 1, height, width).long()
+        channel_select_filtered_negative = all_filtered.gather(
+            1, indices_negative
+        ).squeeze(1)
+
+        channel_select_filtered = torch.stack(
+            [channel_select_filtered_positive, channel_select_filtered_negative]
+        )
+
+        is_max = channel_select_filtered.min(dim=0)[0] > 0.0
+        is_max = torch.unsqueeze(is_max, dim=0)
+
+        thin_edges = grad_mag.clone()
+        thin_edges[is_max.permute(1, 0, 2, 3) == 0] = 0.0
+
+        # THRESHOLD
+
+        thresholded = thin_edges.clone()
+        thresholded[thin_edges < self.threshold] = 0.0
+
+        early_threshold = grad_mag.clone()
+        early_threshold[grad_mag < self.threshold] = 0.0
+
+        assert (
+            grad_mag.size()
+            == grad_orientation.size()
+            == thin_edges.size()
+            == thresholded.size()
+            == early_threshold.size()
+        )
+
+        return (
+            blurred_img,
+            grad_mag,
+            grad_orientation,
+            thin_edges,
+            thresholded,
+            early_threshold,
+        )
+
+
+class CannyLoss(nn.Module):
+    def __init__(
+        self, alpha=0.7, thin_edges_weight=1, thresholded_weight=1, threshold=5
+    ):
+        super(CannyLoss, self).__init__()
+        self.canny = Canny(threshold)
+        self.loss = nn.L1Loss()
+        self.thin_edges_weight = thin_edges_weight
+        self.thresholded_weight = thresholded_weight
+
+    def forward(self, pred, target):
+        _, _, _, thin_edges1, thresholded1, _ = self.canny(pred)
+        _, _, _, thin_edges2, thresholded2, _ = self.canny(target)
+
+        return (
+            self.loss(thin_edges1, thin_edges2) * self.thin_edges_weight
+            + self.loss(thresholded1, thresholded2) * self.thresholded_weight
+        )

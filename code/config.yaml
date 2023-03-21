@@ -1124,6 +1124,13 @@ train:
     # loss for rife
     SOBEL_weight: 0 # not recommended, leave it at 0
 
+    # Canny
+    Canny_weight: 0
+    canny_alpha: 0.7
+    thin_edges_weight: 1
+    thresholded_weight: 1
+    canny_threshold: 5
+
     # Three different augmentation options, diffaug and muaraugment apply to both training loops,
     # while batch_aug only applies to the discriminator training loop
     augmentation_method: batch_aug # diffaug, MuarAugment, batch_aug, None

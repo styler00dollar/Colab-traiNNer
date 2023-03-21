@@ -2,6 +2,7 @@ import pytorch_lightning as pl
 import torch
 import yaml
 from data.dataloader import DataModule
+import sys
 
 import torch
 
@@ -110,11 +111,11 @@ if __name__ == "__main__":
     # TPU
     if cfg["use_tpu"] == True and cfg["use_amp"] == False:
         print("Currently not supported")
-        return
+        sys.exit(0)
 
     if cfg["use_tpu"] == True and cfg["use_amp"] == True:
         print("Currently not supported")
-        return
+        sys.exit(0)
 
     # Loading a pretrain pth
     if cfg["path"]["pretrain_model_G"]:

@@ -28,6 +28,7 @@ from loss.loss import (
     Contextual_Loss,
     StyleLoss,
     ConsistencyLoss,
+    CannyLoss,
 )
 from piq import (
     SSIMLoss,
@@ -229,6 +230,13 @@ class AllLoss(pl.LightningModule):
             del example_data
 
         self.ConsistencyLoss = ConsistencyLoss()
+
+        self.CannyLoss = CannyLoss(
+            alpha=cfg["train"]["canny_alpha"],
+            thin_edges_weight=cfg["train"]["thin_edges_weight"],
+            thresholded_weight=cfg["train"]["thresholded_weight"],
+            threshold=cfg["train"]["canny_threshold"],
+        )
 
         from arch.hrf_perceptual import ResNetPL
 
@@ -724,6 +732,13 @@ class AllLoss(pl.LightningModule):
                 PR_forward = self.cfg["train"]["PR_weight"] * (precision**-1)
                 total_loss += PR_forward
                 writer.add_scalar("loss/PR" + log_suffix, PR_forward, global_step)
+
+            if self.cfg["train"]["Canny_weight"] > 0:
+                Canny_forward = self.cfg["train"]["Canny_weight"] * self.CannyLoss(
+                    out, hr_image
+                )
+                total_loss += Canny_forward
+                writer.add_scalar("loss/Canny" + log_suffix, Canny_forward, global_step)
 
             #########################
             # exotic loss
