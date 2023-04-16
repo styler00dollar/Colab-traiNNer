@@ -6,7 +6,7 @@ RUN apt-get -y update && apt-get install ffmpeg libsm6 libxext6 libjpeg-dev libp
     git clone https://github.com/libjpeg-turbo/libjpeg-turbo --recursive && cd libjpeg-turbo && mkdir build && cd build && cmake .. && make -j$(nproc) && \
     make install && cd .. && cd .. && rm -rf libjpeg-turbo && apt-get autoclean -y && apt-get autoremove -y && apt-get clean -y
 
-RUN pip install https://github.com/pytorch/TensorRT/releases/download/v1.3.0/torch_tensorrt-1.3.0-cp38-cp38-linux_x86_64.whl \
+RUN pip install lion-pytorch https://github.com/pytorch/TensorRT/releases/download/v1.3.0/torch_tensorrt-1.3.0-cp38-cp38-linux_x86_64.whl \
     git+https://github.com/lilohuang/PyTurboJPEG.git \
     pytorch_lightning basicsr git+https://github.com/vballoli/nfnets-pytorch \
     albumentations IPython scipy pandas opencv-python pillow wget tfrecord x-transformers adamp efficientnet_pytorch tensorboardX \

@@ -1,6 +1,43 @@
 def CreateOptimizer(cfg, input_G, input_D=None):
     opt_d = None  # if there is no optimizer, return nothing
     if cfg["network_G"]["finetune"] is None or cfg["network_G"]["finetune"] is False:
+        if cfg["train"]["scheduler"] == "Lion":
+            from lion_pytorch import Lion
+
+            opt_g = opt = Lion(
+                input_G,
+                lr=cfg["train"]["lr_g"],
+                weight_decay=float(cfg["train"]["weight_decay"]),
+                use_triton=False,
+            )
+            if cfg["network_D"]["netD"] is not None:
+                opt_d = Lion(
+                    input_D,
+                    lr=cfg["train"]["lr_g"],
+                    weight_decay=float(cfg["train"]["weight_decay"]),
+                    use_triton=False,
+                )
+
+        if cfg["train"]["scheduler"] == "AdamP":
+            from adamp import AdamP
+
+            opt_g = AdamP(
+                input_G,
+                lr=cfg["train"]["lr_g"],
+                betas=(float(cfg["train"]["betas0"]), float(cfg["train"]["betas1"])),
+                weight_decay=float(cfg["train"]["weight_decay"]),
+            )
+            if cfg["network_D"]["netD"] is not None:
+                opt_d = AdamP(
+                    input_D,
+                    lr=cfg["train"]["lr_d"],
+                    betas=(
+                        float(cfg["train"]["betas0"]),
+                        float(cfg["train"]["betas1"]),
+                    ),
+                    weight_decay=float(cfg["train"]["weight_decay"]),
+                )
+
         if cfg["train"]["scheduler"] == "Adam":
             import torch
 

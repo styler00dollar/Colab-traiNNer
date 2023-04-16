@@ -953,11 +953,11 @@ network_D:
 train: 
     # Adam8bit needs "pip install bitsandbytes-cuda111"
     # SGD_AGC needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
-    scheduler: Adan # Adam, AdamP, Adam, SGDP, MADGRAD, Adam8bit, SGD_AGC, cosangulargrad [maybe broken], tanangulargrad [maybe broken], Adan
+    scheduler: Lion # Lion, Adam, AdamP, Adam, SGDP, MADGRAD, Adam8bit, SGD_AGC, cosangulargrad [maybe broken], tanangulargrad [maybe broken], Adan
     # ACG needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
     AGC: False # currently only for generator, only works with certain optimizers
-    lr_g: 0.0001 # 0.00005
-    lr_d: 0.0001
+    lr_g: 0.0005 # 0.00005
+    lr_d: 0.0005
     
     # AdamP, AGDP, MADGRAD, SGD_AGC, cosangulargrad, tanangulargrad
     weight_decay: 0.01
