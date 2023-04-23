@@ -19,6 +19,7 @@ writer = SummaryWriter(logdir=cfg["path"]["log_path"])
 class CustomTrainClass(pl.LightningModule):
     def __init__(self):
         super().__init__()
+        self.automatic_optimization = False
 
         ##################################################################
 

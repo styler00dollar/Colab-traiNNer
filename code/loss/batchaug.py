@@ -200,8 +200,8 @@ def rand_bbox(size, lam):
     H = size[3]
     # image_h, image_w = data.shape[2:]
     cut_rat = np.sqrt(1.0 - lam)
-    cut_w = np.int(W * cut_rat)
-    cut_h = np.int(H * cut_rat)
+    cut_w = int(W * cut_rat)
+    cut_h = int(H * cut_rat)
 
     # uniform
     cx = np.random.randint(W)  # cx = np.random.uniform(0, image_w)
@@ -222,7 +222,7 @@ def _cutmix(img2, prob=1.0, alpha=1.0):
     cut_ratio = np.random.randn() * 0.01 + alpha
 
     h, w = img2.shape[2:]
-    ch, cw = np.int(h * cut_ratio), np.int(w * cut_ratio)
+    ch, cw = int(h * cut_ratio), int(w * cut_ratio)
 
     fcy = np.random.randint(0, h - ch + 1)
     fcx = np.random.randint(0, w - cw + 1)
@@ -345,7 +345,7 @@ def cutblur(img1, img2, prob=1.0, alpha=1.0):
     cut_ratio = np.random.randn() * 0.01 + alpha
 
     h, w = img2.size(2), img2.size(3)
-    ch, cw = np.int(h * cut_ratio), np.int(w * cut_ratio)
+    ch, cw = int(h * cut_ratio), int(w * cut_ratio)
     cy = np.random.randint(0, h - ch + 1)
     cx = np.random.randint(0, w - cw + 1)
 
