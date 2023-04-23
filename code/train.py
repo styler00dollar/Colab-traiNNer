@@ -53,6 +53,7 @@ if __name__ == "__main__":
             logger=None,
             accelerator="gpu",
             devices=cfg["gpus"],
+            precision=32,
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
             default_root_dir=cfg["default_root_dir"],
         )
@@ -84,6 +85,7 @@ if __name__ == "__main__":
             logger=None,
             accelerator="gpu",
             devices=cfg["gpus"],
+            precision=32,
             strategy=cfg["distributed_backend"],
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
             default_root_dir=cfg["default_root_dir"],

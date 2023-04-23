@@ -96,6 +96,7 @@ def check_arch(cfg):
         "SCET",
         "UpCunet2x_fast",
         "SAFMN",
+        "MFRAN",
     ) and cfg["datasets"]["train"]["mode"] in ("DS_lrhr", "DS_realesrgan"):
         if cfg["network_G"]["netG"] == "DFDNet":
             # arch, edge, grayscale, landmarks

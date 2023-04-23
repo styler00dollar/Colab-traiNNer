@@ -679,6 +679,20 @@ def CreateGenerator(cfg, scale):
             upscaling_factor=scale,
         )
 
+    elif cfg["netG"] == "MFRAN":
+        from arch.mfran_arch import MFRAN
+
+        netG = MFRAN(
+            n_feats=cfg["n_feats"],
+            n_blocks=cfg["n_blocks"],
+            kernel_size=cfg["kernel_size_MFRAN"],
+            scale=scale,
+            div=cfg["div"],
+            rgb_range=cfg["rgb_range"],
+            n_colors=cfg["n_colors"],
+            path=cfg["path"],
+        )
+
     ############################
 
     if cfg["CEM"] is True:

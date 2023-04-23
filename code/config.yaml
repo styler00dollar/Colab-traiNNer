@@ -183,10 +183,22 @@ network_G:
     #netG: UpCunet2x_fast
 
     # SAFMN (2023)
-    netG: SAFMN
-    dim: 36
-    n_blocks: 8
-    ffn_scale: 2.0
+    #netG: SAFMN
+    #dim: 36
+    #n_blocks: 8
+    #ffn_scale: 2.0
+
+    # MFRAN (2023)
+    netG: MFRAN
+    n_feats: 64
+    n_blocks: 16
+    kernel_size_MFRAN: 3
+    scale: 2
+    n_blocks: 16
+    div: 2
+    rgb_range: 1
+    n_colors: 3
+    path: 4
 
     # ASRGAN:
     #which_model_G: asr_resnet # asr_resnet | asr_cnn
@@ -953,7 +965,7 @@ network_D:
 train: 
     # Adam8bit needs "pip install bitsandbytes-cuda111"
     # SGD_AGC needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
-    scheduler: Lion # Lion, Adam, AdamP, Adam, SGDP, MADGRAD, Adam8bit, SGD_AGC, cosangulargrad [maybe broken], tanangulargrad [maybe broken], Adan
+    scheduler: Lamb # Lamb, Lion, Adam, AdamP, Adam, SGDP, MADGRAD, Adam8bit, SGD_AGC, cosangulargrad [maybe broken], tanangulargrad [maybe broken], Adan
     # ACG needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
     AGC: False # currently only for generator, only works with certain optimizers
     lr_g: 0.0005 # 0.00005
@@ -1077,7 +1089,10 @@ train:
     hrf_perceptual_weight: 0
     force_fp16_hrf: True # not supported for cpu
 
-    ColorLoss_weight: 0 # converts rgb to yuv and calculates l1, expected input is rgb
+    # experimental color stuff
+    YUVColorLoss_weight: 0 # converts rgb to yuv and calculates l1, expected input is rgb
+    XYZColorLoss_weight: 0
+
     FrobeniusNormLoss_weight: 0
     GradientLoss_weight: 0
     MultiscalePixelLoss_weight: 0

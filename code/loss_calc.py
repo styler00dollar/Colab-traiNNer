@@ -19,7 +19,8 @@ from loss.loss import (
     FFTloss,
     OFLoss,
     L1_regularization,
-    ColorLoss,
+    YUVColorLoss,
+    XYZColorLoss,
     AverageLoss,
     GPLoss,
     CPLoss,
@@ -247,7 +248,9 @@ class AllLoss(pl.LightningModule):
         if cfg["train"]["force_fp16_hrf"] is True:
             self.hrf_perceptual_loss = self.hrf_perceptual_loss.half()
 
-        self.ColorLoss = ColorLoss()
+        self.YUVColorLoss = YUVColorLoss()
+        self.XYZColorLoss = XYZColorLoss()
+
         self.FrobeniusNormLoss = FrobeniusNormLoss()
         self.GradientLoss = GradientLoss()
         self.MultiscalePixelLoss = MultiscalePixelLoss()
@@ -527,13 +530,22 @@ class AllLoss(pl.LightningModule):
                 total_loss += Lap_forward
                 writer.add_scalar("loss/Lap", Lap_forward, global_step)
 
-            if self.cfg["train"]["ColorLoss_weight"] > 0:
-                ColorLoss_forward = self.cfg["train"]["ColorLoss_weight"] * (
-                    self.ColorLoss(out, hr_image)
+            if self.cfg["train"]["YUVColorLoss_weight"] > 0:
+                YUVColorLoss_forward = self.cfg["train"]["YUVColorLoss_weight"] * (
+                    self.YUVColorLoss(out, hr_image)
                 )
-                total_loss += ColorLoss_forward
+                total_loss += YUVColorLoss_forward
                 writer.add_scalar(
-                    "loss/ColorLoss" + log_suffix, ColorLoss_forward, global_step
+                    "loss/YUVColorLoss" + log_suffix, YUVColorLoss_forward, global_step
+                )
+
+            if self.cfg["train"]["XYZColorLoss_weight"] > 0:
+                XYZColorLoss_forward = self.cfg["train"]["XYZColorLoss_weight"] * (
+                    self.XYZColorLoss(out, hr_image)
+                )
+                total_loss += XYZColorLoss_forward
+                writer.add_scalar(
+                    "loss/XYZColorLoss" + log_suffix, XYZColorLoss_forward, global_step
                 )
 
             if self.cfg["train"]["FrobeniusNormLoss_weight"] > 0:

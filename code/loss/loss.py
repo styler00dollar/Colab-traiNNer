@@ -10,6 +10,7 @@ import math
 import numbers
 import torch.nn.functional as F
 import numpy as np
+import kornia
 
 # import pdb
 
@@ -482,9 +483,9 @@ class L1_regularization(torch.nn.Module):
 
 # TODO: testing
 # Color loss
-class ColorLoss(torch.nn.Module):
+class YUVColorLoss(torch.nn.Module):
     def __init__(self):
-        super(ColorLoss, self).__init__()
+        super(YUVColorLoss, self).__init__()
         self.criterion = torch.nn.L1Loss()
 
     def forward(self, input, target):
@@ -492,6 +493,15 @@ class ColorLoss(torch.nn.Module):
         target_uv = rgb_to_yuv(target, consts="uv")
         return self.criterion(input_uv, target_uv)
 
+class XYZColorLoss(torch.nn.Module):
+    def __init__(self):
+        super(XYZColorLoss, self).__init__()
+        self.criterion = torch.nn.L1Loss()
+
+    def forward(self, input, target):
+        input = kornia.color.rgb_to_xyz(input)
+        target = kornia.color.rgb_to_xyz(target)
+        return self.criterion(input[:,1:], target[:,1:])
 
 # TODO: testing
 # Averaging Downscale loss
