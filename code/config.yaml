@@ -1094,10 +1094,6 @@ train:
     hrf_perceptual_weight: 0
     force_fp16_hrf: True # not supported for cpu
 
-    # experimental color stuff
-    YUVColorLoss_weight: 0 # converts rgb to yuv and calculates l1, expected input is rgb
-    XYZColorLoss_weight: 0
-
     FrobeniusNormLoss_weight: 0
     GradientLoss_weight: 0
     MultiscalePixelLoss_weight: 0
@@ -1173,3 +1169,17 @@ train:
 
     # Metrics
     metrics: [] # PSNR | SSIM | AE | MSE
+
+    # EXPERIMENTAL
+    YUVColorLoss_weight: 0
+    XYZColorLoss_weight: 0
+    KullbackHistogramLoss_weight: 0 # only works in fp32
+    SalientRegionLoss_weight: 0 # only works in fp32, big values, use ~0.1 weight
+    glcmLoss_weight: 0 # big values, use ~0.001 weight
+    GradientDomainLoss_weight: 0
+    SobelLoss_weight: 0
+    SobelLossV2_weight: 0
+    ColorHarmonyLoss_weight: 0
+    VIT_FeatureLoss_weight: 0
+    VIT_MMD_FeatureLoss_weight: 0 # big values, use ~0.001 weight
+    LaplacianLoss_weight: 0

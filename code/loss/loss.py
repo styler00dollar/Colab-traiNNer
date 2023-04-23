@@ -11,6 +11,7 @@ import numbers
 import torch.nn.functional as F
 import numpy as np
 import kornia
+from transformers import ViTModel
 
 # import pdb
 
@@ -1844,3 +1845,551 @@ class CannyLoss(nn.Module):
             + self.loss(thresholded1, thresholded2) * self.thresholded_weight
             + self.loss(early_threshold1, early_threshold2) * self.early_threshold
         )
+
+
+################################################
+# VERY EXPERIMENTAL LOSS FUNCTIONS
+################################################
+
+################
+# KullbackHistogramLoss
+################
+
+
+class KullbackHistogramLoss(torch.nn.Module):
+    def __init__(self):
+        super(KullbackHistogramLoss, self).__init__()
+        self.criterion = torch.nn.L1Loss()
+
+    def color_histogram(self, x, bins):
+        batch_size, channels, height, width = x.shape
+        x = x.reshape(batch_size, channels, -1)
+        hist = torch.histc(x, bins=bins, min=0, max=1)
+        hist = hist / (height * width)
+        return hist
+
+    def kl_divergence(self, p, q):
+        p = F.normalize(p, p=1, dim=-1)
+        q = F.normalize(q, p=1, dim=-1)
+        tmp = torch.log(p / (q + 1e-8) + 1e-8)
+        kl = torch.sum(p * tmp, dim=-1)
+        return kl
+
+    def forward(self, imgl, img2, bins=64):
+        histl = self.color_histogram(imgl, bins=bins)
+        hist2 = self.color_histogram(img2, bins=bins)
+        loss = self.kl_divergence(histl, hist2) + self.kl_divergence(hist2, histl)
+        return loss.mean()
+
+
+################
+# Salient Region Loss using the Spectral Residual (SR) saliency detection method
+################
+
+
+class SpectralResidualSaliency(nn.Module):
+    def __init__(self):
+        super(SpectralResidualSaliency, self).__init__()
+
+    def forward(self, img):
+        img_gray = self.rgb2gray(img)
+        spectral_residual = self.compute_spectral_residual(img_gray)
+        saliency_map = self.gaussian_filter(spectral_residual)
+        return saliency_map
+
+    def rgb2gray(self, img):
+        return torch.mean(img, dim=1, keepdim=True)
+
+    def compute_spectral_residual(self, img_gray):
+        img_fft = torch.fft.fftn(img_gray, dim=(-2, -1))
+        img_log_amplitude = torch.log(torch.abs(img_fft) + 1e-8)
+        img_phase = img_fft / (img_log_amplitude + 1e-8)
+
+        img_log_amplitude_res = img_log_amplitude - F.avg_pool2d(
+            img_log_amplitude, kernel_size=3, stride=1, padding=1
+        )
+
+        spectral_residual = torch.fft.ifftn(
+            img_phase * torch.exp(img_log_amplitude_res), dim=(-2, -1)
+        )
+        return torch.abs(spectral_residual)
+
+    def gaussian_filter(self, img):
+        kernel_size = 9
+        kernel = torch.ones((1, 1, kernel_size, kernel_size), device=img.device) / (
+            kernel_size**2
+        )
+        return F.conv2d(img, kernel, padding=kernel_size // 2)
+
+
+class SalientRegionLoss(nn.Module):
+    def __init__(self, weight=1.0):
+        super(SalientRegionLoss, self).__init__()
+        self.saliency = SpectralResidualSaliency()
+        self.weight = weight
+
+    def forward(self, original_img, generated_img):
+        original_saliency_map = self.saliency(original_img)
+        generated_saliency_map = self.saliency(generated_img)
+
+        loss = F.l1_loss(original_saliency_map, generated_saliency_map)
+        return self.weight * loss
+
+
+###############
+# Texture Loss via Gray-Level Co-occurrence Matrix (GLCM)
+###############
+
+
+class glcmLoss(nn.Module):
+    def __init__(self):
+        super(glcmLoss, self).__init__()
+
+    def glcm(
+        self,
+        image,
+        distances,
+        angles,
+        levels=256,
+        symmetric=True,
+        device=None,
+    ):
+        n, h, w = image.shape
+        glcm = torch.zeros((levels, levels, len(distances), len(angles)), device=device)
+
+        angles = torch.tensor(angles, device=device)
+
+        for i, d in enumerate(distances):
+            dx = torch.round(d * torch.cos(angles)).long()
+            dy = torch.round(d * torch.sin(angles)).long()
+            shifted_images = [
+                torch.roll(image, shifts=(x, y), dims=(1, 2)) for x, y in zip(dx, dy)
+            ]
+
+            co_occurrence = torch.zeros((n, levels, levels, len(angles)), device=device)
+            for k, shifted_image in enumerate(shifted_images):
+                joint_indices = (image * levels + shifted_image).view(n, -1).long()
+                min_indices = torch.min(joint_indices).item()
+                max_indices = torch.max(joint_indices).item()
+
+                joint_histogram = torch.stack(
+                    [
+                        torch.histc(
+                            idx.float(),
+                            bins=levels * levels,
+                            min=min_indices,
+                            max=max_indices,
+                        )
+                        for idx in joint_indices
+                    ]
+                )
+                joint_histogram = joint_histogram.view(n, levels, levels)
+
+                co_occurrence[..., k] = joint_histogram
+
+            co_occurrence = co_occurrence.sum(dim=0)
+
+            if symmetric:
+                co_occurrence = co_occurrence + co_occurrence.transpose(0, 1).clone()
+
+            glcm[:, :, i, :] = co_occurrence / torch.sum(co_occurrence)
+
+        return glcm
+
+    def glcm_contrast(self, glcm):
+        levels = glcm.shape[0]
+        contrast = torch.tensor(
+            [[(i - j) ** 2 for j in range(levels)] for i in range(levels)],
+            device=glcm.device,
+        )
+        return torch.sum(glcm * contrast[:, :, None, None], dim=(0, 1))
+
+    def forward(
+        self,
+        original,
+        generated,
+        distances=[torch.tensor(1)],
+        angles=[
+            torch.tensor(0),
+            torch.tensor(torch.pi / 4),
+            torch.tensor(torch.pi / 2),
+            torch.tensor(3 * torch.pi / 4),
+        ],
+        levels=256,
+        device="cuda",
+    ):
+        distances = [d.to(device) for d in distances]
+        angles = [a.to(device) for a in angles]
+        original_gray = (original.mean(dim=1) * (levels - 1)).round().long()
+        generated_gray = (generated.mean(dim=1) * (levels - 1)).round().long()
+
+        original_glcm = self.glcm(
+            original_gray, distances, angles, levels, device=device
+        )
+        generated_glcm = self.glcm(
+            generated_gray, distances, angles, levels, device=device
+        )
+
+        loss = torch.mean(
+            torch.abs(
+                self.glcm_contrast(original_glcm) - self.glcm_contrast(generated_glcm)
+            )
+        )
+        return loss
+
+
+###############
+# GradientDomainLoss
+###############
+
+
+class GradientDomainLoss(nn.Module):
+    def __init__(self):
+        super(GradientDomainLoss, self).__init__()
+
+    def forward(self, original, generated):
+        original_grad_x = original[:, :, 1:, :] - original[:, :, :-1, :]
+        original_grad_y = original[:, :, :, 1:] - original[:, :, :, :-1]
+
+        generated_grad_x = generated[:, :, 1:, :] - generated[:, :, :-1, :]
+        generated_grad_y = generated[:, :, :, 1:] - generated[:, :, :, :-1]
+
+        loss_x = torch.mean(torch.abs(original_grad_x - generated_grad_x))
+        loss_y = torch.mean(torch.abs(original_grad_y - generated_grad_y))
+
+        loss = loss_x + loss_y
+
+        return loss
+
+
+###############
+# color harmony loss
+###############
+
+
+class ColorHarmonyLoss(nn.Module):
+    def __init__(self):
+        super(ColorHarmonyLoss, self).__init__()
+
+    def rgb_to_hsv(self, color):
+        r, g, b = color.unbind(dim=0)
+        max_val, _ = torch.max(color, dim=0)
+        min_val, _ = torch.min(color, dim=0)
+        diff = max_val - min_val
+
+        h = torch.where(
+            max_val == min_val,
+            torch.zeros_like(r),
+            torch.where(
+                max_val == r,
+                (g - b) / diff % 6,
+                torch.where(max_val == g, (b - r) / diff + 2, (r - g) / diff + 4),
+            ),
+        )
+        h = h / 6
+        s = torch.where(max_val == 0, torch.zeros_like(r), diff / max_val)
+        v = max_val
+        return torch.stack([h, s, v])
+
+    def hsv_to_rgb(self, color):
+        h, s, v = color.unbind()
+        c = v * s
+        x = c * (1 - torch.abs((h * 6) % 2 - 1))
+        m = v - c
+
+        r, g, b = (
+            torch.where(torch.logical_and(0 <= h, h < 1 / 6), c, x),
+            torch.where(torch.logical_and(1 / 6 <= h, h < 1 / 3), x, c),
+            torch.where(torch.logical_and(1 / 3 <= h, h < 1 / 2), c, x),
+        )
+        r, g, b = (
+            torch.where(torch.logical_and(1 / 2 <= h, h < 2 / 3), x, r),
+            torch.where(torch.logical_and(2 / 3 <= h, h < 5 / 6), c, g),
+            torch.where(torch.logical_and(1 / 3 <= h, h < 1 / 2), x, b),
+        )
+        r, g, b = (
+            torch.where(torch.logical_and(5 / 6 <= h, h <= 1), c, r),
+            torch.where(torch.logical_and(5 / 6 <= h, h <= 1), x, g),
+            torch.where(torch.logical_and(5 / 6 <= h, h <= 1), x, b),
+        )
+
+        return torch.stack([r + m, g + m, b + m])
+
+    def rotate_hue(self, color, angle):
+        hsv_color = self.rgb_to_hsv(color)
+        hsv_color[0] = (hsv_color[0] + angle) % 1
+        return self.hsv_to_rgb(hsv_color)
+
+    def harmony_fn(self, color):
+        color1 = self.rotate_hue(color, 1 / 3)
+        color2 = self.rotate_hue(color, 2 / 3)
+        return torch.stack([color1, color2])
+
+    def color_distance(self, color1, color2):
+        return torch.sum((color1 - color2) ** 2)
+
+    def forward(self, original, generated):
+        batch_size = original.size(0)
+        original_color = original.mean(dim=(2, 3))
+        generated_color = generated.mean(dim=(2, 3))
+
+        total_loss = 0.0
+        for b in range(batch_size):
+            original_harmony = self.harmony_fn(original_color[b])
+            generated_harmony = self.harmony_fn(generated_color[b])
+            total_loss += torch.mean(
+                self.color_distance(original_harmony, generated_harmony)
+            )
+
+        loss = total_loss / batch_size
+        return loss
+
+
+###############
+# SobelLoss
+###############
+
+
+class SobelLoss(nn.Module):
+    def __init__(self):
+        super(SobelLoss, self).__init__()
+        self.sobel_x_kernel = (
+            torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=torch.float32)
+            .unsqueeze(0)
+            .unsqueeze(0)
+        )
+        self.sobel_y_kernel = (
+            torch.tensor([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], dtype=torch.float32)
+            .unsqueeze(0)
+            .unsqueeze(0)
+        )
+
+    def forward(self, interpolated_frame, ground_truth_frame):
+        sobel_x_kernel = self.sobel_x_kernel.to(interpolated_frame.device)
+        sobel_y_kernel = self.sobel_y_kernel.to(interpolated_frame.device)
+
+        sobel_x_kernel = sobel_x_kernel.expand(
+            3, -1, -1, -1
+        )  # Expand kernel to match the number of channels in the input tensors
+        sobel_y_kernel = sobel_y_kernel.expand(
+            3, -1, -1, -1
+        )  # Expand kernel to match the number of channels in the input tensors
+
+        sobel_x_interpolated = F.conv2d(
+            interpolated_frame, sobel_x_kernel, padding=1, groups=3
+        )
+        sobel_y_interpolated = F.conv2d(
+            interpolated_frame, sobel_y_kernel, padding=1, groups=3
+        )
+
+        sobel_x_ground_truth = F.conv2d(
+            ground_truth_frame, sobel_x_kernel, padding=1, groups=3
+        )
+        sobel_y_ground_truth = F.conv2d(
+            ground_truth_frame, sobel_y_kernel, padding=1, groups=3
+        )
+
+        loss_x = F.l1_loss(sobel_x_interpolated, sobel_x_ground_truth)
+        loss_y = F.l1_loss(sobel_y_interpolated, sobel_y_ground_truth)
+
+        return loss_x + loss_y
+
+
+###############
+# SobelLossV2
+###############
+
+
+class SobelLossV2(nn.Module):
+    def __init__(self):
+        super(SobelLossV2, self).__init__()
+        self.mae = nn.L1Loss()
+        self.sector_to_dx_dy = {0: (0, 1), 1: (1, 1), 2: (1, 0), 3: (1, -1)}
+
+    def forward(self, pred, target):
+        pred_gray = kornia.color.rgb_to_grayscale(pred)
+        target_gray = kornia.color.rgb_to_grayscale(target)
+
+        edge_map = self._compute_edge_map(target_gray)
+        edge_loss = torch.mean(edge_map * self.mae(pred_gray, target_gray))
+
+        pixel_loss = self.mae(pred, target)
+
+        total_loss = pixel_loss + edge_loss
+        return total_loss
+
+    def _compute_edge_map(self, target_gray):
+        sobel_x_kernel = torch.tensor(
+            [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]],
+            dtype=torch.float32,
+            device=target_gray.device,
+        )
+        sobel_y_kernel = torch.tensor(
+            [[-1, -2, -1], [0, 0, 0], [1, 2, 1]],
+            dtype=torch.float32,
+            device=target_gray.device,
+        )
+
+        sobel_x_kernel = sobel_x_kernel.view(1, 1, 3, 3)
+        sobel_y_kernel = sobel_y_kernel.view(1, 1, 3, 3)
+
+        grad_x = F.conv2d(target_gray, sobel_x_kernel, padding=1)
+        grad_y = F.conv2d(target_gray, sobel_y_kernel, padding=1)
+
+        magnitude = torch.sqrt(grad_x**2 + grad_y**2)
+        direction = torch.atan2(grad_y, grad_x)
+
+        # Non-maximum suppression
+        sector = ((direction + math.pi) * 4 / (2 * math.pi)).floor() % 4
+        edge_map = torch.zeros_like(magnitude)
+
+        for s in range(4):
+            if torch.eq(sector[:, :, None, None], s).all():
+                continue
+
+            dx, dy = self.sector_to_dx_dy[s]
+            edge_map = torch.where(
+                (magnitude > torch.roll(magnitude, shifts=(dy, dx), dims=(2, 3)))
+                & (magnitude > torch.roll(magnitude, shifts=(-dy, -dx), dims=(2, 3))),
+                magnitude,
+                edge_map,
+            )
+
+        return edge_map.view(*target_gray.shape)
+
+
+###############
+# LaplacianLoss
+###############
+
+
+class LaplacianLoss(nn.Module):
+    def __init__(self):
+        super(LaplacianLoss, self).__init__()
+        self.laplacian_kernel = (
+            torch.tensor([[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]], dtype=torch.float32)
+            .unsqueeze(0)
+            .unsqueeze(0)
+        )
+
+    def forward(self, interpolated_frame, ground_truth_frame):
+        laplacian_kernel = self.laplacian_kernel.to(interpolated_frame.device)
+        laplacian_kernel = laplacian_kernel.expand(
+            3, -1, -1, -1
+        )  # Expand kernel to match the number of channels in the input tensors
+
+        lap_interpolated = F.conv2d(
+            interpolated_frame, laplacian_kernel, padding=1, groups=3
+        )
+        lap_ground_truth = F.conv2d(
+            ground_truth_frame, laplacian_kernel, padding=1, groups=3
+        )
+
+        loss = F.l1_loss(lap_interpolated, lap_ground_truth)
+        return loss
+
+
+###############
+# Feature Loss with VIT
+###############
+
+import torchvision
+
+
+class VIT_FeatureLoss(nn.Module):
+    def __init__(self, device="cuda"):
+        super(VIT_FeatureLoss, self).__init__()
+        self.device = device
+        self.vit_model = ViTModel.from_pretrained(
+            "google/vit-base-patch16-224", output_hidden_states=True
+        )
+        # self.vit_model = ViTModel.from_pretrained(
+        #    "google/vit-large-patch16-224", output_hidden_states=True
+        # )
+        self.criterion = nn.MSELoss()
+
+    def forward(self, real_images, generated_images):
+        if real_images.shape[-1] != 224 or real_images.shape[-2] != 224:
+            real_images = torchvision.transforms.functional.resize(
+                real_images, (224, 224)
+            )
+        if generated_images.shape[-1] != 224 or generated_images.shape[-2] != 224:
+            generated_images = torchvision.transforms.functional.resize(
+                generated_images, (224, 224)
+            )
+
+        # Extract features from real images
+        with torch.no_grad():
+            real_features = (
+                self.vit_model(real_images.to(self.device)).hidden_states[-1].detach()
+            )
+
+        # Extract features from generated images
+        generated_features = self.vit_model(
+            generated_images.to(self.device)
+        ).hidden_states[-1]
+
+        # Compute feature loss
+        loss = self.criterion(real_features, generated_features)
+        return loss
+
+
+###############
+# Feature Loss with Maximum Mean Discrepancy (MMD)
+###############
+
+
+class VIT_MMD_FeatureLoss(nn.Module):
+    def __init__(self, device="cuda", sigma=1):
+        super(VIT_MMD_FeatureLoss, self).__init__()
+        self.device = device
+        self.vit_model = ViTModel.from_pretrained(
+            "google/vit-base-patch16-224", output_hidden_states=True
+        )
+        self.criterion = nn.MSELoss()
+        self.sigma = sigma
+
+    def forward(self, real_images, generated_images):
+        if real_images.shape[-1] != 224 or real_images.shape[-2] != 224:
+            real_images = torchvision.transforms.functional.resize(
+                real_images, (224, 224)
+            )
+        if generated_images.shape[-1] != 224 or generated_images.shape[-2] != 224:
+            generated_images = torchvision.transforms.functional.resize(
+                generated_images, (224, 224)
+            )
+
+        # Extract features from real images
+        with torch.no_grad():
+            real_features = (
+                self.vit_model(real_images.to(self.device)).hidden_states[-1].detach()
+            )
+
+        # Extract features from generated images
+        generated_features = self.vit_model(
+            generated_images.to(self.device)
+        ).hidden_states[-1]
+
+        # Compute feature loss
+        mse_loss = self.criterion(real_features, generated_features)
+
+        # Compute MMD loss
+        mmd_loss = self.compute_mmd_loss(real_features, generated_features)
+
+        # Total loss
+        loss = mse_loss + mmd_loss
+
+        return loss
+
+    def compute_mmd_loss(self, real_features, generated_features):
+        # Compute mean embeddings
+        real_mean = real_features.mean(0)
+        generated_mean = generated_features.mean(0)
+
+        # Compute MMD distance
+        mmd_dist = torch.norm(real_mean - generated_mean)
+
+        # Regularize MMD loss
+        mmd_loss = self.sigma * mmd_dist
+
+        return mmd_loss

@@ -4,9 +4,6 @@ from loss.loss import (
     feature_matching_loss,
     FrobeniusNormLoss,
     LapLoss,
-    CharbonnierLoss,
-    GANLoss,
-    GradientPenaltyLoss,
     HFENLoss,
     TVLoss,
     GradientLoss,
@@ -14,22 +11,28 @@ from loss.loss import (
     RelativeL1,
     L1CosineSim,
     ClipL1,
-    MaskedL1Loss,
     MultiscalePixelLoss,
     FFTloss,
     OFLoss,
-    L1_regularization,
     YUVColorLoss,
     XYZColorLoss,
-    AverageLoss,
     GPLoss,
     CPLoss,
-    SPL_ComputeWithTrace,
     SPLoss,
     Contextual_Loss,
     StyleLoss,
     ConsistencyLoss,
     CannyLoss,
+    KullbackHistogramLoss,
+    SalientRegionLoss,
+    glcmLoss,
+    GradientDomainLoss,
+    SobelLoss,
+    ColorHarmonyLoss,
+    VIT_FeatureLoss,
+    VIT_MMD_FeatureLoss,
+    LaplacianLoss,
+    SobelLossV2,
 )
 from piq import (
     SSIMLoss,
@@ -242,6 +245,17 @@ class AllLoss(pl.LightningModule):
             thresholded_weight=cfg["train"]["canny_thresholded_weight"],
             early_threshold=cfg["train"]["canny_early_threshold"],
         )
+
+        self.KullbackHistogramLoss = KullbackHistogramLoss()
+        self.SalientRegionLoss = SalientRegionLoss()
+        self.glcmLoss = glcmLoss()
+        self.GradientDomainLoss = GradientDomainLoss()
+        self.SobelLoss = SobelLoss()
+        self.ColorHarmonyLoss = ColorHarmonyLoss()
+        self.VIT_FeatureLoss = VIT_FeatureLoss()
+        self.VIT_MMD_FeatureLoss = VIT_MMD_FeatureLoss()
+        self.LaplacianLoss = LaplacianLoss()
+        self.SobelLossV2 = SobelLossV2()
 
         from arch.hrf_perceptual import ResNetPL
 
@@ -737,6 +751,118 @@ class AllLoss(pl.LightningModule):
             )
             total_loss += Canny_forward
             writer.add_scalar("loss/Canny" + log_suffix, Canny_forward, global_step)
+
+        # experimental loss
+
+        if self.cfg["train"]["KullbackHistogramLoss_weight"] > 0:
+            KullbackHistogramLoss_forward = self.cfg["train"][
+                "KullbackHistogramLoss_weight"
+            ] * self.KullbackHistogramLoss(out.float(), hr_image.float())
+            total_loss += KullbackHistogramLoss_forward
+            writer.add_scalar(
+                "loss/KullbackHistogramLoss" + log_suffix,
+                KullbackHistogramLoss_forward,
+                global_step,
+            )
+
+        if self.cfg["train"]["SalientRegionLoss_weight"] > 0:
+            SalientRegionLoss_forward = self.cfg["train"][
+                "SalientRegionLoss_weight"
+            ] * self.SalientRegionLoss(out.float(), hr_image.float())
+            total_loss += SalientRegionLoss_forward
+            writer.add_scalar(
+                "loss/SalientRegionLoss" + log_suffix,
+                SalientRegionLoss_forward,
+                global_step,
+            )
+
+        if self.cfg["train"]["glcmLoss_weight"] > 0:
+            glcmLoss_forward = self.cfg["train"]["glcmLoss_weight"] * self.glcmLoss(
+                out, hr_image
+            )
+            total_loss += glcmLoss_forward
+            writer.add_scalar(
+                "loss/glcm" + log_suffix,
+                glcmLoss_forward,
+                global_step,
+            )
+
+        if self.cfg["train"]["GradientDomainLoss_weight"] > 0:
+            GradientDomainLoss_forward = self.cfg["train"][
+                "GradientDomainLoss_weight"
+            ] * self.GradientDomainLoss(out, hr_image)
+            total_loss += GradientDomainLoss_forward
+            writer.add_scalar(
+                "loss/GradientDomainLoss" + log_suffix,
+                GradientDomainLoss_forward,
+                global_step,
+            )
+
+        if self.cfg["train"]["SobelLoss_weight"] > 0:
+            SobelLoss_forward = self.cfg["train"]["SobelLoss_weight"] * self.SobelLoss(
+                out, hr_image
+            )
+            total_loss += SobelLoss_forward
+            writer.add_scalar(
+                "loss/SobelLoss" + log_suffix,
+                SobelLoss_forward,
+                global_step,
+            )
+
+        if self.cfg["train"]["ColorHarmonyLoss_weight"] > 0:
+            ColorHarmonyLoss_forward = self.cfg["train"][
+                "ColorHarmonyLoss_weight"
+            ] * self.ColorHarmonyLoss(out, hr_image)
+            total_loss += ColorHarmonyLoss_forward
+            writer.add_scalar(
+                "loss/ColorHarmonyLoss" + log_suffix,
+                ColorHarmonyLoss_forward,
+                global_step,
+            )
+
+        if self.cfg["train"]["VIT_FeatureLoss_weight"] > 0:
+            VIT_FeatureLoss_forward = self.cfg["train"][
+                "VIT_FeatureLoss_weight"
+            ] * self.VIT_FeatureLoss(out, hr_image)
+            total_loss += VIT_FeatureLoss_forward
+            writer.add_scalar(
+                "loss/VIT_FeatureLoss" + log_suffix,
+                VIT_FeatureLoss_forward,
+                global_step,
+            )
+
+        if self.cfg["train"]["VIT_MMD_FeatureLoss_weight"] > 0:
+            VIT_MMD_FeatureLoss_forward = self.cfg["train"][
+                "VIT_MMD_FeatureLoss_weight"
+            ] * self.VIT_MMD_FeatureLoss(out, hr_image)
+            total_loss += VIT_MMD_FeatureLoss_forward
+            writer.add_scalar(
+                "loss/VIT_MMD_FeatureLoss" + log_suffix,
+                VIT_MMD_FeatureLoss_forward,
+                global_step,
+            )
+
+        if self.cfg["train"]["LaplacianLoss_weight"] > 0:
+            LaplacianLoss_forward = self.cfg["train"][
+                "LaplacianLoss_weight"
+            ] * self.LaplacianLoss(out, hr_image)
+            total_loss += LaplacianLoss_forward
+            writer.add_scalar(
+                "loss/LaplacianLoss" + log_suffix,
+                LaplacianLoss_forward,
+                global_step,
+            )
+
+        if self.cfg["train"]["SobelLossV2_weight"] > 0:
+            SobelLossV2_forward = self.cfg["train"][
+                "SobelLossV2_weight"
+            ] * self.SobelLossV2(out, hr_image)
+            total_loss += SobelLossV2_forward
+            writer.add_scalar(
+                "loss/SobelLossV2" + log_suffix,
+                SobelLossV2_forward,
+                global_step,
+            )
 
         #########################
         # exotic loss
