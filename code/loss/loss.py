@@ -493,6 +493,7 @@ class YUVColorLoss(torch.nn.Module):
         target_uv = rgb_to_yuv(target, consts="uv")
         return self.criterion(input_uv, target_uv)
 
+
 class XYZColorLoss(torch.nn.Module):
     def __init__(self):
         super(XYZColorLoss, self).__init__()
@@ -501,7 +502,8 @@ class XYZColorLoss(torch.nn.Module):
     def forward(self, input, target):
         input = kornia.color.rgb_to_xyz(input)
         target = kornia.color.rgb_to_xyz(target)
-        return self.criterion(input[:,1:], target[:,1:])
+        return self.criterion(input[:, 1:], target[:, 1:])
+
 
 # TODO: testing
 # Averaging Downscale loss
@@ -1771,6 +1773,16 @@ class Canny(nn.Module):
             == early_threshold.size()
         )
 
+        if blurred_img.dim() > 4:
+            return (
+                blurred_img.squeeze(0),
+                grad_mag.squeeze(0),
+                grad_orientation.squeeze(0),
+                thin_edges.squeeze(0),
+                thresholded.squeeze(0),
+                early_threshold.squeeze(0),
+            )
+
         return (
             blurred_img,
             grad_mag,
@@ -1783,19 +1795,52 @@ class Canny(nn.Module):
 
 class CannyLoss(nn.Module):
     def __init__(
-        self, alpha=0.7, thin_edges_weight=1, thresholded_weight=1, threshold=5
+        self,
+        threshold=5,
+        blurred_img_weight=0.1,
+        grad_mag_weight=0.1,
+        grad_orientation_weight=0.1,
+        thin_edges_weight=0.5,
+        thresholded_weight=0.5,
+        early_threshold=0.5,
     ):
         super(CannyLoss, self).__init__()
+        self.blurred_img_weight = blurred_img_weight
+        self.grad_mag_weight = grad_mag_weight
+        self.grad_orientation_weight = grad_orientation_weight
+        self.thin_edges_weight = thin_edges_weight
+        self.thresholded_weight = thresholded_weight
+        self.early_threshold = early_threshold
+
         self.canny = Canny(threshold)
         self.loss = nn.L1Loss()
         self.thin_edges_weight = thin_edges_weight
         self.thresholded_weight = thresholded_weight
 
     def forward(self, pred, target):
-        _, _, _, thin_edges1, thresholded1, _ = self.canny(pred)
-        _, _, _, thin_edges2, thresholded2, _ = self.canny(target)
+        (
+            blurred_img1,
+            grad_mag1,
+            grad_orientation1,
+            thin_edges1,
+            thresholded1,
+            early_threshold1,
+        ) = self.canny(pred)
+        (
+            blurred_img2,
+            grad_mag2,
+            grad_orientation2,
+            thin_edges2,
+            thresholded2,
+            early_threshold2,
+        ) = self.canny(target)
 
         return (
-            self.loss(thin_edges1, thin_edges2) * self.thin_edges_weight
+            self.loss(blurred_img1, blurred_img2) * self.blurred_img_weight
+            + self.loss(grad_mag1, grad_mag2) * self.grad_mag_weight
+            + self.loss(grad_orientation1, grad_orientation2)
+            * self.grad_orientation_weight
+            + self.loss(thin_edges1, thin_edges2) * self.thin_edges_weight
             + self.loss(thresholded1, thresholded2) * self.thresholded_weight
+            + self.loss(early_threshold1, early_threshold2) * self.early_threshold
         )

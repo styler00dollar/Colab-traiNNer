@@ -233,10 +233,13 @@ class AllLoss(pl.LightningModule):
         self.ConsistencyLoss = ConsistencyLoss()
 
         self.CannyLoss = CannyLoss(
-            alpha=cfg["train"]["canny_alpha"],
-            thin_edges_weight=cfg["train"]["thin_edges_weight"],
-            thresholded_weight=cfg["train"]["thresholded_weight"],
             threshold=cfg["train"]["canny_threshold"],
+            blurred_img_weight=cfg["train"]["canny_blurred_img_weight"],
+            grad_mag_weight=cfg["train"]["canny_grad_mag_weight"],
+            grad_orientation_weight=cfg["train"]["canny_grad_mag_weight"],
+            thin_edges_weight=cfg["train"]["canny_thin_edges_weight"],
+            thresholded_weight=cfg["train"]["canny_thresholded_weight"],
+            early_threshold=cfg["train"]["canny_early_threshold"],
         )
 
         from arch.hrf_perceptual import ResNetPL
