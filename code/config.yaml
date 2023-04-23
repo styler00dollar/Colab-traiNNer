@@ -968,6 +968,11 @@ train:
     scheduler: Lamb # Lamb, Lion, Adam, AdamP, Adam, SGDP, MADGRAD, Adam8bit, SGD_AGC, cosangulargrad [maybe broken], tanangulargrad [maybe broken], Adan
     # ACG needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
     AGC: False # currently only for generator, only works with certain optimizers
+    gradient_clipping_G: true
+    gradient_clipping_G_value: 1
+    gradient_clipping_D: true
+    gradient_clipping_D_value: 1
+
     lr_g: 0.0005 # 0.00005
     lr_d: 0.0005
     
