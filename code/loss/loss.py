@@ -2319,18 +2319,19 @@ class VIT_FeatureLoss(nn.Module):
             )
 
         # Extract features from real images
+        loss = 0
         with torch.no_grad():
             real_features = (
                 self.vit_model(real_images.to(self.device)).hidden_states[-1].detach()
             )
 
-        # Extract features from generated images
-        generated_features = self.vit_model(
-            generated_images.to(self.device)
-        ).hidden_states[-1]
+            # Extract features from generated images
+            generated_features = self.vit_model(
+                generated_images.to(self.device)
+            ).hidden_states[-1]
 
-        # Compute feature loss
-        loss = self.criterion(real_features, generated_features)
+            # Compute feature loss
+            loss = self.criterion(real_features, generated_features)
         return loss
 
 
@@ -2360,24 +2361,25 @@ class VIT_MMD_FeatureLoss(nn.Module):
             )
 
         # Extract features from real images
+        loss = 0
         with torch.no_grad():
             real_features = (
                 self.vit_model(real_images.to(self.device)).hidden_states[-1].detach()
             )
 
-        # Extract features from generated images
-        generated_features = self.vit_model(
-            generated_images.to(self.device)
-        ).hidden_states[-1]
+            # Extract features from generated images
+            generated_features = self.vit_model(
+                generated_images.to(self.device)
+            ).hidden_states[-1]
 
-        # Compute feature loss
-        mse_loss = self.criterion(real_features, generated_features)
+            # Compute feature loss
+            mse_loss = self.criterion(real_features, generated_features)
 
-        # Compute MMD loss
-        mmd_loss = self.compute_mmd_loss(real_features, generated_features)
+            # Compute MMD loss
+            mmd_loss = self.compute_mmd_loss(real_features, generated_features)
 
-        # Total loss
-        loss = mse_loss + mmd_loss
+            # Total loss
+            loss = mse_loss + mmd_loss
 
         return loss
 
