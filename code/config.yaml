@@ -1185,8 +1185,9 @@ train:
     LaplacianLoss_weight: 0
 
     TIMM_FeatureLoss_weight: 1 
-    TIMM_FeatureLoss_arch: davit_tiny # davit_tiny, davit_huge
-    TIMM_FeatureLoss_resolution: 224
+    # https://github.com/huggingface/pytorch-image-models/blob/main/results/results-imagenet.csv
+    TIMM_FeatureLoss_arch: maxvit_xlarge_tf_512 # davit_small (224), davit_base (224), maxvit_xlarge_tf_512, tf_efficientnetv2_b0 (224), tf_efficientnet_l2 (800)
+    TIMM_FeatureLoss_resolution: 512
     TIMM_FeatureLoss_fp16: True
     TIMM_FeatureLoss_criterion: huber # huber, mse, l1, cross_entropy, kullback
     TIMM_FeatureLoss_normalize: True
