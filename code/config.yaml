@@ -181,6 +181,7 @@ network_G:
 
     # CUGAN
     netG: UpCunet2x # UpCunet2x_fast / UpCunet2x
+    pro_mode: True
 
     # SAFMN (2023)
     #netG: SAFMN

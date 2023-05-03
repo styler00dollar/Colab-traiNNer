@@ -16,7 +16,7 @@ class SEBlock(nn.Module):
         )
 
     def forward(self, x):
-        if "Half" in x.type():  # torch.HalfTensor/torch.cuda.HalfTensor
+        if "Half" in x.type():
             x0 = torch.mean(x.float(), dim=(2, 3), keepdim=True).half()
         else:
             x0 = torch.mean(x, dim=(2, 3), keepdim=True)
@@ -216,20 +216,20 @@ class UNet2(nn.Module):
         z = self.conv_bottom(x5)
         return z
 
-    def forward_a(self, x):  # conv234结尾有se
+    def forward_a(self, x):
         x1 = self.conv1(x)
         x2 = self.conv1_down(x1)
         x2 = F.leaky_relu(x2, 0.1, inplace=True)
         x2 = self.conv2.conv(x2)
         return x1, x2
 
-    def forward_b(self, x2):  # conv234结尾有se
+    def forward_b(self, x2):
         x3 = self.conv2_down(x2)
         x3 = F.leaky_relu(x3, 0.1, inplace=True)
         x3 = self.conv3.conv(x3)
         return x3
 
-    def forward_c(self, x2, x3):  # conv234结尾有se
+    def forward_c(self, x2, x3):
         x3 = self.conv3_up(x3)
         x3 = F.leaky_relu(x3, 0.1, inplace=True)
 
@@ -237,7 +237,7 @@ class UNet2(nn.Module):
         x4 = self.conv4.conv(x2 + x3)
         return x4
 
-    def forward_d(self, x1, x4):  # conv234结尾有se
+    def forward_d(self, x1, x4):
         x4 = self.conv4_up(x4)
         x4 = F.leaky_relu(x4, 0.1, inplace=True)
 
@@ -250,13 +250,20 @@ class UNet2(nn.Module):
 
 
 class UpCunet2x(nn.Module):
-    def __init__(self, in_channels=3, out_channels=3):
+    def __init__(self, in_channels=3, out_channels=3, pro_mode=True):
         super(UpCunet2x, self).__init__()
         self.unet1 = UNet1(in_channels, out_channels, deconv=True)
         self.unet2 = UNet2(in_channels, out_channels, deconv=False)
+        self.pro_mode = pro_mode
 
-    def forward(self, x):
+    def forward(self, x):  # 1.7G
+        x = torch.clamp(x, 0, 1)
+
+        if self.pro_mode:
+            x = (x * 0.7) + 0.15
+
         n, c, h0, w0 = x.shape
+
         ph = ((h0 - 1) // 2 + 1) * 2
         pw = ((w0 - 1) // 2 + 1) * 2
         x = F.pad(x, (18, 18 + pw - w0, 18, 18 + ph - h0), "reflect")
@@ -266,47 +273,65 @@ class UpCunet2x(nn.Module):
         x = torch.add(x0, x1)
         if w0 != pw or h0 != ph:
             x = x[:, :, : h0 * 2, : w0 * 2]
+
+        if self.pro_mode:
+            x = (x - 0.15) / 0.7
+
         return x
 
 
-class UpCunet3x(nn.Module):  # 完美tile，全程无损
-    def __init__(self, in_channels=3, out_channels=3):
+class UpCunet3x(nn.Module):
+    def __init__(self, in_channels=3, out_channels=3, pro_mode=True):
         super(UpCunet3x, self).__init__()
         self.unet1 = UNet1x3(in_channels, out_channels, deconv=True)
         self.unet2 = UNet2(in_channels, out_channels, deconv=False)
+        self.pro_mode = pro_mode
 
-    def forward(self, x):  # 1.7G
+    def forward(self, x):
+        x = torch.clamp(x, 0, 1)
+
+        if self.pro_mode:
+            x = (x * 0.7) + 0.15
+
         n, c, h0, w0 = x.shape
-        # if(tile_mode==0):#不tile
 
         ph = ((h0 - 1) // 4 + 1) * 4
         pw = ((w0 - 1) // 4 + 1) * 4
-        x = F.pad(x, (14, 14 + pw - w0, 14, 14 + ph - h0), "reflect")  # 需要保证被2整除
+        x = F.pad(x, (14, 14 + pw - w0, 14, 14 + ph - h0), "reflect")
         x = self.unet1.forward(x)
         x0 = self.unet2.forward(x)
         x1 = F.pad(x, (-20, -20, -20, -20))
         x = torch.add(x0, x1)
         if w0 != pw or h0 != ph:
             x = x[:, :, : h0 * 3, : w0 * 3]
+
+        if self.pro_mode:
+            x = (x - 0.15) / 0.7
+
         return x
 
 
-class UpCunet4x(nn.Module):  # 完美tile，全程无损
-    def __init__(self, in_channels=3, out_channels=3):
+class UpCunet4x(nn.Module):
+    def __init__(self, in_channels=3, out_channels=3, pro_mode=True):
         super(UpCunet4x, self).__init__()
         self.unet1 = UNet1(in_channels, 64, deconv=True)
         self.unet2 = UNet2(64, 64, deconv=False)
         self.ps = nn.PixelShuffle(2)
         self.conv_final = nn.Conv2d(64, 12, 3, 1, padding=0, bias=True)
+        self.pro_mode = pro_mode
 
     def forward(self, x):
+        x = torch.clamp(x, 0, 1)
+
+        if self.pro_mode:
+            x = (x * 0.7) + 0.15
+
         n, c, h0, w0 = x.shape
         x00 = x
-        # if(tile_mode==0):#不tile
 
         ph = ((h0 - 1) // 2 + 1) * 2
         pw = ((w0 - 1) // 2 + 1) * 2
-        x = F.pad(x, (19, 19 + pw - w0, 19, 19 + ph - h0), "reflect")  # 需要保证被2整除
+        x = F.pad(x, (19, 19 + pw - w0, 19, 19 + ph - h0), "reflect")
         x = self.unet1.forward(x)
         x0 = self.unet2.forward(x)
         x1 = F.pad(x, (-20, -20, -20, -20))
@@ -317,6 +342,10 @@ class UpCunet4x(nn.Module):  # 完美tile，全程无损
         if w0 != pw or h0 != ph:
             x = x[:, :, : h0 * 4, : w0 * 4]
         x += F.interpolate(x00, scale_factor=4, mode="nearest")
+
+        if self.pro_mode:
+            x = (x - 0.15) / 0.7
+
         return x
 
 
@@ -343,15 +372,21 @@ class pixel_unshuffle(nn.Module):
 
 
 class UpCunet2x_fast(nn.Module):
-    def __init__(self, in_channels=3, out_channels=3):
+    def __init__(self, in_channels=3, out_channels=3, pro_mode=True):
         super(UpCunet2x_fast, self).__init__()
         self.unet1 = UNet1(12, 64, deconv=True)
         self.unet2 = UNet2(64, 64, deconv=False)
         self.ps = nn.PixelShuffle(2)
         self.conv_final = nn.Conv2d(64, 12, 3, 1, padding=0, bias=True)
         self.inv = pixel_unshuffle(2)
+        self.pro_mode = pro_mode
 
     def forward(self, x):
+        x = torch.clamp(x, 0, 1)
+
+        if self.pro_mode:
+            x = (x * 0.7) + 0.15
+
         n, c, h0, w0 = x.shape
         x00 = x
         ph = ((h0 - 1) // 2 + 1) * 2
@@ -368,4 +403,8 @@ class UpCunet2x_fast(nn.Module):
         if w0 != pw or h0 != ph:
             x = x[:, :, : h0 * 2, : w0 * 2]
         x += F.interpolate(x00, scale_factor=2, mode="nearest")
+
+        if self.pro_mode:
+            x = (x - 0.15) / 0.7
+
         return x

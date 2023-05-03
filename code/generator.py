@@ -667,12 +667,12 @@ def CreateGenerator(cfg, scale):
     elif cfg["netG"] == "UpCunet2x":
         from arch.cugan_arch import UpCunet2x
 
-        netG = UpCunet2x()
+        netG = UpCunet2x(pro_mode=cfg["pro_mode"])
 
     elif cfg["netG"] == "UpCunet2x_fast":
         from arch.cugan_arch import UpCunet2x_fast
 
-        netG = UpCunet2x_fast()
+        netG = UpCunet2x_fast(pro_mode=cfg["pro_mode"])
 
     elif cfg["netG"] == "SAFMN":
         from arch.safmn_arch import SAFMN
