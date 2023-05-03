@@ -1185,7 +1185,8 @@ train:
     LaplacianLoss_weight: 0
 
     TIMM_FeatureLoss_weight: 1 
-    TIMM_FeatureLoss_arch: davit_huge # davit_tiny, davit_huge
+    TIMM_FeatureLoss_arch: davit_tiny # davit_tiny, davit_huge
     TIMM_FeatureLoss_resolution: 224
-    TIMM_FeatureLoss_arch_fp16: True
-    TIMM_FeatureLoss_arch_criterion: kullback # huber, mse, l1, cross_entropy, kullback
+    TIMM_FeatureLoss_fp16: True
+    TIMM_FeatureLoss_criterion: huber # huber, mse, l1, cross_entropy, kullback
+    TIMM_FeatureLoss_normalize: True

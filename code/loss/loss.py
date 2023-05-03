@@ -2410,14 +2410,24 @@ class TIMM_FeatureLoss(nn.Module):
         resolution=224,
         fp16=False,
         criterion="huber",
+        normalize=False
     ):
         super(TIMM_FeatureLoss, self).__init__()
         self.fp16 = fp16
         self.resolution = resolution
         self.model = timm.create_model(model_arch, features_only=True, pretrained=True)
         self.model.cuda().eval()
+        
+        self.normalize = normalize
+        if normalize:
+            self.mean = torch.tensor([0.485, 0.456, 0.406], device="cuda").view(1, 3, 1, 1)
+            self.std = torch.tensor([0.229, 0.224, 0.225], device="cuda").view(1, 3, 1, 1)
+
         if fp16:
             self.model.half()
+        if fp16 and normalize:
+            self.mean = self.mean.half()
+            self.std = self.std.half()
 
         if criterion == "huber":
             self.criterion = nn.HuberLoss()
@@ -2434,6 +2444,10 @@ class TIMM_FeatureLoss(nn.Module):
         if self.fp16:
             real_images = real_images.half()
             generated_images = generated_images.half()
+
+        if self.normalize:
+            real_images = (real_images - self.mean) / self.std
+            generated_images = (generated_images - self.mean) / self.std
 
         if (
             real_images.shape[-1] != self.resolution
