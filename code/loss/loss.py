@@ -12,6 +12,7 @@ import torch.nn.functional as F
 import numpy as np
 import kornia
 from transformers import ViTModel
+import timm
 
 # import pdb
 
@@ -2395,3 +2396,68 @@ class VIT_MMD_FeatureLoss(nn.Module):
         mmd_loss = self.sigma * mmd_dist
 
         return mmd_loss
+
+
+###############
+# TIMM feature loss
+###############
+
+
+class TIMM_FeatureLoss(nn.Module):
+    def __init__(
+        self,
+        model_arch="davit_tiny",
+        resolution=224,
+        fp16=False,
+        criterion="huber",
+    ):
+        super(TIMM_FeatureLoss, self).__init__()
+        self.fp16 = fp16
+        self.resolution = resolution
+        self.model = timm.create_model(model_arch, features_only=True, pretrained=True)
+        self.model.cuda().eval()
+        if fp16:
+            self.model.half()
+
+        if criterion == "huber":
+            self.criterion = nn.HuberLoss()
+        elif criterion == "mse":
+            self.criterion = nn.MSELoss()
+        elif criterion == "l1":
+            self.criterion = nn.L1Loss()
+        elif criterion == "cross_entropy":
+            self.criterion = nn.CrossEntropyLoss()
+        elif criterion == "kullback":
+            self.criterion = nn.KLDivLoss()
+
+    def forward(self, real_images, generated_images):
+        if self.fp16:
+            real_images = real_images.half()
+            generated_images = generated_images.half()
+
+        if (
+            real_images.shape[-1] != self.resolution
+            or real_images.shape[-2] != self.resolution
+        ):
+            real_images = torchvision.transforms.functional.resize(
+                real_images, (self.resolution, self.resolution)
+            )
+        if (
+            generated_images.shape[-1] != self.resolution
+            or generated_images.shape[-2] != self.resolution
+        ):
+            generated_images = torchvision.transforms.functional.resize(
+                generated_images, (self.resolution, self.resolution)
+            )
+
+        # Extract features from real images
+        loss = 0
+        with torch.no_grad():
+            real_features = self.model(real_images)[-1].detach()
+
+            # Extract features from generated images
+            generated_features = self.model(generated_images)[-1]
+
+            # Compute feature loss
+            loss = self.criterion(real_features, generated_features)
+        return loss

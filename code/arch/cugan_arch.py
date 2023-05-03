@@ -369,33 +369,3 @@ class UpCunet2x_fast(nn.Module):
             x = x[:, :, : h0 * 2, : w0 * 2]
         x += F.interpolate(x00, scale_factor=2, mode="nearest")
         return x
-
-
-model = UpCunet2x_fast()
-torch.save(model.state_dict(), "CUGAN_FAST.pth")
-
-"""
-model = UpCunet2x_fast()
-model.cuda().eval()
-input = torch.rand(1,3,720,1280).cuda()
-out = model(input)
-print(out.shape)
-
-dynamic_axes = {
-    "input": {0: "batch_size", 2: "width", 3: "height"},
-    "output": {0: "batch_size", 2: "width", 3: "height"},
-}
-dummy_input = torch.rand(1, 3, 64, 64).cuda()
-
-# fp16
-torch.onnx.export(
-    model.half(),
-    dummy_input.half(),
-    "UpCunet2x_fast_op17.onnx",
-    opset_version=17,
-    verbose=False,
-    input_names=["input"],
-    output_names=["output"],
-    dynamic_axes=dynamic_axes,
-)
-"""

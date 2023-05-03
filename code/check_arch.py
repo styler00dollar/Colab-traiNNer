@@ -94,6 +94,7 @@ def check_arch(cfg):
         "hat",
         "RLFN",
         "SCET",
+        "UpCunet2x",
         "UpCunet2x_fast",
         "SAFMN",
         "MFRAN",

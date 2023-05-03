@@ -180,25 +180,25 @@ network_G:
     #group: 1 # unused for now
 
     # CUGAN
-    #netG: UpCunet2x_fast
+    netG: UpCunet2x # UpCunet2x_fast / UpCunet2x
 
     # SAFMN (2023)
     #netG: SAFMN
-    #dim: 36
-    #n_blocks: 8
+    #dim: 192
+    #n_blocks: 20
     #ffn_scale: 2.0
 
     # MFRAN (2023)
-    netG: MFRAN
-    n_feats: 64
-    n_blocks: 16
-    kernel_size_MFRAN: 3
-    scale: 2
-    n_blocks: 16
-    div: 2
-    rgb_range: 1
-    n_colors: 3
-    path: 4
+    #netG: MFRAN
+    #n_feats: 64
+    #n_blocks: 16
+    #kernel_size_MFRAN: 3
+    #scale: 2
+    #n_blocks: 16
+    #div: 2
+    #rgb_range: 1
+    #n_colors: 3
+    #path: 4
 
     # ASRGAN:
     #which_model_G: asr_resnet # asr_resnet | asr_cnn
@@ -1183,3 +1183,9 @@ train:
     VIT_FeatureLoss_weight: 0
     VIT_MMD_FeatureLoss_weight: 0 # big values, use ~0.001 weight
     LaplacianLoss_weight: 0
+
+    TIMM_FeatureLoss_weight: 1 
+    TIMM_FeatureLoss_arch: davit_huge # davit_tiny, davit_huge
+    TIMM_FeatureLoss_resolution: 224
+    TIMM_FeatureLoss_arch_fp16: True
+    TIMM_FeatureLoss_arch_criterion: kullback # huber, mse, l1, cross_entropy, kullback

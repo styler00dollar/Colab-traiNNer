@@ -31,6 +31,7 @@ from loss.loss import (
     ColorHarmonyLoss,
     VIT_FeatureLoss,
     VIT_MMD_FeatureLoss,
+    TIMM_FeatureLoss,
     LaplacianLoss,
     SobelLossV2,
 )
@@ -254,6 +255,13 @@ class AllLoss(pl.LightningModule):
         self.ColorHarmonyLoss = ColorHarmonyLoss()
         self.VIT_FeatureLoss = VIT_FeatureLoss()
         self.VIT_MMD_FeatureLoss = VIT_MMD_FeatureLoss()
+        self.TIMM_FeatureLoss = TIMM_FeatureLoss(
+            model_arch=cfg["train"]["TIMM_FeatureLoss_arch"],
+            resolution=cfg["train"]["TIMM_FeatureLoss_resolution"],
+            fp16=cfg["train"]["TIMM_FeatureLoss_arch_fp16"],
+            criterion=cfg["train"]["TIMM_FeatureLoss_arch_criterion"],
+        )
+
         self.LaplacianLoss = LaplacianLoss()
         self.SobelLossV2 = SobelLossV2()
 
@@ -839,6 +847,17 @@ class AllLoss(pl.LightningModule):
             writer.add_scalar(
                 "loss/VIT_MMD_FeatureLoss" + log_suffix,
                 VIT_MMD_FeatureLoss_forward,
+                global_step,
+            )
+
+        if self.cfg["train"]["TIMM_FeatureLoss_weight"] > 0:
+            TIMM_FeatureLoss_forward = self.cfg["train"][
+                "TIMM_FeatureLoss_weight"
+            ] * self.TIMM_FeatureLoss(out, hr_image)
+            total_loss += TIMM_FeatureLoss_forward
+            writer.add_scalar(
+                "loss/TIMM_FeatureLoss" + log_suffix,
+                TIMM_FeatureLoss_forward,
                 global_step,
             )
 

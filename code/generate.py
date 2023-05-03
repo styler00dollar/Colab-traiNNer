@@ -70,6 +70,7 @@ def generate(
         "hat",
         "RLFN",
         "SCET",
+        "UpCunet2x",
         "UpCunet2x_fast",
         "SAFMN",
         "MFRAN",
