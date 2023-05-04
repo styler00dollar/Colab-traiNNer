@@ -260,7 +260,8 @@ class AllLoss(pl.LightningModule):
             resolution=cfg["train"]["TIMM_FeatureLoss_resolution"],
             fp16=cfg["train"]["TIMM_FeatureLoss_fp16"],
             criterion=cfg["train"]["TIMM_FeatureLoss_criterion"],
-            normalize=cfg["train"]["TIMM_FeatureLoss_normalize"]
+            normalize=cfg["train"]["TIMM_FeatureLoss_normalize"],
+            last_feature=cfg["train"]["TIMM_FeatureLoss_last_feature"],
         )
 
         self.LaplacianLoss = LaplacianLoss()

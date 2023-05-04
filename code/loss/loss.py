@@ -2464,14 +2464,17 @@ class TIMM_FeatureLoss(nn.Module):
                 generated_images, (self.resolution, self.resolution)
             )
 
-        # Extract features from real images
         loss = 0
         with torch.no_grad():
-            real_features = self.model(real_images)[-1].detach()
+            real_features = self.model(real_images)
+            generated_features = self.model(generated_images)
 
-            # Extract features from generated images
-            generated_features = self.model(generated_images)[-1]
+            if last_feature:
+                loss = self.criterion(real_features[-1], generated_features[-1])
+            if not last_feature:
+                loss = sum(
+                    self.criterion(real_feat, gen_feat)
+                    for real_feat, gen_feat in zip(real_features, generated_features)
+                )
 
-            # Compute feature loss
-            loss = self.criterion(real_features, generated_features)
         return loss

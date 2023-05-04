@@ -1141,16 +1141,6 @@ train:
     # loss for rife
     SOBEL_weight: 0 # not recommended, leave it at 0
 
-    # Canny
-    Canny_weight: 0.05
-    canny_threshold: 5
-    canny_blurred_img_weight: 0.1
-    canny_grad_mag_weight: 0.1
-    canny_grad_orientation_weight: 0.1
-    canny_thin_edges_weight: 0.5
-    canny_thresholded_weight: 0.5
-    canny_early_threshold: 0.5
-
     # Three different augmentation options, diffaug and muaraugment apply to both training loops,
     # while batch_aug only applies to the discriminator training loop
     augmentation_method: batch_aug # diffaug, MuarAugment, batch_aug, None
@@ -1171,6 +1161,16 @@ train:
     # Metrics
     metrics: [] # PSNR | SSIM | AE | MSE
 
+    # Canny [PROBABLY BROKEN]
+    Canny_weight: 0 # 0.01
+    canny_threshold: 5
+    canny_blurred_img_weight: 0
+    canny_grad_mag_weight: 0
+    canny_grad_orientation_weight: 0
+    canny_thin_edges_weight: 0
+    canny_thresholded_weight: 0
+    canny_early_threshold: 0.5
+
     # EXPERIMENTAL
     YUVColorLoss_weight: 0
     XYZColorLoss_weight: 0
@@ -1185,10 +1185,11 @@ train:
     VIT_MMD_FeatureLoss_weight: 0 # big values, use ~0.001 weight
     LaplacianLoss_weight: 0
 
-    TIMM_FeatureLoss_weight: 1 
+    TIMM_FeatureLoss_weight: 0.001 
     # https://github.com/huggingface/pytorch-image-models/blob/main/results/results-imagenet.csv
     TIMM_FeatureLoss_arch: maxvit_xlarge_tf_512 # davit_small (224), davit_base (224), maxvit_xlarge_tf_512, tf_efficientnetv2_b0 (224), tf_efficientnet_l2 (800)
     TIMM_FeatureLoss_resolution: 512
     TIMM_FeatureLoss_fp16: True
     TIMM_FeatureLoss_criterion: huber # huber, mse, l1, cross_entropy, kullback
     TIMM_FeatureLoss_normalize: True
+    TIMM_FeatureLoss_last_feature: False # False means that all features will be used in a sum
