@@ -29,59 +29,6 @@ class LayerNorm(nn.Module):
             x = self.weight[:, None, None] * x + self.bias[:, None, None]
             return x
 
-
-# SE
-class SqueezeExcitation(nn.Module):
-    def __init__(self, dim, shrinkage_rate=0.25):
-        super().__init__()
-        hidden_dim = int(dim * shrinkage_rate)
-
-        self.gate = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(dim, hidden_dim, 1, 1, 0),
-            nn.GELU(),
-            nn.Conv2d(hidden_dim, dim, 1, 1, 0),
-            nn.Sigmoid(),
-        )
-
-    def forward(self, x):
-        return x * self.gate(x)
-
-
-# Channel MLP: Conv1*1 -> Conv1*1
-class ChannelMLP(nn.Module):
-    def __init__(self, dim, growth_rate=2.0):
-        super().__init__()
-        hidden_dim = int(dim * growth_rate)
-
-        self.mlp = nn.Sequential(
-            nn.Conv2d(dim, hidden_dim, 1, 1, 0),
-            nn.GELU(),
-            nn.Conv2d(hidden_dim, dim, 1, 1, 0),
-        )
-
-    def forward(self, x):
-        return self.mlp(x)
-
-
-# MBConv: Conv1*1 -> DW Conv3*3 -> [SE] -> Conv1*1
-class MBConv(nn.Module):
-    def __init__(self, dim, growth_rate=2.0):
-        super().__init__()
-        hidden_dim = int(dim * growth_rate)
-
-        self.mbconv = nn.Sequential(
-            nn.Conv2d(dim, hidden_dim, 3, 1, 1),
-            nn.GELU(),
-            nn.Conv2d(hidden_dim, hidden_dim, 3, 1, 1, groups=hidden_dim),
-            nn.GELU(),
-            nn.Conv2d(hidden_dim, dim, 1, 1, 0),
-        )
-
-    def forward(self, x):
-        return self.mbconv(x)
-
-
 # CCM
 class CCM(nn.Module):
     def __init__(self, dim, growth_rate=2.0):
