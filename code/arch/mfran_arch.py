@@ -1,5 +1,7 @@
 # https://github.com/vanbou/MFRAN/blob/main/src/model/mfran.py
 # https://github.com/vanbou/MFRAN/blob/main/src/model/common.py
+
+
 import torch
 import torch.nn as nn
 
@@ -242,11 +244,11 @@ class MFRAN(nn.Module):
     def __init__(
         self,
         n_feats=64,
-        n_blocks=16,
         kernel_size=3,
         scale=2,
+        n_blocks=16,
         div=2,
-        rgb_range=1,
+        rgb_range=255,
         n_colors=3,
         path=4,
         conv=default_conv,
@@ -254,6 +256,7 @@ class MFRAN(nn.Module):
         super().__init__()
 
         self.n_blocks = n_blocks
+        self.div = div
 
         # RGB mean for DIV2K
         rgb_mean = (0.4488, 0.4371, 0.4040)
@@ -275,12 +278,22 @@ class MFRAN(nn.Module):
             ),
             Upsampler(conv, scale, n_feats, act=False),
             nn.Conv2d(
-                n_feats, n_colors, kernel_size, padding=(kernel_size - 1) // 2, stride=1
+                n_feats,
+                n_colors,
+                kernel_size,
+                padding=(kernel_size - 1) // 2,
+                stride=1,
             ),
         ]
 
         self.adjust = nn.Sequential(
-            nn.Conv2d((n_blocks // div + 1) * n_feats, n_feats, 1, padding=0, stride=1)
+            nn.Conv2d(
+                (self.n_blocks // self.div + 1) * n_feats,
+                n_feats,
+                1,
+                padding=0,
+                stride=1,
+            )
         )
         self.add_mean = MeanShift(rgb_range, rgb_mean, rgb_std, 1)
         self.head = nn.Sequential(*modules_head)
