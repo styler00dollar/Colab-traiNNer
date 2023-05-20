@@ -698,6 +698,22 @@ def CreateGenerator(cfg, scale):
             path=cfg["path"],
         )
 
+    elif cfg["netG"] == "OmniSR":
+        from arch.omnisr_arch import OmniSR
+
+        netG = OmniSR(
+            num_in_ch=cfg["num_in_ch"],
+            num_out_ch=cfg["num_out_ch"],
+            num_feat=cfg["num_feat"],
+            window_size=cfg["window_size"],
+            res_num=cfg["res_num"],
+            up_scale=scale,
+            bias=cfg["bias"],
+            block_num=cfg["block_num"],
+            pe=cfg["pe"],
+            ffn_bias=cfg["ffn_bias"],
+        )
+
     ############################
 
     if cfg["CEM"] is True:

@@ -74,6 +74,7 @@ def generate(
         "UpCunet2x_fast",
         "SAFMN",
         "MFRAN",
+        "OmniSR",
     ):
         if cfg["datasets"]["train"]["mode"] in ("DS_inpaint", "DS_inpaint_TF"):
             # masked test with inpaint dataloader
