@@ -39,6 +39,7 @@ class CustomTrainClass(pl.LightningModule):
             and cfg["network_G"]["netG"] != "srflow"
             and cfg["network_G"]["netG"] != "GFPGAN"
             and cfg["network_G"]["netG"] != "GMFSS_union"
+            and cfg["network_G"]["netG"] != "OmniSR"
         ):
             if self.global_step == 0:
                 weights_init(self.netG, "kaiming")
