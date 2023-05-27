@@ -714,6 +714,22 @@ def CreateGenerator(cfg, scale):
             ffn_bias=cfg["ffn_bias"],
         )
 
+    elif cfg["netG"] == "EMT":
+        from arch.EMT_arch import EMT
+
+        netG = model = EMT(
+            upscale=scale,
+            dim=cfg["dim"],
+            n_blocks=cfg["n_blocks"],
+            n_layers=cfg["n_layers"],
+            num_heads=cfg["num_heads"],
+            mlp_ratio=cfg["mlp_ratio"],
+            n_GTLs=cfg["n_GTLs"],
+            window_list=cfg["window_list"],
+            shift_list=cfg["shift_list"],
+            task=cfg["task"],
+        )
+
     ############################
 
     if cfg["CEM"] is True:

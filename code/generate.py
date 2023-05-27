@@ -75,6 +75,7 @@ def generate(
         "SAFMN",
         "MFRAN",
         "OmniSR",
+        "EMT",
     ):
         if cfg["datasets"]["train"]["mode"] in ("DS_inpaint", "DS_inpaint_TF"):
             # masked test with inpaint dataloader
