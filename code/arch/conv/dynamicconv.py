@@ -3,7 +3,7 @@
 https://github.com/TArdelean/DynamicConvolution/blob/master/dynamic_convolutions.py
 https://github.com/TArdelean/DynamicConvolution/blob/master/models/common.py
 """
-from collections import Iterable
+from collections.abc import Iterable
 import itertools
 
 import torch
