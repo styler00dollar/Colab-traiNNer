@@ -981,6 +981,12 @@ network_D:
     #num_feat: 64
     #skip_connection: True
 
+    # Multiscale Attention U-Net (from asergan) (2021)
+    #netD: multiscale_attention_unet
+    #num_in_ch: 3
+    #num_feat: 64
+    #num_D: 2
+
     # U-Net (from RealESRGAN) (2021)
     #netD: unet
     #num_in_ch: 3

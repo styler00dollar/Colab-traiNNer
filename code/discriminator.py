@@ -520,6 +520,15 @@ def CreateDiscriminator(cfg):
             skip_connection=cfg["network_D"]["skip_connection"],
         )
 
+    elif cfg["network_D"]["netD"] == "multiscale_attention_unet":
+        from arch.multiscale_attention_unet_arch import MultiscaleAttentionUnet
+
+        netD = MultiscaleAttentionUnet(
+            num_in_ch=cfg["network_D"]["num_in_ch"],
+            num_feat=cfg["network_D"]["num_feat"],
+            num_D=cfg["network_D"]["num_D"],
+        )
+
     elif cfg["network_D"]["netD"] == "unet":
         from arch.unet_arch import UNetDiscriminatorSN
 
