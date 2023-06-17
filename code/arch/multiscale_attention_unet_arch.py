@@ -152,7 +152,9 @@ class MultiscaleAttentionUnet(nn.Module):
         input_downsampled = input
         for i in range(num_D):
             model = getattr(self, "layer" + str(num_D - 1 - i))
-            result += torch.mean(self.singleD_forward(model, input_downsampled))
+            result += torch.mean(
+                torch.mean(self.singleD_forward(model, input_downsampled), dim=2), dim=2
+            )
             if i != (num_D - 1):
                 input_downsampled = self.downsample(input_downsampled)
         return result
