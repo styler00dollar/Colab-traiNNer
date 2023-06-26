@@ -6,11 +6,15 @@ Simply download the `.ipynb` and open it inside your Google Drive or click [here
 
 You can also use the code locally. Install commands for local usage:
 ```
-pip install lion-pytorch git+https://github.com/PyTorchLightning/pytorch-lightning.git \
+pip install lion-pytorch pytorch-lightning==2.0.4 \
     git+https://github.com/vballoli/nfnets-pytorch \
-    basicsr albumentations IPython scipy pandas opencv-python pillow wget tfrecord x-transformers adamp efficientnet_pytorch \
-        tensorboardX vit-pytorch swin-transformer-pytorch madgrad timm pillow-avif-plugin kornia omegaconf \
-    git+https://github.com/styler00dollar/piq.git
+    basicsr albumentations IPython scipy pandas opencv-python pillow wget \
+    tfrecord x-transformers adamp efficientnet_pytorch \
+    tensorboardX vit-pytorch swin-transformer-pytorch madgrad \
+    git+https://github.com/huggingface/pytorch-image-models pillow-avif-plugin \
+    kornia omegaconf git+https://github.com/styler00dollar/piq.git
+
+pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu121 --force-reinstall
 ```
 (You need this specific `piq` version, or it won't work properly.)
 
