@@ -29,6 +29,7 @@ class LayerNorm(nn.Module):
             x = self.weight[:, None, None] * x + self.bias[:, None, None]
             return x
 
+
 # CCM
 class CCM(nn.Module):
     def __init__(self, dim, growth_rate=2.0):

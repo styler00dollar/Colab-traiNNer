@@ -444,7 +444,11 @@ def CreateGenerator(cfg, scale):
     elif cfg["netG"] == "rife":
         from arch.rife_arch import IFNet
 
-        netG = IFNet()
+        netG = IFNet(
+            arch_ver=cfg["arch_ver"],
+            fastmode=cfg["fastmode"],
+            ensemble=cfg["ensemble"],
+        )
 
     elif cfg["netG"] == "RRIN":
         from arch.RRIN_arch import Net

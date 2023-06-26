@@ -685,12 +685,11 @@ network_G:
     #nof_kernels: 4
     #reduce: 4
 
-    # rife 4.0
+    # rife 4.x
     #netG: rife
-    #conv: conv2d # doconv | conv2d | gated | TBC | dynamic | MBConv | fft | WSConv
-    ## for dynamic
-    #nof_kernels: 4
-    #reduce: 4
+    #arch_ver: 4.6 # any number between 4.0 and 4.6
+    #fastmode: False
+    #ensemble: True
 
     # RRIN (2020)
     #netG: RRIN

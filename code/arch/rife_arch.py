@@ -331,7 +331,7 @@ class Unet(nn.Module):
 
 
 class IFNet(nn.Module):
-    def __init__(self, arch_ver="4.0"):
+    def __init__(self, arch_ver="4.0", fastmode=False, ensemble=True):
         super(IFNet, self).__init__()
         self.arch_ver = arch_ver
         self.block0 = IFBlock(7, c=192, arch_ver=arch_ver)
@@ -342,6 +342,8 @@ class IFNet(nn.Module):
             self.contextnet = Contextnet(arch_ver=arch_ver)
             self.unet = Unet(arch_ver=arch_ver)
         self.arch_ver = arch_ver
+        self.fastmode = fastmode
+        self.ensemble = ensemble
 
     def forward(
         self,
@@ -350,8 +352,6 @@ class IFNet(nn.Module):
         timestep=0.5,
         scale_list=[8, 4, 2, 1],
         training=True,
-        fastmode=True,
-        ensemble=False,
         return_flow=False,
     ):
         n, c, h, w = img0.shape
@@ -385,7 +385,7 @@ class IFNet(nn.Module):
                     None,
                     scale=scale_list[i],
                 )
-                if ensemble:
+                if self.ensemble:
                     f1, m1 = block[i](
                         torch.cat((img1[:, :3], img0[:, :3], 1 - timestep), 1),
                         None,
@@ -430,7 +430,7 @@ class IFNet(nn.Module):
                             flow,
                             scale=scale_list[i],
                         )
-                if ensemble:
+                if self.ensemble:
                     f1, m1 = block[i](
                         torch.cat(
                             (
@@ -457,7 +457,7 @@ class IFNet(nn.Module):
             return flow_list
         mask_list[3] = torch.sigmoid(mask_list[3])
         merged[3] = merged[3][0] * mask_list[3] + merged[3][1] * (1 - mask_list[3])
-        if not fastmode and self.arch_ver not in ["4.5", "4.6"]:
+        if not self.fastmode and self.arch_ver not in ["4.5", "4.6"]:
             c0 = self.contextnet(img0, flow[:, :2])
             c1 = self.contextnet(img1, flow[:, 2:4])
             tmp = self.unet(img0, img1, warped_img0, warped_img1, mask, flow, c0, c1)
