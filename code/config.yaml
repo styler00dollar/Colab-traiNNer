@@ -998,7 +998,7 @@ train:
     # every other optimizer uses pytorch-optimizers, for further information
     # https://pytorch-optimizers.readthedocs.io/en/latest/optimizer_api.html
     # to further customize, edit optimizer.py
-    scheduler: AdaBelief
+    scheduler: DAdaptAdan
     # ACG needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
     AGC: False # currently only for generator, only works with certain optimizers
     lr_g: 0.001 # 0.0005
