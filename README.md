@@ -12,7 +12,7 @@ pip install lion-pytorch pytorch-lightning==2.0.4 \
     tfrecord x-transformers adamp efficientnet_pytorch \
     tensorboardX vit-pytorch swin-transformer-pytorch madgrad \
     git+https://github.com/huggingface/pytorch-image-models pillow-avif-plugin \
-    kornia omegaconf git+https://github.com/styler00dollar/piq.git pytorch-optimizers
+    kornia omegaconf git+https://github.com/styler00dollar/piq.git pytorch-optimizer
 
 pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu121 --force-reinstall
 ```
