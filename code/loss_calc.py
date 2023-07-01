@@ -34,6 +34,7 @@ from loss.loss import (
     TIMM_FeatureLoss,
     LaplacianLoss,
     SobelLossV2,
+    textured_loss,
 )
 from piq import (
     SSIMLoss,
@@ -134,6 +135,7 @@ class AllLoss(pl.LightningModule):
             use_timm=cfg["train"]["use_timm"],
             timm_model=cfg["train"]["timm_model"],
         )
+        self.textured_loss = textured_loss()
 
         self.MSELoss = torch.nn.MSELoss()
         self.L1Loss = nn.L1Loss()
@@ -882,6 +884,17 @@ class AllLoss(pl.LightningModule):
             writer.add_scalar(
                 "loss/SobelLossV2" + log_suffix,
                 SobelLossV2_forward,
+                global_step,
+            )
+
+        if self.cfg["train"]["textured_loss_weight"] > 0:
+            textured_loss_forward = self.cfg["train"][
+                "textured_loss_weight"
+            ] * self.textured_loss(out, hr_image)
+            total_loss += textured_loss_forward
+            writer.add_scalar(
+                "loss/textured_loss" + log_suffix,
+                textured_loss_forward,
                 global_step,
             )
 

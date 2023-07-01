@@ -1199,6 +1199,7 @@ train:
     VIT_FeatureLoss_weight: 0
     VIT_MMD_FeatureLoss_weight: 0 # big values, use ~0.001 weight
     LaplacianLoss_weight: 0
+    textured_loss_weight: 0
 
     TIMM_FeatureLoss_weight: 0.001 
     # https://github.com/huggingface/pytorch-image-models/blob/main/results/results-imagenet.csv

@@ -2484,3 +2484,45 @@ class TIMM_FeatureLoss(nn.Module):
                 )
 
         return loss
+
+
+###############
+# textured loss
+###############
+
+
+class textured_loss(nn.Module):
+    def __init__(self, texture_weight=1.2):
+        super(textured_loss, self).__init__()
+        self.texture_weight = texture_weight
+
+    def forward(self, input_img, target_img):
+        """
+        Custom loss function that focuses more on textured regions in an image.
+
+        Arguments:
+        - input_img: The predicted image, tensor of shape (batch_size, channels, height, width).
+        - target_img: The target image, tensor of shape (batch_size, channels, height, width).
+        - texture_weight: Weight to adjust the importance of the textured regions.
+
+        Returns:
+        - The textured loss.
+        """
+
+        # Calculate the difference between the predicted and target images
+        diff_img = input_img - target_img
+
+        # Calculate the gradient magnitude of the difference image
+        kernel = (
+            torch.Tensor([[-1, 0, 1]])
+            .unsqueeze(0)
+            .unsqueeze(0)
+            .repeat(1, input_img.shape[1], 1, 1)
+            .to(input_img.device)
+        )
+        gradient = torch.abs(F.conv2d(diff_img, kernel))
+
+        # Calculate the texture loss as the weighted sum of the gradient magnitudes
+        texture_loss = torch.mean(gradient * self.texture_weight)
+
+        return texture_loss
