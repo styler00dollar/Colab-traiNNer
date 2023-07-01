@@ -995,32 +995,18 @@ network_D:
 train: 
     # Adam8bit needs "pip install bitsandbytes-cuda111"
     # SGD_AGC needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
-    scheduler: Lamb # Lamb, Lion, Adam, AdamP, Adam, SGDP, MADGRAD, Adam8bit, SGD_AGC, cosangulargrad [maybe broken], tanangulargrad [maybe broken], Adan
+    # every other optimizer uses pytorch-optimizers, for further information
+    # https://pytorch-optimizers.readthedocs.io/en/latest/optimizer_api.html
+    # to further customize, edit optimizer.py
+    scheduler: AdaBelief
     # ACG needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
     AGC: False # currently only for generator, only works with certain optimizers
+    lr_g: 0.001 # 0.0005
+    lr_d: 0.001 # 0.0005
     gradient_clipping_G: true
     gradient_clipping_G_value: 1
     gradient_clipping_D: true
     gradient_clipping_D_value: 1
-
-    lr_g: 0.0005 # 0.00005
-    lr_d: 0.0005
-    
-    # AdamP, AGDP, MADGRAD, SGD_AGC, cosangulargrad, tanangulargrad
-    weight_decay: 0.01
-
-    # SGDP, MAGDRAD
-    momentum: 0.9
-
-    # AdamP, cosangulargrad, tanangulargrad
-    betas0: 0.9
-    betas1: 0.999
-    
-    # SGDP
-    nesterov: True
-
-    # MADGRAD, SGD_AGC, cosangulargrad, tanangulargrad
-    eps: 1e-6
 
     ############################
 
