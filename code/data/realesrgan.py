@@ -69,6 +69,11 @@ class RealESRGANDataset(pl.LightningDataModule):
         with open("config.yaml", "r") as ymlfile:
             self.config = yaml.safe_load(ymlfile)
 
+        if self.config["datasets"]["train"]["loading_backend"] == "turboJPEG":
+            from turbojpeg import TurboJPEG
+
+            self.jpeg_reader = TurboJPEG()
+
         # blur settings for the first degradation
         self.blur_kernel_size = opt["blur_kernel_size"]
         self.kernel_list = opt["kernel_list"]
@@ -107,7 +112,14 @@ class RealESRGANDataset(pl.LightningDataModule):
         # -------------------------------- Load gt images -------------------------------- #
         # Shape: (h, w, c); channel order: BGR; image range: [0, 1], float32.
         img_gt = self.samples[index]
-        img_gt = cv2.imread(img_gt)
+
+        if self.config["datasets"]["train"]["loading_backend"] == "OpenCV":
+            img_gt = cv2.imread(img_gt)
+        elif self.config["datasets"]["train"]["loading_backend"] == "turboJPEG":
+            img_gt = self.jpeg_reader.decode(
+                open(img_gt, "rb").read(), 1
+            )  # 0 = rgb, 1 = bgr
+
         img_gt = img_gt.astype(np.float32) / 255.0
 
         # -------------------- Do augmentation for training: flip, rotation -------------------- #
