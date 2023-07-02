@@ -13,7 +13,9 @@ from check_arch import check_arch
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
-writer = SummaryWriter(logdir=cfg["path"]["log_path"])
+writer = None
+if cfg["logging"]:
+    writer = SummaryWriter(logdir=cfg["path"]["log_path"])
 
 
 class CustomTrainClass(pl.LightningModule):

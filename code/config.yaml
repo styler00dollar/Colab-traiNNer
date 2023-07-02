@@ -8,6 +8,7 @@ use_amp: True
 use_swa: False
 progress_bar_refresh_rate: 20
 default_root_dir: '/home/user/Schreibtisch/Colab-traiNNer/train'
+logging: True # colab easily crashes with logging, disable in colab
 
 # Dataset options:
 datasets:
