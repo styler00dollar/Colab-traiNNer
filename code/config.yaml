@@ -40,7 +40,7 @@ datasets:
 
     masks: '/workspace/tensorrt/training/data/inpaint_mask/' # only for inpainting
     mask_invert_ratio: 0.3 # 0.3 = 30% of masks will be inverted
-    max_epochs: 2000
+    max_epochs: 20000
     save_step_frequency: 50 # also validation frequency
 
     # if edge data is required
