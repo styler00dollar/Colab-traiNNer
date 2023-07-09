@@ -999,6 +999,10 @@ train:
     # every other optimizer uses pytorch-optimizers, for further information
     # https://pytorch-optimizers.readthedocs.io/en/latest/optimizer_api.html
     # to further customize, edit optimizer.py
+    
+    # Warning: DAdaptAdan seems to not always work with discriminator, seemingly depends on generator
+    #  either change optimizer if you encounter issues or change arch if it results in
+    #  "gradient computation has been modified by an inplace operation"
     scheduler: DAdaptAdan
     # ACG needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
     AGC: False # currently only for generator, only works with certain optimizers
