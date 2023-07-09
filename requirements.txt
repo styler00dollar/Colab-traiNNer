@@ -29,3 +29,4 @@ torchaudio==2.1.0.dev20230626+cu121
 git+https://github.com/styler00dollar/pytorch_optimizer
 git+https://github.com/huggingface/transformers
 gdown
+PyTurboJPEG
