@@ -1233,6 +1233,9 @@ class AllLoss(pl.LightningModule):
         ##########################
         # train discriminator
         ##########################
+
+        hr_image = hr_image.clone().detach()
+        out = out.clone().detach()
         self.toggle_optimizer(d_opt)
 
         # replicating realesrgan strategy, using normal gt for discriminator
