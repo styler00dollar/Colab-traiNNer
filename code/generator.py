@@ -721,7 +721,7 @@ def CreateGenerator(cfg, scale):
     elif cfg["netG"] == "EMT":
         from arch.EMT_arch import EMT
 
-        netG = model = EMT(
+        netG = EMT(
             upscale=scale,
             dim=cfg["dim"],
             n_blocks=cfg["n_blocks"],
@@ -732,6 +732,21 @@ def CreateGenerator(cfg, scale):
             window_list=cfg["window_list"],
             shift_list=cfg["shift_list"],
             task=cfg["task"],
+        )
+
+    elif cfg["netG"] == "lkdn":
+        from arch.lkdn_arch import LKDN
+
+        netG = LKDN(
+            num_in_ch=cfg["num_in_ch"],
+            num_out_ch=cfg["num_out_ch"],
+            num_feat=cfg["num_feat"],
+            num_atten=cfg["num_atten"],
+            num_block=cfg["num_block"],
+            upscale=scale,
+            num_in=cfg["num_in"],
+            conv=cfg["conv"],
+            upsampler=cfg["upsampler"],
         )
 
     ############################
