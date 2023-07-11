@@ -63,6 +63,7 @@ from torch.autograd import Variable
 class AllLoss(pl.LightningModule):
     def __init__(self, cfg):
         super().__init__()
+        self.save_hyperparameters()
         self.automatic_optimization = False
 
         # loss functions
@@ -995,14 +996,15 @@ class AllLoss(pl.LightningModule):
             )
             cons = self.ConsistencyLoss()
             cons_loss = cons(other["csa"], other["csa_d"], hr_image, other["mask"])
+
+            total_loss += recon_loss
+            total_loss += cons_loss
+
             if self.cfg["logging"]:
                 writer.add_scalar(
                     "loss/recon_loss" + log_suffix, recon_loss, global_step
                 )
-            total_loss += recon_loss
-            if self.cfg["logging"]:
                 writer.add_scalar("loss/cons_loss" + log_suffix, cons_loss, global_step)
-            total_loss += cons_loss
 
         # EdgeConnect
         if self.cfg["network_G"]["netG"] == "EdgeConnect":
@@ -1020,6 +1022,7 @@ class AllLoss(pl.LightningModule):
             )
             total_loss += edge_big_l1
             total_loss += edge_small_l1
+
             if self.cfg["logging"]:
                 writer.add_scalar(
                     "loss/edge_big_l1" + log_suffix, edge_big_l1, global_step
@@ -1041,6 +1044,7 @@ class AllLoss(pl.LightningModule):
                 writer.add_scalar(
                     "loss/mid_l1_loss" + log_suffix, mid_l1_loss, global_step
                 )
+
         if self.cfg["logging"]:
             writer.add_scalar("loss/g_loss" + log_suffix, total_loss, global_step)
 
@@ -1099,20 +1103,10 @@ class AllLoss(pl.LightningModule):
             if self.cfg["logging"]:
                 writer.add_scalar("loss/fm_loss" + log_suffix, fm_loss, global_step)
 
-        if self.cfg["network_D"]["netD"] is None:
-            g_opt.zero_grad()
-            self.manual_backward(total_loss, retain_graph=True)
-            if self.cfg["train"]["gradient_clipping_G"]:
-                self.clip_gradients(
-                    g_opt,
-                    gradient_clip_val=self.cfg["train"]["gradient_clipping_G_value"],
-                    gradient_clip_algorithm="norm",
-                )
-            g_opt.step()
+        ##########################
+        # discriminator loss
+        ##########################
 
-        #########################
-        # discriminator
-        #########################
         # replicating realesrgan strategy, using normal gt for discriminator
         if self.cfg["datasets"]["train"]["mode"] == "DS_realesrgan":
             hr_image = other["gt"]
@@ -1125,6 +1119,7 @@ class AllLoss(pl.LightningModule):
                 .unsqueeze(-1)
                 .to(self.device)
             )
+
             if self.cfg["network_D"]["netD"] == "resnet3d":
                 # 3d
                 if self.cfg["train"]["augmentation_method"] == "diffaug":
@@ -1219,129 +1214,138 @@ class AllLoss(pl.LightningModule):
                             global_step,
                         )
 
-            if self.cfg["network_D"]["netD"] is not None:
-                if self.cfg["datasets"]["train"]["mode"] == "DS_realesrgan":
-                    hr_image = other["gt"]
+        # optimizer
+        self.toggle_optimizer(g_opt)
+        g_opt.zero_grad()
+        self.manual_backward(total_loss, retain_graph=True)
+        if self.cfg["train"]["gradient_clipping_G"]:
+            self.clip_gradients(
+                g_opt,
+                gradient_clip_val=self.cfg["train"]["gradient_clipping_G_value"],
+                gradient_clip_algorithm="norm",
+            )
+        g_opt.step()
+        self.untoggle_optimizer(g_opt)
 
-                Tensor = torch.FloatTensor  # if cuda else torch.FloatTensor
-                valid = (
-                    Variable(Tensor((out.shape[0])).fill_(1.0), requires_grad=False)
-                    .unsqueeze(-1)
-                    .to(self.device)
-                )
-                fake = (
-                    Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False)
-                    .unsqueeze(-1)
-                    .to(self.device)
-                )
+        if self.cfg["network_D"]["netD"] is None:
+            return total_loss
 
-                if self.cfg["network_D"]["netD"] == "resnet3d":
-                    # 3d
-                    if self.cfg["train"]["augmentation_method"] == "diffaug":
-                        dis_real_loss = self.discriminator_criterion(
-                            netD(
-                                self.DiffAugment(
-                                    torch.stack(
-                                        [
-                                            other["hr_image1"],
-                                            hr_image,
-                                            other["hr_image3"],
-                                        ],
-                                        dim=1,
-                                    ),
-                                    self.cfg["train"]["policy"],
-                                )
-                            ),
-                            valid,
-                        )
-                        dis_fake_loss = self.discriminator_criterion(
-                            netD(
+        ##########################
+        # train discriminator
+        ##########################
+        self.toggle_optimizer(d_opt)
+
+        # replicating realesrgan strategy, using normal gt for discriminator
+        if self.cfg["datasets"]["train"]["mode"] == "DS_realesrgan":
+            hr_image = other["gt"]
+
+        if self.cfg["network_D"]["netD"] is not None:
+            Tensor = torch.FloatTensor  # if cuda else torch.FloatTensor
+            valid = (
+                Variable(Tensor((out.shape[0])).fill_(1.0), requires_grad=False)
+                .unsqueeze(-1)
+                .to(self.device)
+            )
+            fake = (
+                Variable(Tensor((out.shape[0])).fill_(0.0), requires_grad=False)
+                .unsqueeze(-1)
+                .to(self.device)
+            )
+
+            if self.cfg["network_D"]["netD"] == "resnet3d":
+                # 3d
+                if self.cfg["train"]["augmentation_method"] == "diffaug":
+                    dis_real_loss = self.discriminator_criterion(
+                        netD(
+                            self.DiffAugment(
                                 torch.stack(
-                                    [other["hr_image1"], out, other["hr_image3"]], dim=1
-                                )
-                            ),
-                            fake,
-                        )
-                    else:
-                        dis_real_loss = self.discriminator_criterion(
-                            netD(
-                                torch.stack(
-                                    [other["hr_image1"], hr_image, other["hr_image3"]],
+                                    [
+                                        other["hr_image1"],
+                                        hr_image,
+                                        other["hr_image3"],
+                                    ],
                                     dim=1,
-                                )
-                            ),
-                            valid,
-                        )
-                        dis_fake_loss = self.discriminator_criterion(
-                            netD(
-                                torch.stack(
-                                    [other["hr_image1"], out, other["hr_image3"]], dim=1
-                                )
-                            ),
-                            fake,
-                        )
+                                ),
+                                self.cfg["train"]["policy"],
+                            )
+                        ),
+                        valid,
+                    )
+                    dis_fake_loss = self.discriminator_criterion(
+                        netD(
+                            torch.stack(
+                                [other["hr_image1"], out, other["hr_image3"]], dim=1
+                            )
+                        ),
+                        fake,
+                    )
                 else:
-                    # 2d
-                    if self.cfg["train"]["augmentation_method"] == "diffaug":
-                        discr_out_fake = netD(
-                            self.DiffAugment(out, self.cfg["train"]["policy"])
-                        )
-                        discr_out_real = netD(
-                            self.DiffAugment(hr_image, self.cfg["train"]["policy"])
-                        )
-                    elif self.cfg["train"]["augmentation_method"] == "MuarAugment":
-                        self.mu_transform.setup(self)
-                        # fake
-                        mu_augment, _ = self.mu_transform((out, fake))
-                        discr_out_fake = netD(mu_augment)
-                        # real
-                        mu_augment, _ = self.mu_transform((hr_image, valid))
-                        discr_out_real = netD(mu_augment)
-                    elif self.cfg["train"]["augmentation_method"] == "batch_aug":
-                        fake_out, real_out = self.batch_aug(out, hr_image)
-                        discr_out_fake = netD(fake_out)
-                        discr_out_real = netD(real_out)
+                    dis_real_loss = self.discriminator_criterion(
+                        netD(
+                            torch.stack(
+                                [other["hr_image1"], hr_image, other["hr_image3"]],
+                                dim=1,
+                            )
+                        ),
+                        valid,
+                    )
+                    dis_fake_loss = self.discriminator_criterion(
+                        netD(
+                            torch.stack(
+                                [other["hr_image1"], out, other["hr_image3"]], dim=1
+                            )
+                        ),
+                        fake,
+                    )
+            else:
+                # 2d
+                if self.cfg["train"]["augmentation_method"] == "diffaug":
+                    discr_out_fake = netD(
+                        self.DiffAugment(out, self.cfg["train"]["policy"])
+                    )
+                    discr_out_real = netD(
+                        self.DiffAugment(hr_image, self.cfg["train"]["policy"])
+                    )
+                elif self.cfg["train"]["augmentation_method"] == "MuarAugment":
+                    self.mu_transform.setup(self)
+                    # fake
+                    mu_augment, _ = self.mu_transform((out, fake))
+                    discr_out_fake = netD(mu_augment)
+                    # real
+                    mu_augment, _ = self.mu_transform((hr_image, valid))
+                    discr_out_real = netD(mu_augment)
+                elif self.cfg["train"]["augmentation_method"] == "batch_aug":
+                    fake_out, real_out = self.batch_aug(out, hr_image)
+                    discr_out_fake = netD(fake_out)
+                    discr_out_real = netD(real_out)
+                else:
+                    if self.cfg["network_D"]["netD"] == "FFCNLayerDiscriminator":
+                        discr_out_fake, _ = netD(out)
+                        discr_out_real, _ = netD(hr_image)
                     else:
-                        if self.cfg["network_D"]["netD"] == "FFCNLayerDiscriminator":
-                            discr_out_fake, _ = netD(out)
-                            discr_out_real, _ = netD(hr_image)
-                        else:
-                            discr_out_fake = netD(out)
-                            discr_out_real = netD(hr_image)
+                        discr_out_fake = netD(out)
+                        discr_out_real = netD(hr_image)
 
-                    dis_fake_loss = self.discriminator_criterion(discr_out_fake, fake)
-                    dis_real_loss = self.discriminator_criterion(discr_out_real, fake)
+                dis_fake_loss = self.discriminator_criterion(discr_out_fake, fake)
+                dis_real_loss = self.discriminator_criterion(discr_out_real, fake)
 
-                # Total loss
-                d_loss = self.cfg["network_D"]["d_loss_weight"] * (
-                    (dis_real_loss + dis_fake_loss) / 2
+            # Total loss
+            d_loss = self.cfg["network_D"]["d_loss_weight"] * (
+                (dis_real_loss + dis_fake_loss) / 2
+            )
+
+            if self.cfg["logging"]:
+                writer.add_scalar("loss/d_loss" + log_suffix, d_loss, global_step)
+
+            d_opt.zero_grad()
+            self.manual_backward(d_loss, retain_graph=True)
+            if self.cfg["train"]["gradient_clipping_D"]:
+                self.clip_gradients(
+                    d_opt,
+                    gradient_clip_val=self.cfg["train"]["gradient_clipping_D_value"],
+                    gradient_clip_algorithm="norm",
                 )
-                if self.cfg["logging"]:
-                    writer.add_scalar("loss/d_loss" + log_suffix, d_loss, global_step)
+            d_opt.step()
+            self.untoggle_optimizer(d_opt)
 
-                g_opt.zero_grad()
-                self.manual_backward(total_loss, retain_graph=True)
-                if self.cfg["train"]["gradient_clipping_G"]:
-                    self.clip_gradients(
-                        g_opt,
-                        gradient_clip_val=self.cfg["train"][
-                            "gradient_clipping_G_value"
-                        ],
-                        gradient_clip_algorithm="norm",
-                    )
-                g_opt.step()
-
-                d_opt.zero_grad()
-                self.manual_backward(d_loss, retain_graph=True)
-                if self.cfg["train"]["gradient_clipping_D"]:
-                    self.clip_gradients(
-                        d_opt,
-                        gradient_clip_val=self.cfg["train"][
-                            "gradient_clipping_D_value"
-                        ],
-                        gradient_clip_algorithm="norm",
-                    )
-                d_opt.step()
-
-                total_loss += d_loss
         return total_loss
