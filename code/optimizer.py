@@ -228,6 +228,10 @@ def CreateOptimizer(cfg, input_G, input_D=None):
             opt_g = pytorch_optimizer.PAdam(input_G, lr=cfg["train"]["lr_g"])
             if cfg["network_D"]["netD"] is not None:
                 opt_d = pytorch_optimizer.PAdam(input_D, lr=cfg["train"]["lr_g"])
+        if cfg["train"]["scheduler"] == "Tiger":
+            opt_g = pytorch_optimizer.Tiger(input_G, lr=cfg["train"]["lr_g"])
+            if cfg["network_D"]["netD"] is not None:
+                opt_d = pytorch_optimizer.Tiger(input_D, lr=cfg["train"]["lr_g"])
         if cfg["train"]["scheduler"] == "Adam8bit":
             import bitsandbytes as bnb
 
