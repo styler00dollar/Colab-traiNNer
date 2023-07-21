@@ -209,16 +209,24 @@ network_G:
     #task: "lsr"
 
     # lkdn (2023)
-    netG: lkdn
-    num_in_ch: 3
-    num_out_ch: 3
-    num_feat: 56
-    num_atten: 56
-    num_block: 8
-    upscale: 2
-    num_in: 4
-    conv: "BSConvU"
-    upsampler: "pixelshuffledirect"
+    #netG: lkdn
+    #num_in_ch: 3
+    #num_out_ch: 3
+    #num_feat: 56
+    #num_atten: 56
+    #num_block: 8
+    #upscale: 2
+    #num_in: 4
+    #conv: "BSConvU"
+    #upsampler: "pixelshuffledirect"
+
+    # wavemix (2023) (only 2x)
+    netG: wavemix
+    depth: 4
+    mult: 1
+    ff_channel: 144
+    final_dim: 144
+    dropout: 0.3
 
     # SAFMN (2023)
     #netG: SAFMN

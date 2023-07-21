@@ -30,3 +30,4 @@ git+https://github.com/styler00dollar/pytorch_optimizer
 git+https://github.com/huggingface/transformers
 gdown
 PyTurboJPEG
+wavemix
