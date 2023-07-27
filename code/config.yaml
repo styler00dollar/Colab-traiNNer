@@ -1148,6 +1148,7 @@ train:
     BCE_weight: 0
     Huber_weight: 0
     SmoothL1_weight: 0
+    SoftMargin_weight: 0
 
     # piq loss
     SSIMLoss_weight: 0
