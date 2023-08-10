@@ -221,12 +221,24 @@ network_G:
     #upsampler: "pixelshuffledirect"
 
     # wavemix (2023) (only 2x)
-    netG: wavemix
-    depth: 4
-    mult: 1
-    ff_channel: 144
-    final_dim: 144
-    dropout: 0.3
+    #netG: wavemix
+    #depth: 4
+    #mult: 1
+    #ff_channel: 144
+    #final_dim: 144
+    #dropout: 0.3
+
+    # DITN (2023)
+    netG: DITN
+    inp_channels: 3
+    dim: 60
+    ITL_blocks: 4
+    SAL_blocks: 4
+    UFONE_blocks: 1
+    ffn_expansion_factor: 2
+    bias:  False
+    LayerNorm_type: 'WithBias'
+    patch_size: 8
 
     # SAFMN (2023)
     #netG: SAFMN
@@ -1225,9 +1237,9 @@ train:
     LaplacianLoss_weight: 0
     textured_loss_weight: 0
 
-    TIMM_FeatureLoss_weight: 0.001 
+    TIMM_FeatureLoss_weight: 0
     # https://github.com/huggingface/pytorch-image-models/blob/main/results/results-imagenet.csv
-    TIMM_FeatureLoss_arch: maxvit_xlarge_tf_512 # davit_small (224), davit_base (224), maxvit_xlarge_tf_512, tf_efficientnetv2_b0 (224), tf_efficientnet_l2 (800)
+    TIMM_FeatureLoss_arch: tf_efficientnetv2_b0 # davit_small (224), davit_base (224), maxvit_xlarge_tf_512, tf_efficientnetv2_b0 (224), tf_efficientnet_l2 (800)
     TIMM_FeatureLoss_resolution: 512
     TIMM_FeatureLoss_fp16: True
     TIMM_FeatureLoss_criterion: huber # huber, mse, l1, cross_entropy, kullback

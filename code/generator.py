@@ -749,6 +749,22 @@ def CreateGenerator(cfg, scale):
             upsampler=cfg["upsampler"],
         )
 
+    elif cfg["netG"] == "DITN":
+        from arch.DITN_arch import DITN
+
+        netG = DITN(
+            inp_channels=cfg["inp_channels"],
+            dim=cfg["dim"],
+            ITL_blocks=cfg["ITL_blocks"],
+            SAL_blocks=cfg["SAL_blocks"],
+            UFONE_blocks=cfg["UFONE_blocks"],
+            ffn_expansion_factor=cfg["ffn_expansion_factor"],
+            bias=cfg["bias"],
+            LayerNorm_type=cfg["LayerNorm_type"],
+            patch_size=cfg["patch_size"],
+            upscale=scale,
+        )
+
     ############################
 
     if cfg["CEM"] is True:
