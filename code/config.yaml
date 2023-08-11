@@ -229,16 +229,29 @@ network_G:
     #dropout: 0.3
 
     # DITN (2023)
-    netG: DITN
-    inp_channels: 3
-    dim: 60
-    ITL_blocks: 4
-    SAL_blocks: 4
-    UFONE_blocks: 1
-    ffn_expansion_factor: 2
-    bias:  False
-    LayerNorm_type: 'WithBias'
-    patch_size: 8
+    #netG: DITN
+    #inp_channels: 3
+    #dim: 60
+    #ITL_blocks: 4
+    #SAL_blocks: 4
+    #UFONE_blocks: 1
+    #ffn_expansion_factor: 2
+    #bias:  False
+    #LayerNorm_type: 'WithBias'
+    #patch_size: 8
+
+    # dat (2023)
+    netG: dat
+    upscale: 2
+    in_chans: 3
+    img_size: 64
+    img_range: 1.
+    depth: [6,6,6,6,6,6]
+    embed_dim: 180
+    num_heads: [6,6,6,6,6,6]
+    expansion_factor: 2
+    resi_connection: '1conv'
+    split_size: [8,16]
 
     # SAFMN (2023)
     #netG: SAFMN

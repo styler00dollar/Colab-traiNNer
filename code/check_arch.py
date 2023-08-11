@@ -54,6 +54,7 @@ def check_arch(cfg):
         "SCET",
         "lkdn",
         "DITN",
+        "dat",
     ) and cfg["datasets"]["train"]["mode"] in ("DS_inpaint", "DS_inpaint_TF"):
         if cfg["network_G"]["netG"] in ("PRVS", "CTSDG"):
             # arch, edge, grayscale, landmarks
@@ -104,6 +105,7 @@ def check_arch(cfg):
         "EMT",
         "lkdn",
         "DITN",
+        "dat",
     ) and cfg["datasets"]["train"]["mode"] in ("DS_lrhr", "DS_realesrgan"):
         if cfg["network_G"]["netG"] == "DFDNet":
             # arch, edge, grayscale, landmarks

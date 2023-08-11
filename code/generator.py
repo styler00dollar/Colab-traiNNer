@@ -765,6 +765,22 @@ def CreateGenerator(cfg, scale):
             upscale=scale,
         )
 
+    elif cfg["netG"] == "dat":
+        from arch.dat_arch import DAT
+
+        netG = DAT(
+            upscale=scale,
+            in_chans=cfg["in_chans"],
+            img_size=cfg["img_size"],
+            img_range=cfg["img_range"],
+            depth=cfg["depth"],
+            embed_dim=cfg["embed_dim"],
+            num_heads=cfg["num_heads"],
+            expansion_factor=cfg["expansion_factor"],
+            resi_connection=cfg["resi_connection"],
+            split_size=cfg["split_size"],
+        )
+
     ############################
 
     if cfg["CEM"] is True:
