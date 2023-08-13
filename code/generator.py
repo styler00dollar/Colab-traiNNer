@@ -769,16 +769,23 @@ def CreateGenerator(cfg, scale):
         from arch.dat_arch import DAT
 
         netG = DAT(
-            upscale=scale,
-            in_chans=cfg["in_chans"],
             img_size=cfg["img_size"],
-            img_range=cfg["img_range"],
-            depth=cfg["depth"],
+            in_chans=cfg["in_chans"],
             embed_dim=cfg["embed_dim"],
+            split_size=cfg["split_size"],
+            depth=cfg["depth"],
             num_heads=cfg["num_heads"],
             expansion_factor=cfg["expansion_factor"],
+            qkv_bias=cfg["qkv_bias"],
+            qk_scale=cfg["qk_scale"],
+            drop_rate=cfg["drop_rate"],
+            attn_drop_rate=cfg["attn_drop_rate"],
+            drop_path_rate=cfg["drop_path_rate"],
+            use_chk=cfg["use_chk"],
+            upscale=scale,
+            img_range=cfg["img_range"],
             resi_connection=cfg["resi_connection"],
-            split_size=cfg["split_size"],
+            upsampler=cfg["upsampler"],
         )
 
     ############################
