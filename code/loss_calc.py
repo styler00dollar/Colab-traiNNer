@@ -341,6 +341,7 @@ class AllLoss(pl.LightningModule):
             self.DiffAugment = DiffAugment()
 
         self.cfg = cfg
+        self.scaler = torch.cuda.amp.GradScaler()
 
     def forward(
         self,
@@ -1089,14 +1090,19 @@ class AllLoss(pl.LightningModule):
         # optimizer
         self.toggle_optimizer(g_opt)
         g_opt.zero_grad()
-        self.manual_backward(total_loss, retain_graph=True)
+        # self.manual_backward(total_loss, retain_graph=True)
         if self.cfg["train"]["gradient_clipping_G"]:
             self.clip_gradients(
                 g_opt,
                 gradient_clip_val=self.cfg["train"]["gradient_clipping_G_value"],
                 gradient_clip_algorithm="norm",
             )
-        g_opt.step()
+
+        self.scaler.scale(total_loss).backward()
+        self.scaler.step(g_opt)
+        self.scaler.update()
+
+        # g_opt.step()
         self.untoggle_optimizer(g_opt)
 
         if self.cfg["network_D"]["netD"] is None:
@@ -1212,8 +1218,9 @@ class AllLoss(pl.LightningModule):
             if self.cfg["logging"]:
                 writer.add_scalar("loss/d_loss" + log_suffix, d_loss, global_step)
 
+            # todo: scale optimizer
             d_opt.zero_grad()
-            self.manual_backward(d_loss, retain_graph=True)
+            self.manual_backward(d_loss)
             if self.cfg["train"]["gradient_clipping_D"]:
                 self.clip_gradients(
                     d_opt,
@@ -1222,5 +1229,4 @@ class AllLoss(pl.LightningModule):
                 )
             d_opt.step()
             self.untoggle_optimizer(d_opt)
-
         return total_loss

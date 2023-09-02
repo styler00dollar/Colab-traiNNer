@@ -44,7 +44,7 @@ if __name__ == "__main__":
     # limit_val_batches=0
 
     # Warning: stochastic_weight_avg **can cause crashing after an epoch**. Test if it crashes first if you reach next epoch. Not all generators are tested.
-    if cfg["use_tpu"] == False and cfg["use_amp"] == False:
+    if cfg["use_tpu"] == False:
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
             log_every_n_steps=50,
@@ -54,28 +54,13 @@ if __name__ == "__main__":
             accelerator="gpu",
             devices=cfg["gpus"],
             precision=32,
-            max_epochs=cfg["datasets"]["train"]["max_epochs"],
-            default_root_dir=cfg["default_root_dir"],
-        )
-    # GPU with AMP (amp_level='O1' = mixed precision, 'O2' = Almost FP16, 'O3' = FP16)
-    # https://nvidia.github.io/apex/amp.html?highlight=opt_level#o1-mixed-precision-recommended-for-typical-use
-    if cfg["use_tpu"] == False and cfg["use_amp"] == True:
-        trainer = pl.Trainer(
-            num_sanity_val_steps=0,
-            log_every_n_steps=50,
-            check_val_every_n_epoch=None,
-            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]),
-            logger=None,
-            accelerator="gpu",
-            devices=cfg["gpus"],
-            precision=16,
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
             default_root_dir=cfg["default_root_dir"],
         )
 
     # 2+ cfg['gpus'] (locally, not inside Google Colab)
     # Recommended: Pytorch 1.8+. 1.7.1 seems to have dataloader issues and ddp only works if code is run within console.
-    if cfg["use_tpu"] == False and cfg["gpus"] > 1 and cfg["use_amp"] == False:
+    if cfg["use_tpu"] == False and cfg["gpus"] > 1:
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
             log_every_n_steps=50,
@@ -86,25 +71,6 @@ if __name__ == "__main__":
             accelerator="gpu",
             devices=cfg["gpus"],
             precision=32,
-            strategy=cfg["distributed_backend"],
-            max_epochs=cfg["datasets"]["train"]["max_epochs"],
-            default_root_dir=cfg["default_root_dir"],
-        )
-
-    if cfg["use_tpu"] == False and cfg["gpus"] > 1 and cfg["use_amp"] == True:
-        trainer = pl.Trainer(
-            plugins=pl.plugins.precision.NativeMixedPrecisionPlugin(
-                precision="16", device="cuda"
-            ),
-            num_sanity_val_steps=0,
-            log_every_n_steps=50,
-            resume_from_checkpoint=cfg["path"]["checkpoint_path"],
-            check_val_every_n_epoch=None,
-            val_check_interval=int(cfg["datasets"]["train"]["save_step_frequency"]),
-            logger=None,
-            accelerator="gpu",
-            devices=cfg["gpus"],
-            precision=16,
             strategy=cfg["distributed_backend"],
             max_epochs=cfg["datasets"]["train"]["max_epochs"],
             default_root_dir=cfg["default_root_dir"],

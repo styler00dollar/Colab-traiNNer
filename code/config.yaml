@@ -4,7 +4,7 @@ gpus: 1 # amount of gpus, 0 = cpu
 strategy: ddp # dp, ddp, ddp_spawn, ddp2, horovod, bagua
 tpu_cores: 8 # 8 if you use a Google Colab TPU
 use_tpu: False
-use_amp: True
+use_precision: bf16 # bf16 | fp16 | fp32
 use_swa: False
 progress_bar_refresh_rate: 20
 default_root_dir: '/home/user/Schreibtisch/Colab-traiNNer/train'

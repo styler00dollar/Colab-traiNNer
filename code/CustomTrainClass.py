@@ -124,6 +124,13 @@ class CustomTrainClass(pl.LightningModule):
 
             self.RealESRGANDatasetApply = RealESRGANDatasetApply(self.device)
 
+        if cfg["use_precision"] == "bf16":
+            self.autocast_precision = torch.bfloat16
+        elif cfg["use_precision"] == "fp16":
+            self.autocast_precision = torch.float16
+        elif cfg["use_precision"] == "fp32":
+            self.autocast_precision = torch.float32
+
     def forward(self, image, masks):
         return self.netG(image, masks)
 
@@ -185,52 +192,55 @@ class CustomTrainClass(pl.LightningModule):
 
         total_loss = 0
 
-        out, other = generate(
-            cfg=cfg,
-            lr_image=lr_image,
-            hr_image=hr_image,
-            netG=self.netG,
-            other=other,
-            global_step=self.trainer.global_step,
-            arch=arch,
-            arch_name=cfg["network_G"]["netG"],
-        )
-
-        total_loss += self.loss(
-            out=out,
-            hr_image=hr_image,
-            writer=writer,
-            global_step=self.trainer.global_step,
-            optimizer_idx=optimizer_idx,
-            netD=self.netD,
-            other=other,
-        )
-
-        if cfg["network_G_teacher"]["netG"] != None:
-            out_teacher, other_teacher = generate(
+        with torch.autocast(
+            device_type="cuda", dtype=self.autocast_precision, enabled=True
+        ):
+            out, other = generate(
                 cfg=cfg,
                 lr_image=lr_image,
                 hr_image=hr_image,
-                netG=self.netG_teacher,
-                other=other_teacher,
+                netG=self.netG,
+                other=other,
                 global_step=self.trainer.global_step,
                 arch=arch,
-                arch_name=cfg["network_G_teacher"]["netG"],
+                arch_name=cfg["network_G"]["netG"],
             )
 
             total_loss += self.loss(
                 out=out,
-                hr_image=out_teacher,
+                hr_image=hr_image,
                 writer=writer,
                 global_step=self.trainer.global_step,
                 optimizer_idx=optimizer_idx,
                 netD=self.netD,
                 other=other,
-                other_teacher=other_teacher,
-                log_suffix="_teacher",
             )
 
-        return total_loss
+            if cfg["network_G_teacher"]["netG"] != None:
+                out_teacher, other_teacher = generate(
+                    cfg=cfg,
+                    lr_image=lr_image,
+                    hr_image=hr_image,
+                    netG=self.netG_teacher,
+                    other=other_teacher,
+                    global_step=self.trainer.global_step,
+                    arch=arch,
+                    arch_name=cfg["network_G_teacher"]["netG"],
+                )
+
+                total_loss += self.loss(
+                    out=out,
+                    hr_image=out_teacher,
+                    writer=writer,
+                    global_step=self.trainer.global_step,
+                    optimizer_idx=optimizer_idx,
+                    netD=self.netD,
+                    other=other,
+                    other_teacher=other_teacher,
+                    log_suffix="_teacher",
+                )
+
+            return total_loss
 
     def configure_optimizers(self):
         if cfg["network_G"]["finetune"] is True:
