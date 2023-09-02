@@ -24,6 +24,7 @@ from loss.loss import (
     ConsistencyLoss,
     CannyLoss,
     KullbackHistogramLoss,
+    KullbackHistogramLossV2,
     SalientRegionLoss,
     glcmLoss,
     GradientDomainLoss,
@@ -35,6 +36,8 @@ from loss.loss import (
     LaplacianLoss,
     SobelLossV2,
     textured_loss,
+    ldl_loss,
+    IQA_loss,
 )
 from piq import (
     SSIMLoss,
@@ -137,6 +140,7 @@ class AllLoss(pl.LightningModule):
             timm_model=cfg["train"]["timm_model"],
         )
         self.textured_loss = textured_loss()
+        self.ldl_loss = ldl_loss()
 
         self.MSELoss = torch.nn.MSELoss()
         self.L1Loss = nn.L1Loss()
@@ -251,6 +255,7 @@ class AllLoss(pl.LightningModule):
         )
 
         self.KullbackHistogramLoss = KullbackHistogramLoss()
+        self.KullbackHistogramLossV2 = KullbackHistogramLossV2()
         self.SalientRegionLoss = SalientRegionLoss()
         self.glcmLoss = glcmLoss()
         self.GradientDomainLoss = GradientDomainLoss()
@@ -294,23 +299,7 @@ class AllLoss(pl.LightningModule):
 
         self.LapLoss = LapLoss()
 
-        # piq loss
-        self.SSIMLoss = SSIMLoss()
-        self.MultiScaleSSIMLoss = MultiScaleSSIMLoss()
-        self.VIFLoss = VIFLoss()
-        self.FSIMLoss = FSIMLoss()
-        self.GMSDLoss = GMSDLoss()
-        self.MultiScaleGMSDLoss = MultiScaleGMSDLoss()
-        self.VSILoss = VSILoss()
-        self.HaarPSILoss = HaarPSILoss()
-        self.MDSILoss = MDSILoss()
-        self.BRISQUELoss = BRISQUELoss()
-        self.PieAPP = PieAPP(enable_grad=True)
-        self.DISTS = DISTS()
-        self.IS = IS()
-        self.FID = FID()
-        self.KID = KID()
-        self.PR = PR()
+        self.iqa_loss = IQA_loss()
 
         if cfg["network_G"]["netG"] == "rife":
             from loss.loss import SOBEL
@@ -575,6 +564,16 @@ class AllLoss(pl.LightningModule):
                     "loss/SmoothL1" + log_suffix, SmoothL1_forward, global_step
                 )
 
+        if self.cfg["train"]["SoftMargin_weight"] > 0:
+            SoftMargin_forward = self.cfg["train"][
+                "SoftMargin_weight"
+            ] * self.SoftMarginLoss(out, hr_image)
+            total_loss += SoftMargin_forward
+            if self.cfg["logging"]:
+                writer.add_scalar(
+                    "loss/SoftMargin" + log_suffix, SoftMargin_forward, global_step
+                )
+
         if self.cfg["train"]["Lap_weight"] > 0:
             Lap_forward = (
                 self.cfg["train"]["Lap_weight"] * (self.LapLoss(out, hr_image)).mean()
@@ -658,167 +657,6 @@ class AllLoss(pl.LightningModule):
                     "loss/FFLoss" + log_suffix, FFLoss_forward, global_step
                 )
 
-        if self.cfg["train"]["SSIMLoss_weight"] > 0:
-            SSIMLoss_forward = self.cfg["train"]["SSIMLoss_weight"] * self.SSIMLoss(
-                out, hr_image
-            )
-            total_loss += SSIMLoss_forward
-            if self.cfg["logging"]:
-                writer.add_scalar(
-                    "loss/SSIM" + log_suffix, SSIMLoss_forward, global_step
-                )
-
-        if self.cfg["train"]["MultiScaleSSIMLoss_weight"] > 0:
-            MultiScaleSSIMLoss_forward = self.cfg["train"][
-                "MultiScaleSSIMLoss_weight"
-            ] * (self.MultiScaleSSIMLoss(out, hr_image))
-            total_loss += MultiScaleSSIMLoss_forward
-            if self.cfg["logging"]:
-                writer.add_scalar(
-                    "loss/MultiScaleSSIM" + log_suffix,
-                    MultiScaleSSIMLoss_forward,
-                    global_step,
-                )
-
-        if self.cfg["train"]["VIFLoss_weight"] > 0:
-            VIFLoss_forward = self.cfg["train"]["VIFLoss_weight"] * self.VIFLoss(
-                out, hr_image
-            )
-            total_loss += VIFLoss_forward
-            if self.cfg["logging"]:
-                writer.add_scalar("loss/VIF" + log_suffix, VIFLoss_forward, global_step)
-
-        if self.cfg["train"]["FSIMLoss_weight"] > 0:
-            FSIMLoss_forward = self.cfg["train"]["FSIMLoss_weight"] * self.FSIMLoss(
-                out, hr_image
-            )
-            total_loss += FSIMLoss_forward
-            if self.cfg["logging"]:
-                writer.add_scalar(
-                    "loss/FSIM" + log_suffix, FSIMLoss_forward, global_step
-                )
-
-        if self.cfg["train"]["GMSDLoss_weight"] > 0:
-            GMSDLoss_forward = self.cfg["train"]["GMSDLoss_weight"] * self.GMSDLoss(
-                out, hr_image
-            )
-            total_loss += GMSDLoss_forward
-            if self.cfg["logging"]:
-                writer.add_scalar(
-                    "loss/GMSD" + log_suffix, GMSDLoss_forward, global_step
-                )
-
-        if self.cfg["train"]["MultiScaleGMSDLoss_weight"] > 0:
-            MultiScaleGMSDLoss_forward = self.cfg["train"][
-                "MultiScaleGMSDLoss_weight"
-            ] * self.MultiScaleGMSDLoss(out, hr_image)
-            total_loss += MultiScaleGMSDLoss_forward
-            if self.cfg["logging"]:
-                writer.add_scalar(
-                    "loss/MultiScaleGMSD" + log_suffix,
-                    MultiScaleGMSDLoss_forward,
-                    global_step,
-                )
-
-        if self.cfg["train"]["VSILoss_weight"] > 0:
-            VSILoss_forward = self.cfg["train"]["VSILoss_weight"] * (
-                self.VSILoss(out, hr_image)
-            )
-            total_loss += VSILoss_forward
-            if self.cfg["logging"]:
-                writer.add_scalar("loss/VSI" + log_suffix, VSILoss_forward, global_step)
-
-        if self.cfg["train"]["HaarPSILoss_weight"] > 0:
-            HaarPSILoss_forward = self.cfg["train"][
-                "HaarPSILoss_weight"
-            ] * self.HaarPSILoss(out, hr_image)
-            total_loss += HaarPSILoss_forward
-            if self.cfg["logging"]:
-                writer.add_scalar(
-                    "loss/HaarPSI" + log_suffix, HaarPSILoss_forward, global_step
-                )
-
-        if self.cfg["train"]["MDSILoss_weight"] > 0:
-            MDSILoss_forward = self.cfg["train"]["MDSILoss_weight"] * self.MDSILoss(
-                out, hr_image
-            )
-            total_loss += MDSILoss_forward
-            if self.cfg["logging"]:
-                writer.add_scalar(
-                    "loss/DSI" + log_suffix, MDSILoss_forward, global_step
-                )
-
-        if self.cfg["train"]["BRISQUELoss_weight"] > 0:
-            BRISQUELoss_forward = self.cfg["train"][
-                "BRISQUELoss_weight"
-            ] * self.BRISQUELoss(out)
-            total_loss += BRISQUELoss_forward
-            if self.cfg["logging"]:
-                writer.add_scalar(
-                    "loss/BRISQUE" + log_suffix, BRISQUELoss_forward, global_step
-                )
-
-        if self.cfg["train"]["PieAPP_weight"] > 0:
-            PieAPP_forward = self.cfg["train"]["PieAPP_weight"] * self.PieAPP(
-                out, hr_image
-            )
-            total_loss += PieAPP_forward
-            if self.cfg["logging"]:
-                writer.add_scalar(
-                    "loss/PieAPP" + log_suffix, PieAPP_forward, global_step
-                )
-
-        if self.cfg["train"]["DISTS_weight"] > 0:
-            DISTS_forward = self.cfg["train"]["DISTS_weight"] * self.DISTS(
-                out, hr_image
-            )
-            total_loss += DISTS_forward
-            if self.cfg["logging"]:
-                writer.add_scalar("loss/DISTS" + log_suffix, DISTS_forward, global_step)
-
-        if self.cfg["train"]["IS_weight"] > 0:
-            if self.cfg["train"]["force_piq_fp16"] is True:
-                i1 = self.piq_model(out.half())
-                i2 = self.piq_model(hr_image.half())
-            else:
-                i1 = self.piq_model(out)
-                i2 = self.piq_model(hr_image)
-            IS_forward = self.cfg["train"]["IS_weight"] * self.IS(i1, i2)
-            total_loss += IS_forward
-            if self.cfg["logging"]:
-                writer.add_scalar("loss/IS" + log_suffix, IS_forward, global_step)
-
-        if self.cfg["train"]["FID_weight"] > 0:
-            if self.cfg["train"]["force_piq_fp16"] is True:
-                i1 = self.piq_model(out.half())
-                i2 = self.piq_model(hr_image.half())
-            else:
-                i1 = self.piq_model(out)
-                i2 = self.piq_model(hr_image)
-            FID_forward = self.cfg["train"]["FID_weight"] * self.FID(i1, i2)
-            total_loss += FID_forward
-            if self.cfg["logging"]:
-                writer.add_scalar("loss/FID" + log_suffix, FID_forward, global_step)
-
-        if self.cfg["train"]["KID_weight"] > 0:
-            if self.cfg["train"]["force_piq_fp16"] is True:
-                i1 = self.piq_model(out.half())
-                i2 = self.piq_model(hr_image.half())
-            else:
-                i1 = self.piq_model(out)
-                i2 = self.piq_model(hr_image)
-            KID_forward = self.cfg["train"]["KID_weight"] * self.KID(i1, i2)
-            total_loss += KID_forward
-            if self.cfg["logging"]:
-                writer.add_scalar("loss/KID" + log_suffix, KID_forward, global_step)
-
-        if self.cfg["train"]["PR_weight"] > 0:
-            precision, recall = self.PR(self.piq_model(out), self.piq_model(hr_image))
-            PR_forward = self.cfg["train"]["PR_weight"] * (precision**-1)
-            total_loss += PR_forward
-            if self.cfg["logging"]:
-                writer.add_scalar("loss/PR" + log_suffix, PR_forward, global_step)
-
         if self.cfg["train"]["Canny_weight"] > 0:
             Canny_forward = self.cfg["train"]["Canny_weight"] * self.CannyLoss(
                 out, hr_image
@@ -837,6 +675,18 @@ class AllLoss(pl.LightningModule):
             if self.cfg["logging"]:
                 writer.add_scalar(
                     "loss/KullbackHistogramLoss" + log_suffix,
+                    KullbackHistogramLoss_forward,
+                    global_step,
+                )
+
+        if self.cfg["train"]["KullbackHistogramLossV2_weight"] > 0:
+            KullbackHistogramLoss_forward = self.cfg["train"][
+                "KullbackHistogramLossV2_weight"
+            ] * self.KullbackHistogramLoss(out.float(), hr_image.float())
+            total_loss += KullbackHistogramLoss_forward
+            if self.cfg["logging"]:
+                writer.add_scalar(
+                    "loss/KullbackHistogramLossV2" + log_suffix,
                     KullbackHistogramLoss_forward,
                     global_step,
                 )
@@ -970,6 +820,28 @@ class AllLoss(pl.LightningModule):
                 writer.add_scalar(
                     "loss/textured_loss" + log_suffix,
                     textured_loss_forward,
+                    global_step,
+                )
+
+        if self.cfg["train"]["ldl_weight"] > 0:
+            ldl_loss_forward = self.cfg["train"]["ldl_weight"] * self.ldl_loss(
+                out, hr_image
+            )
+            total_loss += ldl_loss_forward
+            if self.cfg["logging"]:
+                writer.add_scalar(
+                    "loss/ldl" + log_suffix, ldl_loss_forward, global_step
+                )
+
+        if self.cfg["train"]["iqa_weight"] > 0:
+            iqa_loss_forward = self.cfg["train"]["iqa_weight"] * self.iqa_loss(
+                out, hr_image
+            )
+            total_loss += iqa_loss_forward
+            if self.cfg["logging"]:
+                writer.add_scalar(
+                    "loss/iqa_" + self.cfg["train"]["iqa_metric"] + log_suffix,
+                    iqa_loss_forward,
                     global_step,
                 )
 

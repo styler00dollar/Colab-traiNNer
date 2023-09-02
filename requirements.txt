@@ -21,7 +21,6 @@ git+https://github.com/huggingface/pytorch-image-models
 pillow-avif-plugin
 kornia
 omegaconf
-git+https://github.com/styler00dollar/piq.git
 --extra-index-url https://download.pytorch.org/whl/nightly/cu121
 torch==2.1.0.dev20230626+cu121
 torchvision==0.16.0.dev20230626+cu121
@@ -31,3 +30,4 @@ git+https://github.com/huggingface/transformers
 gdown
 PyTurboJPEG
 wavemix
+pyiqa

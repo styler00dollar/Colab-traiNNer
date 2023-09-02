@@ -234,6 +234,7 @@ def CreateOptimizer(cfg, input_G, input_D=None):
                 opt_d = pytorch_optimizer.Tiger(input_D, lr=cfg["train"]["lr_g"])
         if cfg["train"]["scheduler"] == "AdamW":
             import torch
+
             opt_g = torch.optim.AdamW(input_G, lr=cfg["train"]["lr_g"])
             if cfg["network_D"]["netD"] is not None:
                 opt_d = torch.optim.AdamW(input_D, lr=cfg["train"]["lr_g"])

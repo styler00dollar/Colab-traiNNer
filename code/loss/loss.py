@@ -13,6 +13,7 @@ import numpy as np
 import kornia
 from transformers import ViTModel
 import timm
+import pyiqa
 
 # import pdb
 
@@ -1883,6 +1884,39 @@ class KullbackHistogramLoss(torch.nn.Module):
         return loss.mean()
 
 
+class KullbackHistogramLossV2(torch.nn.Module):
+    def __init__(self):
+        super(KullbackHistogramLossV2, self).__init__()
+        self.criterion = torch.nn.L1Loss()
+
+    def rgb_to_gray(self, rgb_tensor):
+        # Convert RGB to grayscale using luminosity method
+        gray_tensor = (
+            0.21 * rgb_tensor[:, 0] + 0.72 * rgb_tensor[:, 1] + 0.07 * rgb_tensor[:, 2]
+        )
+        return gray_tensor.unsqueeze(1)
+
+    def forward(self, sr_img, hr_img, bins=256, sigma=1, device=None):
+        sr_img = self.rgb_to_gray(sr_img).view(-1)
+        hr_img = self.rgb_to_gray(hr_img).view(-1)
+
+        # Compute color histograms
+        hr_hist = torch.histc(hr_img, bins=bins, min=0, max=1)
+        sr_hist = torch.histc(sr_img, bins=bins, min=0, max=1)
+
+        # Normalize histograms
+        hr_hist = hr_hist / hr_hist.sum()
+        sr_hist = sr_hist / sr_hist.sum()
+
+        # Compute Kullback-Leibler divergence
+        kl_div = F.kl_div(torch.log(sr_hist + 1e-10), hr_hist, reduction="sum")
+
+        # Apply Gaussian smoothing
+        kl_div = torch.exp(-kl_div * sigma)
+
+        return kl_div
+
+
 ################
 # Salient Region Loss using the Spectral Residual (SR) saliency detection method
 ################
@@ -2526,3 +2560,98 @@ class textured_loss(nn.Module):
         texture_loss = torch.mean(gradient * self.texture_weight)
 
         return texture_loss
+
+
+###############
+# LDL loss without ema to simplify loss
+# https://github.com/csjliang/LDL
+###############
+
+
+class ldl_loss(nn.Module):
+    def __init__(self):
+        super(ldl_loss, self).__init__()
+        self.criterion = torch.nn.L1Loss()
+
+    def forward(self, input_img, target_img):
+        pixel_weight = self.get_refined_artifact_map(target_img, input_img, 7)
+        return self.criterion(
+            torch.mul(pixel_weight, input_img), torch.mul(pixel_weight, target_img)
+        )
+
+    def get_local_weights(self, residual, ksize):
+        """Get local weights for generating the artifact map of LDL.
+        It is only called by the `get_refined_artifact_map` function.
+        Args:
+            residual (Tensor): Residual between predicted and ground truth images.
+            ksize (Int): size of the local window.
+        Returns:
+            Tensor: weight for each pixel to be discriminated as an artifact pixel
+        """
+
+        pad = (ksize - 1) // 2
+        residual_pad = F.pad(residual, pad=[pad, pad, pad, pad], mode="reflect")
+
+        unfolded_residual = residual_pad.unfold(2, ksize, 1).unfold(3, ksize, 1)
+        pixel_level_weight = (
+            torch.var(unfolded_residual, dim=(-1, -2), unbiased=True, keepdim=True)
+            .squeeze(-1)
+            .squeeze(-1)
+        )
+
+        return pixel_level_weight
+
+    def get_refined_artifact_map(self, img_gt, img_output, ksize):
+        """Calculate the artifact map of LDL
+        (Details or Artifacts: A Locally Discriminative Learning Approach to Realistic Image Super-Resolution. In CVPR 2022)
+        Args:
+            img_gt (Tensor): ground truth images.
+            img_output (Tensor): output images given by the optimizing model.
+            ksize (Int): size of the local window.
+        Returns:
+            overall_weight: weight for each pixel to be discriminated as an artifact pixel
+            (calculated based on both local and global observations).
+        """
+        residual_sr = torch.sum(torch.abs(img_gt - img_output), 1, keepdim=True)
+
+        patch_level_weight = torch.var(
+            residual_sr.clone(), dim=(-1, -2, -3), keepdim=True
+        ) ** (1 / 5)
+        pixel_level_weight = self.get_local_weights(residual_sr.clone(), ksize)
+        overall_weight = patch_level_weight * pixel_level_weight
+        return overall_weight
+
+
+###############
+# IQA-PyTorch loss
+# https://github.com/chaofengc/IQA-PyTorch/blob/6f75bdea3c18e3c414ceb81238950f68d559a76b/docs/ModelCard.md
+# https://github.com/chaofengc/IQA-PyTorch/blob/6f75bdea3c18e3c414ceb81238950f68d559a76b/pyiqa/default_model_configs.py
+###############
+
+
+class IQA_loss(nn.Module):
+    def __init__(self, iqa_metric="cw_ssim", iqa_method="FR", iqa_invert=True):
+        super(IQA_loss, self).__init__()
+        device = (
+            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        )
+        self.iqa_metric = pyiqa.create_metric(iqa_metric, device=device)
+        self.iqa_method = iqa_method
+        self.iqa_invert = iqa_invert
+
+    def forward(self, out, hr):
+        result = 0
+
+        assert self.iqa_method in [
+            "FR",
+            "NR",
+        ], "Invalid IQA method specified. Either FR or NR."
+
+        if self.iqa_method == "FR":
+            result = torch.mean(self.iqa_metric(out, hr))
+        elif self.iqa_method == "NR":
+            result = torch.mean(self.iqa_metric(out))
+
+        if self.iqa_invert:
+            return 1 - result
+        return result

@@ -94,10 +94,10 @@ datasets:
     dataroot_LR: '/home/user/Schreibtisch/Colab-traiNNer/train/val_input' # Inpainting will use this directory as input
 
 path:
-    pretrain_model_G: #'/workspace/tensorrt/lite/cugan_2x_fast_pretrain.pth'
+    pretrain_model_G: 
     pretrain_model_G_teacher:
     pretrain_model_D:
-    checkpoint_path:  #"/home/user/Schreibtisch/Colab-traiNNer/train/rvp2.1_resnet3d/epoch=33-step=129990.ckpt"
+    checkpoint_path: 
     checkpoint_save_path: '/home/user/Schreibtisch/GIT/Colab-traiNNer/train'
     validation_output_path: '/home/user/Schreibtisch/GIT/Colab-traiNNer/train/val/'
     log_path: '/home/user/Schreibtisch/GIT/Colab-traiNNer/train/logs/'
@@ -1054,19 +1054,20 @@ train:
 
     # Examples are: AdamW, AdamP, Lamb, DAdaptAdan, Prodigy
     
-    scheduler: DAdaptAdan
+    scheduler: Prodigy
     # ACG needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"
     AGC: False # currently only for generator, only works with certain optimizers
-    lr_g: 0.001 # 0.0005
-    lr_d: 0.001 # 0.0005
+    lr_g: 1 # 0.0005
+    lr_d: 1 # 0.0005
     gradient_clipping_G: true
     gradient_clipping_G_value: 1
     gradient_clipping_D: true
     gradient_clipping_D_value: 1
 
     ############################
+    ## Losses ##    
+    ############################
 
-    # Losses:
     L1Loss_weight: 0
 
     # HFENLoss
@@ -1159,23 +1160,20 @@ train:
     # fp16 will only work on fp16 compatible hardware, convert will only work with a GPU, FP16 untested
     perceptual_tensorrt: False 
 
-
     # high receptive field (HRF) perceptual loss
     # you can download it manually with this command, but the code will download it automatically if you don't have it
     # wget -P /content/ http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50dilated-ppm_deepsup/encoder_epoch_20.pth
     hrf_perceptual_weight: 0
-    force_fp16_hrf: True # not supported for cpu
+    force_fp16_hrf: True
 
+    ldl_weight: 0
     FrobeniusNormLoss_weight: 0
     GradientLoss_weight: 0
     MultiscalePixelLoss_weight: 0
     SPLoss_weight: 0
     FFLoss_weight: 0
-
-    # only if the network outputs 2 images, will use l1
-    stage1_weight: 0 
-
     Lap_weight: 0
+    SoftMargin_weight: 0
 
     # pytorch loss functions
     MSE_weight: 0
@@ -1183,35 +1181,80 @@ train:
     Huber_weight: 0
     SmoothL1_weight: 0
 
-    # piq loss
-    SSIMLoss_weight: 0
-    MultiScaleSSIMLoss_weight: 0
-    VIFLoss_weight: 0
-    FSIMLoss_weight: 0 # unstable
-    GMSDLoss_weight: 0 # unstable
-    MultiScaleGMSDLoss_weight: 0 # unstable
-    VSILoss_weight: 0 # unstable
-    HaarPSILoss_weight: 0
-    MDSILoss_weight: 0 # unstable
-    BRISQUELoss_weight: 0 # unstable
-    PieAPP_weight: 0
-    DISTS_weight: 0
-    # the losses below require a GPU
-    # may be changed in the future, to have custom feature extractors
-    IS_weight: 0 # unstable
-    FID_weight: 0
-    KID_weight: 0
-    PR_weight: 0 # only fp32
-    # todo(?): LPIPS
-    force_piq_fp16: True
+    ############################
+    ## ARCH SPECIFIC LOSS ##
+    ############################
+    # only if the network outputs 2 images, will use l1
+    stage1_weight: 0 
 
     # loss for CTSDG
     CTSDG_edge_weight: 0 #0.01
     CTSDG_projected_weight: 0 #0.1
-
     # loss for rife
     SOBEL_weight: 0 # not recommended, leave it at 0
 
+    ############################
+    ## EXPERIMENTAL LOSS ##
+    ############################
+    YUVColorLoss_weight: 0
+    XYZColorLoss_weight: 0
+    KullbackHistogramLoss_weight: 0 # fp16 doesn't work
+    KullbackHistogramLossV2_weight: 0
+    SalientRegionLoss_weight: 0 # fp16 doesn't work, big values, use ~0.1 weight
+    glcmLoss_weight: 0 # big values, use ~0.001 weight
+    GradientDomainLoss_weight: 0
+    SobelLoss_weight: 0
+    SobelLossV2_weight: 0
+    ColorHarmonyLoss_weight: 0
+    VIT_FeatureLoss_weight: 0
+    VIT_MMD_FeatureLoss_weight: 0 # big values, use ~0.001 weight
+    LaplacianLoss_weight: 0
+    textured_loss_weight: 0
+
+    # Canny [PROBABLY BROKEN, NEEDS TO BE TESTED]
+    Canny_weight: 0 # 0.01
+    canny_threshold: 5
+    canny_blurred_img_weight: 0
+    canny_grad_mag_weight: 0
+    canny_grad_orientation_weight: 0
+    canny_thin_edges_weight: 0
+    canny_thresholded_weight: 0
+    canny_early_threshold: 0.5
+
+    TIMM_FeatureLoss_weight: 0
+    # https://github.com/huggingface/pytorch-image-models/blob/main/results/results-imagenet.csv
+    TIMM_FeatureLoss_arch: tf_efficientnetv2_b0 # davit_small (224), davit_base (224), maxvit_xlarge_tf_512, tf_efficientnetv2_b0 (224), tf_efficientnet_l2 (800)
+    TIMM_FeatureLoss_resolution: 512
+    TIMM_FeatureLoss_fp16: True
+    TIMM_FeatureLoss_criterion: huber # huber, mse, l1, cross_entropy, kullback
+    TIMM_FeatureLoss_normalize: True
+    TIMM_FeatureLoss_last_feature: False # False means that all features will be used in a sum
+
+    # IQA-PyTorch Loss
+    iqa_weight: 1
+    # https://github.com/chaofengc/IQA-PyTorch/blob/main/pyiqa/default_model_configs.py
+    # only fr methods
+    ## method FR
+    # ahiq | ckdn | lpips | lpips-vgg | stlpips | stlpips-vgg | dists | ssim | ssimc | 
+    # psnr | psnry | fsim | ms_ssim | vif | gmsd | nlpd | vsi | cw_ssim | mad | pieapp | 
+    # topiq_fr | topiq_fr-pipal
+    ## method NR
+    # niqe | ilniqe | brisque | nrqm | pi | cnniqa | musiq | musiq-ava | musiq-koniq |
+    # musiq-paq2piq | musiq-spaq | nima | nima-vgg16-ava | pieapp | paq2piq | dbcnn |
+    # fid | maniqa | maniqa-koniq | maniqa-pipal | maniqa-kadid | clipiqa | clipiqa+ |
+    # clipiqa+_vitL14_512 | clipiqa+_rn50_512 | tres | tres-koniq | tres-flive | hyperiqa |
+    # uranker | clipscore | entropy | topiq_nr | topiq_nr-flive | topiq_nr-spaq | topiq_iaa
+    # topiq_iaa_res50 | laion_aes
+    iqa_metric: "cw_ssim" 
+    iqa_method: FR
+    # inform yourself value going to 1 or to 0 means higher quality
+    # if set to true, it will apply 1 - result instead of returning result
+    # higher value should return worse image quality
+    iqa_invert: True 
+
+    ############################
+    ## AUG OPTIONS ##
+    ############################
     # Three different augmentation options, diffaug and muaraugment apply to both training loops,
     # while batch_aug only applies to the discriminator training loop
     augmentation_method: batch_aug # diffaug, MuarAugment, batch_aug, None
@@ -1229,39 +1272,5 @@ train:
     aux_mixprob: 1.0
     aux_mixalpha: 1.2
 
-    # Metrics
+    ## Metrics ##
     metrics: [] # PSNR | SSIM | AE | MSE
-
-    # Canny [PROBABLY BROKEN]
-    Canny_weight: 0 # 0.01
-    canny_threshold: 5
-    canny_blurred_img_weight: 0
-    canny_grad_mag_weight: 0
-    canny_grad_orientation_weight: 0
-    canny_thin_edges_weight: 0
-    canny_thresholded_weight: 0
-    canny_early_threshold: 0.5
-
-    # EXPERIMENTAL
-    YUVColorLoss_weight: 0
-    XYZColorLoss_weight: 0
-    KullbackHistogramLoss_weight: 0 # only works in fp32
-    SalientRegionLoss_weight: 0 # only works in fp32, big values, use ~0.1 weight
-    glcmLoss_weight: 0 # big values, use ~0.001 weight
-    GradientDomainLoss_weight: 0
-    SobelLoss_weight: 0
-    SobelLossV2_weight: 0
-    ColorHarmonyLoss_weight: 0
-    VIT_FeatureLoss_weight: 0
-    VIT_MMD_FeatureLoss_weight: 0 # big values, use ~0.001 weight
-    LaplacianLoss_weight: 0
-    textured_loss_weight: 0
-
-    TIMM_FeatureLoss_weight: 0
-    # https://github.com/huggingface/pytorch-image-models/blob/main/results/results-imagenet.csv
-    TIMM_FeatureLoss_arch: tf_efficientnetv2_b0 # davit_small (224), davit_base (224), maxvit_xlarge_tf_512, tf_efficientnetv2_b0 (224), tf_efficientnet_l2 (800)
-    TIMM_FeatureLoss_resolution: 512
-    TIMM_FeatureLoss_fp16: True
-    TIMM_FeatureLoss_criterion: huber # huber, mse, l1, cross_entropy, kullback
-    TIMM_FeatureLoss_normalize: True
-    TIMM_FeatureLoss_last_feature: False # False means that all features will be used in a sum
