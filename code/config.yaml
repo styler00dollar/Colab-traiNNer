@@ -1211,8 +1211,8 @@ train:
     LaplacianLoss_weight: 0
     textured_loss_weight: 0
 
-    # Canny [PROBABLY BROKEN, NEEDS TO BE TESTED]
-    Canny_weight: 0 # 0.01
+    # Canny
+    Canny_weight: 1 # 0.01
     canny_threshold: 5
     canny_blurred_img_weight: 0
     canny_grad_mag_weight: 0
@@ -1247,7 +1247,7 @@ train:
     # topiq_iaa_res50 | laion_aes
     iqa_metric: "cw_ssim" 
     iqa_method: FR
-    # inform yourself value going to 1 or to 0 means higher quality
+    # inform yourself if value going to 1 or to 0 means higher quality
     # if set to true, it will apply 1 - result instead of returning result
     # higher value should return worse image quality
     iqa_invert: True 
