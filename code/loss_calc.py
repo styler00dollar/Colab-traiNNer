@@ -39,24 +39,7 @@ from loss.loss import (
     ldl_loss,
     IQA_loss,
 )
-from piq import (
-    SSIMLoss,
-    MultiScaleSSIMLoss,
-    VIFLoss,
-    FSIMLoss,
-    GMSDLoss,
-    MultiScaleGMSDLoss,
-    VSILoss,
-    HaarPSILoss,
-    MDSILoss,
-    BRISQUELoss,
-    PieAPP,
-    DISTS,
-    IS,
-    FID,
-    KID,
-    PR,
-)
+
 import torch
 import torch.nn as nn
 import os
