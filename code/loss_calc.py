@@ -492,7 +492,7 @@ class AllLoss(pl.LightningModule):
                 ] * self.perceptual_loss(in0=out, in1=hr_image)
             if self.cfg["logging"]:
                 writer.add_scalar(
-                    "loss/perceptual" + log_suffix, perceptual_loss_forward, global_step
+                    "loss/perceptual" + log_suffix, perceptual_loss_forward.float(), global_step
                 )
             total_loss += perceptual_loss_forward
 
