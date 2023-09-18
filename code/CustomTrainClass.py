@@ -106,19 +106,6 @@ class CustomTrainClass(pl.LightningModule):
 
         self.iter_check = 0
 
-        if (
-            cfg["train"]["KID_weight"] > 0
-            or cfg["train"]["IS_weight"] > 0
-            or cfg["train"]["FID_weight"] > 0
-            or cfg["train"]["PR_weight"] > 0
-        ):
-            from loss.inceptionV3 import fid_inception_v3
-
-            self.piq_model = fid_inception_v3()
-            self.piq_model = self.piq_model.cuda().eval()
-            if cfg["train"]["force_piq_fp16"] is True:
-                self.piq_model = self.piq_model.half()
-
         if cfg["datasets"]["train"]["mode"] == "DS_realesrgan":
             from data.realesrgan import RealESRGANDatasetApply
 
