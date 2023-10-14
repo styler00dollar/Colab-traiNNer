@@ -788,7 +788,7 @@ def CreateGenerator(cfg, scale):
             upsampler=cfg["upsampler"],
         )
 
-    elif cfg["netG"] == "window_size=ws,":
+    elif cfg["netG"] == "DCTLSA":
         from arch.dctlsa_arch import DCTLSA
 
         netG = DCTLSA(
