@@ -711,7 +711,7 @@ def CreateGenerator(cfg, scale):
             num_feat=cfg["num_feat"],
             window_size=cfg["window_size"],
             res_num=cfg["res_num"],
-            up_scale=scale,
+            upsampling=scale,
             bias=cfg["bias"],
             block_num=cfg["block_num"],
             pe=cfg["pe"],
@@ -786,6 +786,18 @@ def CreateGenerator(cfg, scale):
             img_range=cfg["img_range"],
             resi_connection=cfg["resi_connection"],
             upsampler=cfg["upsampler"],
+        )
+
+    elif cfg["netG"] == "window_size=ws,":
+        from arch.dctlsa_arch import DCTLSA
+
+        netG = DCTLSA(
+            in_nc=cfg["in_nc"],
+            nf=cfg["nf"],
+            num_modules=cfg["num_modules"],
+            out_nc=cfg["out_nc"],
+            upscale=scale,
+            num_head=cfg["num_head"],
         )
 
     ############################

@@ -387,11 +387,11 @@ class ModelBuilder:
     ):
         if segmentation:
             if not os.path.exists("encoder_epoch_20.pth"):
-                import gdown
+                import wget
 
-                url = "https://drive.google.com/uc?id=1WdN7_wZbT5ZFz1nkca41ug8MX-sTF2rf"
-                output = "encoder_epoch_20.pth"
-                gdown.download(url, output, quiet=False)
+                wget.download(
+                    "https://github.com/styler00dollar/Colab-traiNNer/releases/download/models/encoder_epoch_20.pth"
+                )
                 print("encoder_epoch_20.pth downloaded")
             else:
                 print("encoder_epoch_20.pth already downloaded")

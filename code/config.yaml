@@ -185,16 +185,16 @@ network_G:
     #pro_mode: True
 
     # OmniSR (2023)
-    #netG: OmniSR
-    #num_in_ch: 3
-    #num_out_ch: 3
-    #num_feat: 64
-    #window_size: 8
-    #res_num: 5
-    #bias: True
-    #block_num: 4
-    #pe: True
-    #ffn_bias: True
+    netG: OmniSR
+    num_in_ch: 3
+    num_out_ch: 3
+    num_feat: 64
+    window_size: 8
+    res_num: 5
+    bias: True
+    block_num: 4
+    pe: True
+    ffn_bias: True
 
     # EMT (2023)
     #netG: EMT
@@ -241,24 +241,32 @@ network_G:
     #patch_size: 8
 
     # dat (2023)
-    netG: dat
-    img_size: 64
-    in_chans: 3
-    embed_dim: 180
-    split_size: [2,4]
-    depth: [2,2,2,2]
-    num_heads: [2,2,2,2]
-    expansion_factor: 4.
-    qkv_bias: True
-    qk_scale: 
-    drop_rate: 0.
-    attn_drop_rate: 0.
-    drop_path_rate: 0.1
-    use_chk: False
-    upscale: 2,
-    img_range: 1.
-    resi_connection: '1conv'
-    upsampler: 'pixelshuffle'
+    #netG: dat
+    #img_size: 64
+    #in_chans: 3
+    #embed_dim: 180
+    #split_size: [2,4]
+    #depth: [2,2,2,2]
+    #num_heads: [2,2,2,2]
+    #expansion_factor: 4.
+    #qkv_bias: True
+    #qk_scale: 
+    #drop_rate: 0.
+    #attn_drop_rate: 0.
+    #drop_path_rate: 0.1
+    #use_chk: False
+    #upscale: 2,
+    #img_range: 1.
+    #resi_connection: '1conv'
+    #upsampler: 'pixelshuffle'
+
+    # DCTLSA (2023)
+    #netG: DCTLSA
+    #in_nc: 3
+    #nf: 55
+    #num_modules: 6
+    #out_nc: 3
+    #num_head: 5
 
     # SAFMN (2023)
     #netG: SAFMN
@@ -1212,7 +1220,7 @@ train:
     textured_loss_weight: 0
 
     # Canny
-    Canny_weight: 1 # 0.01
+    Canny_weight: 0 # 0.01
     canny_threshold: 5
     canny_blurred_img_weight: 0
     canny_grad_mag_weight: 0
@@ -1231,7 +1239,7 @@ train:
     TIMM_FeatureLoss_last_feature: False # False means that all features will be used in a sum
 
     # IQA-PyTorch Loss
-    iqa_weight: 1
+    iqa_weight: 0
     # https://github.com/chaofengc/IQA-PyTorch/blob/main/pyiqa/default_model_configs.py
     # only fr methods
     ## method FR
