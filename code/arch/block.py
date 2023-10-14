@@ -14,33 +14,54 @@ import yaml
 with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
+
 # CONV
-if cfg["network_G"]["convtype"] == "doconv":
-    from .conv.doconv import *
+conv_archs = ["MRRDBNet_FM", "RRDB_net", "SRVGGNetCompact", "ppon"]
+if "convtype" in cfg["network_G"]:
+    if (
+        cfg["network_G"]["convtype"] == "doconv"
+        and cfg["network_G"]["netG"] in conv_archs
+    ):
+        from .conv.doconv import *
 
-if cfg["network_G"]["convtype"] == "gated":
-    from .conv.gatedconv import *
+    if (
+        cfg["network_G"]["convtype"] == "gated"
+        and cfg["network_G"]["netG"] in conv_archs
+    ):
+        from .conv.gatedconv import *
 
-if cfg["network_G"]["convtype"] == "TBC":
-    from .conv.TBC import *
+    if cfg["network_G"]["convtype"] == "TBC" and cfg["network_G"]["netG"] in conv_archs:
+        from .conv.TBC import *
 
-if cfg["network_G"]["convtype"] == "dynamic":
-    from .conv.dynamicconv import *
+    if (
+        cfg["network_G"]["convtype"] == "dynamic"
+        and cfg["network_G"]["netG"] in conv_archs
+    ):
+        from .conv.dynamicconv import *
 
-    nof_kernels_param = cfg["network_G"]["nof_kernels"]
-    reduce_param = cfg["network_G"]["reduce"]
+        nof_kernels_param = cfg["network_G"]["nof_kernels"]
+        reduce_param = cfg["network_G"]["reduce"]
 
-if cfg["network_G"]["convtype"] == "MBConv":
-    from .conv.MBConv import MBConv
+    if (
+        cfg["network_G"]["convtype"] == "MBConv"
+        and cfg["network_G"]["netG"] in conv_archs
+    ):
+        from .conv.MBConv import MBConv
 
-if cfg["network_G"]["convtype"] == "CondConv":
-    from .conv.CondConv import CondConv
+    if (
+        cfg["network_G"]["convtype"] == "CondConv"
+        and cfg["network_G"]["netG"] in conv_archs
+    ):
+        from .conv.CondConv import CondConv
 
-if cfg["network_G"]["convtype"] == "fft":
-    from .lama_arch import FourierUnit
+    if cfg["network_G"]["convtype"] == "fft" and cfg["network_G"]["netG"] in conv_archs:
+        from .lama_arch import FourierUnit
 
-if cfg["network_G"]["convtype"] == "WSConv":
-    from nfnets import WSConv2d, WSConvTranspose2d, ScaledStdConv2d
+    if (
+        cfg["network_G"]["convtype"] == "WSConv"
+        and cfg["network_G"]["netG"] in conv_archs
+    ):
+        from nfnets import WSConv2d, WSConvTranspose2d, ScaledStdConv2d
 
 ####################
 # Basic blocks

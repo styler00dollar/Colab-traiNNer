@@ -844,15 +844,14 @@ network_D:
     #z_norm: False
 
     # PatchGAN
-    #netD: NLayerDiscriminator
-    #input_nc: 3
-    #ndf: 64
-    #n_layers: 3
-    #norm_layer: nn.BatchNorm2d
-    #use_sigmoid: False
-    #getIntermFeat: False
-    #patch: True
-    #use_spectral_norm: False
+    netD: NLayerDiscriminator
+    input_nc: 3
+    ndf: 64
+    n_layers: 3
+    use_sigmoid: False
+    getIntermFeat: False
+    patch: True
+    use_spectral_norm: False
 
     # Multiscale
     #netD: MultiscaleDiscriminator

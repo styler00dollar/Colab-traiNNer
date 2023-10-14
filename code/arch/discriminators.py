@@ -1194,7 +1194,11 @@ class NLayerDiscriminator(nn.Module):
                 return [res[-1], res[1:-1]]
             return res[-1]
         # Standard forward.
-        return self.model(x)
+        # return self.model(x)
+
+        # TODO: check
+        result = self.model(x)
+        return torch.mean(torch.mean(result, dim=2), dim=2)
 
 
 class MultiscaleDiscriminator(nn.Module):
@@ -1282,8 +1286,11 @@ class MultiscaleDiscriminator(nn.Module):
                 feat_maps.extend(result[i][1])
             return [last_res, feat_maps]
         """
-        # TODO: creating average of all
-        return torch.mean(torch.mean(result[0], dim=2), dim=2)
+        # TODO: check
+        avg_sum = 0
+        for i in range(len(result)):
+            avg_sum += torch.mean(torch.mean(result[i][0], dim=2), dim=2)
+        return avg_sum / len(result)
 
 
 class PixelDiscriminator(nn.Module):

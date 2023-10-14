@@ -61,7 +61,6 @@ def CreateDiscriminator(cfg):
             input_nc=cfg["network_D"]["input_nc"],
             ndf=cfg["network_D"]["ndf"],
             n_layers=cfg["network_D"]["n_layers"],
-            norm_layer=cfg["network_D"]["norm_layer"],
             use_sigmoid=cfg["network_D"]["use_sigmoid"],
             get_feats=cfg["network_D"]["getIntermFeat"],
             patch=cfg["network_D"]["patch"],
