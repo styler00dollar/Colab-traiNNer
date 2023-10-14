@@ -53,236 +53,302 @@ class AllLoss(pl.LightningModule):
         self.automatic_optimization = False
 
         # loss functions
-        self.l1 = nn.L1Loss()
+        if cfg["train"]["L1Loss_weight"] > 0:
+            self.l1 = nn.L1Loss()
 
-        if cfg["train"]["loss_f"] == "L1Loss":
-            loss_f = torch.nn.L1Loss()
-        elif cfg["train"]["loss_f"] == "L1CosineSim":
-            loss_f = L1CosineSim(
+        if cfg["train"]["HFEN_weight"] > 0:
+            if cfg["train"]["loss_f"] == "L1Loss":
+                loss_f_hfen = torch.nn.L1Loss()
+            elif cfg["train"]["loss_f"] == "L1CosineSim":
+                loss_f_hfen = L1CosineSim(
+                    loss_lambda=cfg["train"]["loss_lambda"],
+                    reduction=cfg["train"]["reduction_L1CosineSim"],
+                )
+            self.HFENLoss = HFENLoss(
+                loss_f=loss_f_hfen,
+                kernel=cfg["train"]["kernel"],
+                kernel_size=cfg["train"]["kernel_size"],
+                sigma=cfg["train"]["sigma"],
+                norm=cfg["train"]["norm"],
+            )
+
+        if cfg["train"]["Elastic_weight"] > 0:
+            self.ElasticLoss = ElasticLoss(
+                a=cfg["train"]["a"], reduction=cfg["train"]["reduction_elastic"]
+            )
+
+        if cfg["train"]["Relative_l1_weight"] > 0:
+            self.RelativeL1 = RelativeL1(
+                eps=cfg["train"]["l1_eps"], reduction=cfg["train"]["reduction_relative"]
+            )
+
+        if cfg["train"]["L1CosineSim_weight"] > 0:
+            self.L1CosineSim = L1CosineSim(
                 loss_lambda=cfg["train"]["loss_lambda"],
                 reduction=cfg["train"]["reduction_L1CosineSim"],
             )
 
-        self.HFENLoss = HFENLoss(
-            loss_f=loss_f,
-            kernel=cfg["train"]["kernel"],
-            kernel_size=cfg["train"]["kernel_size"],
-            sigma=cfg["train"]["sigma"],
-            norm=cfg["train"]["norm"],
-        )
-        self.ElasticLoss = ElasticLoss(
-            a=cfg["train"]["a"], reduction=cfg["train"]["reduction_elastic"]
-        )
-        self.RelativeL1 = RelativeL1(
-            eps=cfg["train"]["l1_eps"], reduction=cfg["train"]["reduction_relative"]
-        )
-        self.L1CosineSim = L1CosineSim(
-            loss_lambda=cfg["train"]["loss_lambda"],
-            reduction=cfg["train"]["reduction_L1CosineSim"],
-        )
-        self.ClipL1 = ClipL1(
-            clip_min=cfg["train"]["clip_min"], clip_max=cfg["train"]["clip_max"]
-        )
-
-        if cfg["train"]["loss_f_fft"] == "L1Loss":
-            loss_f_fft = torch.nn.L1Loss
-        elif cfg["train"]["loss_f_fft"] == "L1CosineSim":
-            loss_f_fft = L1CosineSim(
-                loss_lambda=cfg["train"]["loss_lambda"],
-                reduction=cfg["train"]["reduction_L1CosineSim"],
+        if cfg["train"]["ClipL1_weight"] > 0:
+            self.ClipL1 = ClipL1(
+                clip_min=cfg["train"]["clip_min"], clip_max=cfg["train"]["clip_max"]
             )
 
-        self.FFTloss = FFTloss(
-            loss_f=loss_f_fft, reduction=cfg["train"]["reduction_fft"]
-        )
-        self.OFLoss = OFLoss()
-        self.GPLoss = GPLoss(
-            trace=cfg["train"]["gp_trace"], spl_denorm=cfg["train"]["gp_spl_denorm"]
-        )
-        self.CPLoss = CPLoss(
-            rgb=cfg["train"]["rgb"],
-            yuv=cfg["train"]["yuv"],
-            yuvgrad=cfg["train"]["yuvgrad"],
-            trace=cfg["train"]["cp_trace"],
-            spl_denorm=cfg["train"]["cp_spl_denorm"],
-            yuv_denorm=cfg["train"]["yuv_denorm"],
-        )
-        self.StyleLoss = StyleLoss()
-        self.TVLoss = TVLoss(tv_type=cfg["train"]["tv_type"], p=cfg["train"]["p"])
-        self.Contextual_Loss = Contextual_Loss(
-            cfg["train"]["layers_weights"],
-            crop_quarter=cfg["train"]["crop_quarter"],
-            max_1d_size=cfg["train"]["max_1d_size"],
-            distance_type=cfg["train"]["distance_type"],
-            b=cfg["train"]["b"],
-            band_width=cfg["train"]["band_width"],
-            use_vgg=cfg["train"]["use_vgg"],
-            net=cfg["train"]["net_contextual"],
-            calc_type=cfg["train"]["calc_type"],
-            use_timm=cfg["train"]["use_timm"],
-            timm_model=cfg["train"]["timm_model"],
-        )
-        self.textured_loss = textured_loss()
-        self.ldl_loss = ldl_loss()
+        if cfg["train"]["FFTLoss_weight"] > 0:
+            if cfg["train"]["loss_f_fft"] == "L1Loss":
+                loss_f_fft = torch.nn.L1Loss
+            elif cfg["train"]["loss_f_fft"] == "L1CosineSim":
+                loss_f_fft = L1CosineSim(
+                    loss_lambda=cfg["train"]["loss_lambda"],
+                    reduction=cfg["train"]["reduction_L1CosineSim"],
+                )
+            self.FFTloss = FFTloss(
+                loss_f=loss_f_fft, reduction=cfg["train"]["reduction_fft"]
+            )
 
-        self.MSELoss = torch.nn.MSELoss()
-        self.L1Loss = nn.L1Loss()
-        self.BCELogits = torch.nn.BCEWithLogitsLoss()
-        self.BCE = torch.nn.BCELoss()
-        self.FFLoss = FocalFrequencyLoss()
+        if cfg["train"]["OFLoss_weight"] > 0:
+            self.OFLoss = OFLoss()
+
+        if cfg["train"]["GPLoss_weight"] > 0:
+            self.GPLoss = GPLoss(
+                trace=cfg["train"]["gp_trace"], spl_denorm=cfg["train"]["gp_spl_denorm"]
+            )
+        if cfg["train"]["CPLoss_weight"] > 0:
+            self.CPLoss = CPLoss(
+                rgb=cfg["train"]["rgb"],
+                yuv=cfg["train"]["yuv"],
+                yuvgrad=cfg["train"]["yuvgrad"],
+                trace=cfg["train"]["cp_trace"],
+                spl_denorm=cfg["train"]["cp_spl_denorm"],
+                yuv_denorm=cfg["train"]["yuv_denorm"],
+            )
+
+        if cfg["train"]["StyleLoss_weight"] > 0:
+            self.StyleLoss = StyleLoss()
+
+        if cfg["train"]["TVLoss_weight"] > 0:
+            self.TVLoss = TVLoss(tv_type=cfg["train"]["tv_type"], p=cfg["train"]["p"])
+
+        if cfg["train"]["Contextual_weight"] > 0:
+            self.Contextual_Loss = Contextual_Loss(
+                cfg["train"]["layers_weights"],
+                crop_quarter=cfg["train"]["crop_quarter"],
+                max_1d_size=cfg["train"]["max_1d_size"],
+                distance_type=cfg["train"]["distance_type"],
+                b=cfg["train"]["b"],
+                band_width=cfg["train"]["band_width"],
+                use_vgg=cfg["train"]["use_vgg"],
+                net=cfg["train"]["net_contextual"],
+                calc_type=cfg["train"]["calc_type"],
+                use_timm=cfg["train"]["use_timm"],
+                timm_model=cfg["train"]["timm_model"],
+            )
+
+        if cfg["train"]["textured_loss_weight"] > 0:
+            self.textured_loss = textured_loss()
+
+        if cfg["train"]["MSE_weight"] > 0:
+            self.MSELoss = torch.nn.MSELoss()
+
+        if cfg["train"]["L1Loss_weight"] > 0:
+            self.L1Loss = nn.L1Loss()
+
+        if cfg["train"]["BCE_weight"] > 0:
+            self.BCELogits = torch.nn.BCEWithLogitsLoss()
+            self.BCE = torch.nn.BCELoss()
+
+        if cfg["train"]["FFLoss_weight"] > 0:
+            self.FFLoss = FocalFrequencyLoss()
 
         # perceptual loss
-        from arch.networks_basic import PNetLin
+        if cfg["train"]["perceptual_weight"] > 0:
+            from arch.networks_basic import PNetLin
 
-        self.perceptual_loss = PNetLin(
-            pnet_rand=cfg["train"]["pnet_rand"],
-            pnet_tune=cfg["train"]["pnet_tune"],
-            pnet_type=cfg["train"]["pnet_type"],
-            use_dropout=cfg["train"]["use_dropout"],
-            spatial=cfg["train"]["spatial"],
-            version=cfg["train"]["version"],
-            lpips=cfg["train"]["lpips"],
-        )
-        model_path = os.path.abspath(
-            f'loss/lpips_weights/v0.1/{cfg["train"]["pnet_type"]}.pth'
-        )
-        print(f"Loading model from: {model_path}")
-        self.perceptual_loss.load_state_dict(
-            torch.load(model_path, map_location=torch.device(self.device)), strict=False
-        )
-        for param in self.perceptual_loss.parameters():
-            param.requires_grad = False
-
-        if (
-            cfg["train"]["force_fp16_perceptual"] is True
-            and cfg["train"]["perceptual_tensorrt"] is False
-        ):
-            print("Converting perceptual model to FP16")
-            self.perceptual_loss = self.perceptual_loss.half()
-
-        if (
-            cfg["train"]["force_fp16_perceptual"] is True
-            and cfg["train"]["perceptual_tensorrt"] is True
-        ):
-            print("Converting perceptual model to TensorRT (FP16)")
-            import torch_tensorrt
-
-            example_data = torch.rand(1, 3, 256, 448).half().cuda()
-            self.perceptual_loss = self.perceptual_loss.half().cuda()
-            self.perceptual_loss = torch.jit.trace(
-                self.perceptual_loss, [example_data, example_data]
+            self.perceptual_loss = PNetLin(
+                pnet_rand=cfg["train"]["pnet_rand"],
+                pnet_tune=cfg["train"]["pnet_tune"],
+                pnet_type=cfg["train"]["pnet_type"],
+                use_dropout=cfg["train"]["use_dropout"],
+                spatial=cfg["train"]["spatial"],
+                version=cfg["train"]["version"],
+                lpips=cfg["train"]["lpips"],
             )
-            self.perceptual_loss = torch_tensorrt.compile(
-                self.perceptual_loss,
-                inputs=[
-                    torch_tensorrt.Input(
-                        min_shape=(1, 3, 64, 64),
-                        opt_shape=(1, 3, 256, 448),
-                        max_shape=(1, 3, 720, 1280),
-                        dtype=torch.half,
-                    ),
-                    torch_tensorrt.Input(
-                        min_shape=(1, 3, 64, 64),
-                        opt_shape=(1, 3, 256, 448),
-                        max_shape=(1, 3, 720, 1280),
-                        dtype=torch.half,
-                    ),
-                ],
-                enabled_precisions={torch.half},
-                truncate_long_and_double=True,
+            model_path = os.path.abspath(
+                f'loss/lpips_weights/v0.1/{cfg["train"]["pnet_type"]}.pth'
             )
-            del example_data
-
-        elif (
-            cfg["train"]["force_fp16_perceptual"] is False
-            and cfg["train"]["perceptual_tensorrt"] is True
-        ):
-            print("Converting perceptual model to TensorRT")
-            import torch_tensorrt
-
-            example_data = torch.rand(1, 3, 256, 448)
-            self.perceptual_loss = torch.jit.trace(
-                self.perceptual_loss, [example_data, example_data]
+            print(f"Loading model from: {model_path}")
+            self.perceptual_loss.load_state_dict(
+                torch.load(model_path, map_location=torch.device(self.device)),
+                strict=False,
             )
-            self.perceptual_loss = torch_tensorrt.compile(
-                self.perceptual_loss,
-                inputs=[
-                    torch_tensorrt.Input(
-                        min_shape=(1, 3, 64, 64),
-                        opt_shape=(1, 3, 256, 448),
-                        max_shape=(1, 3, 720, 1280),
-                        dtype=torch.float32,
-                    ),
-                    torch_tensorrt.Input(
-                        min_shape=(1, 3, 64, 64),
-                        opt_shape=(1, 3, 256, 448),
-                        max_shape=(1, 3, 720, 1280),
-                        dtype=torch.float32,
-                    ),
-                ],
-                enabled_precisions={torch.float},
-                truncate_long_and_double=True,
+            for param in self.perceptual_loss.parameters():
+                param.requires_grad = False
+
+            if (
+                cfg["train"]["force_fp16_perceptual"] is True
+                and cfg["train"]["perceptual_tensorrt"] is False
+            ):
+                print("Converting perceptual model to FP16")
+                self.perceptual_loss = self.perceptual_loss.half()
+
+            if (
+                cfg["train"]["force_fp16_perceptual"] is True
+                and cfg["train"]["perceptual_tensorrt"] is True
+            ):
+                print("Converting perceptual model to TensorRT (FP16)")
+                import torch_tensorrt
+
+                example_data = torch.rand(1, 3, 256, 448).half().cuda()
+                self.perceptual_loss = self.perceptual_loss.half().cuda()
+                self.perceptual_loss = torch.jit.trace(
+                    self.perceptual_loss, [example_data, example_data]
+                )
+                self.perceptual_loss = torch_tensorrt.compile(
+                    self.perceptual_loss,
+                    inputs=[
+                        torch_tensorrt.Input(
+                            min_shape=(1, 3, 64, 64),
+                            opt_shape=(1, 3, 256, 448),
+                            max_shape=(1, 3, 720, 1280),
+                            dtype=torch.half,
+                        ),
+                        torch_tensorrt.Input(
+                            min_shape=(1, 3, 64, 64),
+                            opt_shape=(1, 3, 256, 448),
+                            max_shape=(1, 3, 720, 1280),
+                            dtype=torch.half,
+                        ),
+                    ],
+                    enabled_precisions={torch.half},
+                    truncate_long_and_double=True,
+                )
+                del example_data
+
+            elif (
+                cfg["train"]["force_fp16_perceptual"] is False
+                and cfg["train"]["perceptual_tensorrt"] is True
+            ):
+                print("Converting perceptual model to TensorRT")
+                import torch_tensorrt
+
+                example_data = torch.rand(1, 3, 256, 448)
+                self.perceptual_loss = torch.jit.trace(
+                    self.perceptual_loss, [example_data, example_data]
+                )
+                self.perceptual_loss = torch_tensorrt.compile(
+                    self.perceptual_loss,
+                    inputs=[
+                        torch_tensorrt.Input(
+                            min_shape=(1, 3, 64, 64),
+                            opt_shape=(1, 3, 256, 448),
+                            max_shape=(1, 3, 720, 1280),
+                            dtype=torch.float32,
+                        ),
+                        torch_tensorrt.Input(
+                            min_shape=(1, 3, 64, 64),
+                            opt_shape=(1, 3, 256, 448),
+                            max_shape=(1, 3, 720, 1280),
+                            dtype=torch.float32,
+                        ),
+                    ],
+                    enabled_precisions={torch.float},
+                    truncate_long_and_double=True,
+                )
+                del example_data
+
+        if cfg["network_G"]["netG"] == "CSA":
+            self.ConsistencyLoss = ConsistencyLoss()
+
+        if cfg["train"]["Canny_weight"] > 0:
+            self.CannyLoss = CannyLoss(
+                threshold=cfg["train"]["canny_threshold"],
+                blurred_img_weight=cfg["train"]["canny_blurred_img_weight"],
+                grad_mag_weight=cfg["train"]["canny_grad_mag_weight"],
+                grad_orientation_weight=cfg["train"]["canny_grad_mag_weight"],
+                thin_edges_weight=cfg["train"]["canny_thin_edges_weight"],
+                thresholded_weight=cfg["train"]["canny_thresholded_weight"],
+                early_threshold=cfg["train"]["canny_early_threshold"],
             )
-            del example_data
 
-        self.ConsistencyLoss = ConsistencyLoss()
+        if cfg["train"]["KullbackHistogramLoss_weight"] > 0:
+            self.KullbackHistogramLoss = KullbackHistogramLoss()
 
-        self.CannyLoss = CannyLoss(
-            threshold=cfg["train"]["canny_threshold"],
-            blurred_img_weight=cfg["train"]["canny_blurred_img_weight"],
-            grad_mag_weight=cfg["train"]["canny_grad_mag_weight"],
-            grad_orientation_weight=cfg["train"]["canny_grad_mag_weight"],
-            thin_edges_weight=cfg["train"]["canny_thin_edges_weight"],
-            thresholded_weight=cfg["train"]["canny_thresholded_weight"],
-            early_threshold=cfg["train"]["canny_early_threshold"],
-        )
+        if cfg["train"]["KullbackHistogramLossV2_weight"] > 0:
+            self.KullbackHistogramLossV2 = KullbackHistogramLossV2()
 
-        self.KullbackHistogramLoss = KullbackHistogramLoss()
-        self.KullbackHistogramLossV2 = KullbackHistogramLossV2()
-        self.SalientRegionLoss = SalientRegionLoss()
-        self.glcmLoss = glcmLoss()
-        self.GradientDomainLoss = GradientDomainLoss()
-        self.SobelLoss = SobelLoss()
-        self.ColorHarmonyLoss = ColorHarmonyLoss()
-        self.VIT_FeatureLoss = VIT_FeatureLoss()
-        self.VIT_MMD_FeatureLoss = VIT_MMD_FeatureLoss()
-        self.TIMM_FeatureLoss = TIMM_FeatureLoss(
-            model_arch=cfg["train"]["TIMM_FeatureLoss_arch"],
-            resolution=cfg["train"]["TIMM_FeatureLoss_resolution"],
-            fp16=cfg["train"]["TIMM_FeatureLoss_fp16"],
-            criterion=cfg["train"]["TIMM_FeatureLoss_criterion"],
-            normalize=cfg["train"]["TIMM_FeatureLoss_normalize"],
-            last_feature=cfg["train"]["TIMM_FeatureLoss_last_feature"],
-        )
+        if cfg["train"]["SalientRegionLoss_weight"] > 0:
+            self.SalientRegionLoss = SalientRegionLoss()
 
-        self.LaplacianLoss = LaplacianLoss()
-        self.SobelLossV2 = SobelLossV2()
+        if cfg["train"]["glcmLoss_weight"] > 0:
+            self.glcmLoss = glcmLoss()
 
-        from arch.hrf_perceptual import ResNetPL
+        if cfg["train"]["GradientDomainLoss_weight"] > 0:
+            self.GradientDomainLoss = GradientDomainLoss()
 
-        self.hrf_perceptual_loss = ResNetPL()
-        for param in self.hrf_perceptual_loss.parameters():
-            param.requires_grad = False
+        if cfg["train"]["SobelLoss_weight"] > 0:
+            self.SobelLoss = SobelLoss()
 
-        if cfg["train"]["force_fp16_hrf"] is True:
-            self.hrf_perceptual_loss = self.hrf_perceptual_loss.half()
+        if cfg["train"]["ColorHarmonyLoss_weight"] > 0:
+            self.ColorHarmonyLoss = ColorHarmonyLoss()
 
-        self.YUVColorLoss = YUVColorLoss()
-        self.XYZColorLoss = XYZColorLoss()
+        if cfg["train"]["VIT_FeatureLoss_weight"] > 0:
+            self.VIT_FeatureLoss = VIT_FeatureLoss()
 
-        self.FrobeniusNormLoss = FrobeniusNormLoss()
-        self.GradientLoss = GradientLoss()
-        self.MultiscalePixelLoss = MultiscalePixelLoss()
-        self.SPLoss = SPLoss()
+        if cfg["train"]["VIT_MMD_FeatureLoss_weight"] > 0:
+            self.VIT_MMD_FeatureLoss = VIT_MMD_FeatureLoss()
+
+        if cfg["train"]["TIMM_FeatureLoss_weight"] > 0:
+            self.TIMM_FeatureLoss = TIMM_FeatureLoss(
+                model_arch=cfg["train"]["TIMM_FeatureLoss_arch"],
+                resolution=cfg["train"]["TIMM_FeatureLoss_resolution"],
+                fp16=cfg["train"]["TIMM_FeatureLoss_fp16"],
+                criterion=cfg["train"]["TIMM_FeatureLoss_criterion"],
+                normalize=cfg["train"]["TIMM_FeatureLoss_normalize"],
+                last_feature=cfg["train"]["TIMM_FeatureLoss_last_feature"],
+            )
+
+        if cfg["train"]["LaplacianLoss_weight"] > 0:
+            self.LaplacianLoss = LaplacianLoss()
+
+        if cfg["train"]["SobelLossV2_weight"] > 0:
+            self.SobelLossV2 = SobelLossV2()
+
+        if cfg["train"]["hrf_perceptual_weight"] > 0:
+            from arch.hrf_perceptual import ResNetPL
+
+            self.hrf_perceptual_loss = ResNetPL()
+            for param in self.hrf_perceptual_loss.parameters():
+                param.requires_grad = False
+
+            if cfg["train"]["force_fp16_hrf"] is True:
+                self.hrf_perceptual_loss = self.hrf_perceptual_loss.half()
+
+        if cfg["train"]["YUVColorLoss_weight"] > 0:
+            self.YUVColorLoss = YUVColorLoss()
+        if cfg["train"]["XYZColorLoss_weight"] > 0:
+            self.XYZColorLoss = XYZColorLoss()
+
+        if cfg["train"]["FrobeniusNormLoss_weight"] > 0:
+            self.FrobeniusNormLoss = FrobeniusNormLoss()
+        if cfg["train"]["GradientLoss_weight"] > 0:
+            self.GradientLoss = GradientLoss()
+        if cfg["train"]["MultiscalePixelLoss_weight"] > 0:
+            self.MultiscalePixelLoss = MultiscalePixelLoss()
+        if cfg["train"]["SPLoss_weight"] > 0:
+            self.SPLoss = SPLoss()
 
         # pytorch loss
-        self.HuberLoss = nn.HuberLoss()
-        self.SmoothL1Loss = nn.SmoothL1Loss()
-        self.SoftMarginLoss = nn.SoftMarginLoss()
+        if cfg["train"]["Huber_weight"] > 0:
+            self.HuberLoss = nn.HuberLoss()
+        if cfg["train"]["SmoothL1_weight"] > 0:
+            self.SmoothL1Loss = nn.SmoothL1Loss()
+        if cfg["train"]["SoftMargin_weight"] > 0:
+            self.SoftMarginLoss = nn.SoftMarginLoss()
 
-        self.LapLoss = LapLoss()
+        if cfg["train"]["Lap_weight"] > 0:
+            self.LapLoss = LapLoss()
 
-        self.iqa_loss = IQA_loss()
+        if cfg["train"]["iqa_weight"] > 0:
+            self.iqa_loss = IQA_loss()
 
         if cfg["network_G"]["netG"] == "rife":
             from loss.loss import SOBEL
@@ -555,6 +621,7 @@ class AllLoss(pl.LightningModule):
                 "SoftMargin_weight"
             ] * self.SoftMarginLoss(out, hr_image)
             total_loss += SoftMargin_forward
+
             if self.cfg["logging"]:
                 writer.add_scalar(
                     "loss/SoftMargin" + log_suffix, SoftMargin_forward, global_step

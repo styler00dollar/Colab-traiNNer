@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
     if cfg["path"]["checkpoint_path"]:
         trainer.strategy.strict_loading = False
-        #trainer.fit(model, dm, ckpt_path=cfg["path"]["checkpoint_path"])
+        # trainer.fit(model, dm, ckpt_path=cfg["path"]["checkpoint_path"])
         trainer.fit(model, dm)
     else:
         trainer.fit(model, dm)
