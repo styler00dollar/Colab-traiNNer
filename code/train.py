@@ -123,7 +123,7 @@ if __name__ == "__main__":
         # dict_keys(['epoch', 'global_step', 'pytorch-lightning_version', 'callbacks', 'optimizer_states', 'lr_schedulers', 'state_dict', 'hparams_name', 'hyper_parameters'])
 
         # To use DDP for local multi-GPU training, you need to add find_unused_parameters=True inside the DDP command
-        model = model.load_from_checkpoint(cfg["path"]["checkpoint_path"])
+        model = model.load_from_checkpoint(cfg["path"]["checkpoint_path"], strict=False)
         # trainer = pl.Trainer(resume_from_checkpoint=checkpoint_path, logger=None, gpus=cfg['gpus'], max_epochs=cfg['datasets']['train']['max_epochs'], progress_bar_refresh_rate=cfg['progress_bar_refresh_rate'], default_root_dir=cfg['default_root_dir'], callbacks=[CheckpointEveryNSteps(save_step_frequency=cfg['datasets']['train']['save_step_frequency'], save_path = cfg['path']['checkpoint_save_path'])])
         checkpoint = torch.load(cfg["path"]["checkpoint_path"])
         # trainer.checkpoint_connector.restore(checkpoint)
@@ -136,6 +136,8 @@ if __name__ == "__main__":
     #############################################
 
     if cfg["path"]["checkpoint_path"]:
-        trainer.fit(model, dm, ckpt_path=cfg["path"]["checkpoint_path"])
+        trainer.strategy.strict_loading = False
+        #trainer.fit(model, dm, ckpt_path=cfg["path"]["checkpoint_path"])
+        trainer.fit(model, dm)
     else:
         trainer.fit(model, dm)
