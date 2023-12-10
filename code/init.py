@@ -11,6 +11,9 @@ def weights_init(net, init_type="kaiming", init_gain=0.02):
     def init_func(m):
         classname = m.__class__.__name__
 
+        if classname == "AnchorLinear" or classname == "AnchorConv2d":
+            return 
+
         if hasattr(m, "weight") and classname.find("Conv") != -1:
             if init_type == "normal":
                 init.normal_(m.weight.data, 0.0, init_gain)
@@ -24,12 +27,17 @@ def weights_init(net, init_type="kaiming", init_gain=0.02):
                 raise NotImplementedError(
                     "initialization method [%s] is not implemented" % init_type
                 )
+
+            if hasattr(m, "bias") and m.bias is not None:
+                init.constant_(m.bias.data, 0.0)
         elif classname.find("BatchNorm2d") != -1:
             init.normal_(m.weight.data, 1.0, 0.02)
-            init.constant_(m.bias.data, 0.0)
+            if hasattr(m, "bias") and m.bias is not None:
+                init.constant_(m.bias.data, 0.0)
         elif classname.find("Linear") != -1:
             init.normal_(m.weight, 0, 0.01)
-            init.constant_(m.bias, 0)
+            if hasattr(m, "bias") and m.bias is not None:
+                init.constant_(m.bias, 0.0)
 
     # Apply the initialization function <init_func>
     print("Initialization method [{:s}]".format(init_type))

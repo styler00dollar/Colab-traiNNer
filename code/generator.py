@@ -800,6 +800,71 @@ def CreateGenerator(cfg, scale):
             num_head=cfg["num_head"],
         )
 
+    elif cfg["netG"] == "grl":
+        from arch.grl_arch import GRL
+
+        netG = GRL(
+            img_size=cfg["img_size"],
+            window_size=cfg["window_size"],
+            depths=cfg["depths"],
+            embed_dim=cfg["embed_dim"],
+            num_heads_window=cfg["num_heads_window"],
+            num_heads_stripe=cfg["num_heads_stripe"],
+            mlp_ratio=cfg["mlp_ratio"],
+            qkv_proj_type=cfg["qkv_proj_type"],
+            anchor_proj_type=cfg["anchor_proj_type"],
+            anchor_window_down_factor=cfg["anchor_window_down_factor"],
+            out_proj_type=cfg["out_proj_type"],
+            conv_type=cfg["conv_type"],
+            upsampler=scale,
+            local_connection=cfg["local_connection"],
+        )
+
+    elif cfg["netG"] == "craft":
+        from arch.craft_arch import CRAFT
+
+        netG = CRAFT(
+            in_chans=cfg["in_chans"],
+            embed_dim=cfg["embed_dim"],
+            depths=cfg["depths"],
+            num_heads=cfg["num_heads"],
+            split_size_0=cfg["split_size_0"],
+            split_size_1=cfg["split_size_1"],
+            mlp_ratio=cfg["mlp_ratio"],
+            qkv_bias=cfg["qkv_bias"],
+            qk_scale=cfg["qk_scale"],
+            img_range=cfg["img_range"],
+            upsampler=cfg["upsampler"],
+            resi_connection=cfg["resi_connection"],
+            upscale=scale,
+        )
+
+    elif cfg["netG"] == "srformer":
+        from arch.srformer_arch import SRFormer
+
+        netG = SRFormer(
+            img_size=cfg["img_size"],
+            patch_size=cfg["patch_size"],
+            in_chans=cfg["in_chans"],
+            embed_dim=cfg["embed_dim"],
+            depths=cfg["depths"],
+            num_heads=cfg["num_heads"],
+            window_size=cfg["window_size"],
+            mlp_ratio=cfg["mlp_ratio"],
+            qkv_bias=cfg["qkv_bias"],
+            qk_scale=cfg["qk_scale"],
+            drop_rate=cfg["drop_rate"],
+            attn_drop_rate=cfg["attn_drop_rate"],
+            drop_path_rate=cfg["drop_path_rate"],
+            ape=cfg["ape"],
+            patch_norm=cfg["patch_norm"],
+            use_checkpoint=cfg["use_checkpoint"],
+            upscale=scale,
+            img_range=cfg["img_range"],
+            upsampler=cfg["upsampler"],
+            resi_connection=cfg["resi_connection"],
+        )
+
     ############################
 
     if cfg["CEM"] is True:
