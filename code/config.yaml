@@ -181,8 +181,10 @@ network_G:
     #group: 1 # unused for now
 
     # CUGAN
-    #netG: UpCunet2x # UpCunet2x_fast / UpCunet2x
-    #pro_mode: True
+    netG: UpCunet2x
+    in_channels: 3
+    out_channels: 3
+    pro_mode: True
 
     # OmniSR (2023)
     #netG: OmniSR
@@ -293,27 +295,27 @@ network_G:
     #resi_connection: "1conv"
 
     # srformer (2023)
-    netG: srformer
-    img_size: 48
-    patch_size: 1
-    in_chans: 3
-    embed_dim: 180
-    depths: [6, 6, 6, 6, 6, 6]
-    num_heads: [6, 6, 6, 6, 6, 6]
-    window_size: 24
-    mlp_ratio: 4.0
-    qkv_bias: True
-    qk_scale: 
-    drop_rate: 0.0
-    attn_drop_rate: 0.0
-    drop_path_rate: 0.1
-    ape: False
-    patch_norm: True
-    use_checkpoint: False
-    upscale: 2
-    img_range: 1.0
-    upsampler: ""
-    resi_connection: "1conv"
+    #netG: srformer
+    #img_size: 48
+    #patch_size: 1
+    #in_chans: 3
+    #embed_dim: 180
+    #depths: [6, 6, 6, 6, 6, 6]
+    #num_heads: [6, 6, 6, 6, 6, 6]
+    #window_size: 24
+    #mlp_ratio: 4.0
+    #qkv_bias: True
+    #qk_scale: 
+    #drop_rate: 0.0
+    #attn_drop_rate: 0.0
+    #drop_path_rate: 0.1
+    #ape: False
+    #patch_norm: True
+    #use_checkpoint: False
+    #upscale: 2
+    #img_range: 1.0
+    #upsampler: ""
+    #resi_connection: "1conv"
 
     # DCTLSA (2023)
     #netG: DCTLSA

@@ -1,8 +1,10 @@
+# https://github.com/muslll/neosr/blob/master/neosr/archs/cugan_arch.py
 # https://github.com/bilibili/ailab/blob/main/Real-CUGAN/VapourSynth/upcunet_v3_vs.py
+
+
 import torch
 from torch import nn as nn
 from torch.nn import functional as F
-import numpy as np
 
 
 class SEBlock(nn.Module):
@@ -249,76 +251,28 @@ class UNet2(nn.Module):
         return z
 
 
-class UpCunet2x(nn.Module):
-    def __init__(self, in_channels=3, out_channels=3, pro_mode=True):
-        super(UpCunet2x, self).__init__()
-        self.unet1 = UNet1(in_channels, out_channels, deconv=True)
-        self.unet2 = UNet2(in_channels, out_channels, deconv=False)
+class cugan(nn.Module):
+    def __init__(self, in_channels=3, out_channels=3, scale=2, pro_mode=True):
+        super(cugan, self).__init__()
+        self.scale = scale
         self.pro_mode = pro_mode
-
-    def forward(self, x):  # 1.7G
-        x = torch.clamp(x, 0, 1)
-
-        if self.pro_mode:
-            x = (x * 0.7) + 0.15
-
-        n, c, h0, w0 = x.shape
-
-        ph = ((h0 - 1) // 2 + 1) * 2
-        pw = ((w0 - 1) // 2 + 1) * 2
-        x = F.pad(x, (18, 18 + pw - w0, 18, 18 + ph - h0), "reflect")
-        x = self.unet1.forward(x)
-        x0 = self.unet2.forward(x)
-        x1 = F.pad(x, (-20, -20, -20, -20))
-        x = torch.add(x0, x1)
-        if w0 != pw or h0 != ph:
-            x = x[:, :, : h0 * 2, : w0 * 2]
-
-        if self.pro_mode:
-            x = (x - 0.15) / 0.7
-
-        return x
-
-
-class UpCunet3x(nn.Module):
-    def __init__(self, in_channels=3, out_channels=3, pro_mode=True):
-        super(UpCunet3x, self).__init__()
-        self.unet1 = UNet1x3(in_channels, out_channels, deconv=True)
-        self.unet2 = UNet2(in_channels, out_channels, deconv=False)
-        self.pro_mode = pro_mode
-
-    def forward(self, x):
-        x = torch.clamp(x, 0, 1)
-
-        if self.pro_mode:
-            x = (x * 0.7) + 0.15
-
-        n, c, h0, w0 = x.shape
-
-        ph = ((h0 - 1) // 4 + 1) * 4
-        pw = ((w0 - 1) // 4 + 1) * 4
-        x = F.pad(x, (14, 14 + pw - w0, 14, 14 + ph - h0), "reflect")
-        x = self.unet1.forward(x)
-        x0 = self.unet2.forward(x)
-        x1 = F.pad(x, (-20, -20, -20, -20))
-        x = torch.add(x0, x1)
-        if w0 != pw or h0 != ph:
-            x = x[:, :, : h0 * 3, : w0 * 3]
-
-        if self.pro_mode:
-            x = (x - 0.15) / 0.7
-
-        return x
-
-
-class UpCunet4x(nn.Module):
-    def __init__(self, in_channels=3, out_channels=3, pro_mode=True):
-        super(UpCunet4x, self).__init__()
-        self.unet1 = UNet1(in_channels, 64, deconv=True)
-        self.unet2 = UNet2(64, 64, deconv=False)
         self.ps = nn.PixelShuffle(2)
         self.conv_final = nn.Conv2d(64, 12, 3, 1, padding=0, bias=True)
-        self.pro_mode = pro_mode
+
+        if self.scale == 1:
+            raise ValueError(f"1x scale ratio is unsupported. Please use 2x, 3x or 4x.")
+
+        if self.scale == 2:
+            self.unet1 = UNet1(in_channels, out_channels, deconv=True)
+            self.unet2 = UNet2(in_channels, out_channels, deconv=False)
+
+        if self.scale == 3:
+            self.unet1 = UNet1x3(in_channels, out_channels, deconv=True)
+            self.unet2 = UNet2(in_channels, out_channels, deconv=False)
+
+        if self.scale == 4:
+            self.unet1 = UNet1(in_channels, 64, deconv=True)
+            self.unet2 = UNet2(64, 64, deconv=False)
 
     def forward(self, x):
         x = torch.clamp(x, 0, 1)
@@ -329,80 +283,35 @@ class UpCunet4x(nn.Module):
         n, c, h0, w0 = x.shape
         x00 = x
 
-        ph = ((h0 - 1) // 2 + 1) * 2
-        pw = ((w0 - 1) // 2 + 1) * 2
-        x = F.pad(x, (19, 19 + pw - w0, 19, 19 + ph - h0), "reflect")
+        if self.scale == 3:
+            ph = ((h0 - 1) // 2 + 1) * 4
+            pw = ((w0 - 1) // 2 + 1) * 4
+        else:
+            ph = ((h0 - 1) // 2 + 1) * 2
+            pw = ((w0 - 1) // 2 + 1) * 2
+
+        if self.scale == 2:
+            x = F.pad(x, (18, 18 + pw - w0, 18, 18 + ph - h0), "reflect")
+        if self.scale == 3:
+            x = F.pad(x, (14, 14 + pw - w0, 14, 14 + ph - h0), "reflect")
+        if self.scale == 4:
+            x = F.pad(x, (19, 19 + pw - w0, 19, 19 + ph - h0), "reflect")
+
         x = self.unet1.forward(x)
         x0 = self.unet2.forward(x)
         x1 = F.pad(x, (-20, -20, -20, -20))
         x = torch.add(x0, x1)
-        x = self.conv_final(x)
-        x = F.pad(x, (-1, -1, -1, -1))
-        x = self.ps(x)
+
+        if self.scale == 4:
+            x = self.conv_final(x)
+            x = F.pad(x, (-1, -1, -1, -1))
+            x = self.ps(x)
+
         if w0 != pw or h0 != ph:
-            x = x[:, :, : h0 * 4, : w0 * 4]
-        x += F.interpolate(x00, scale_factor=4, mode="nearest")
+            x = x[:, :, : h0 * self.scale, : w0 * self.scale]
 
-        if self.pro_mode:
-            x = (x - 0.15) / 0.7
-
-        return x
-
-
-class pixel_unshuffle(nn.Module):
-    def __init__(self, ratio=2):
-        super(pixel_unshuffle, self).__init__()
-        self.ratio = ratio
-
-    def forward(self, tensor):
-        ratio = self.ratio
-        b = tensor.size(0)
-        ch = tensor.size(1)
-        y = tensor.size(2)
-        x = tensor.size(3)
-        assert x % ratio == 0 and y % ratio == 0, "x, y, ratio : {}, {}, {}".format(
-            x, y, ratio
-        )
-        return (
-            tensor.view(b, ch, y // ratio, ratio, x // ratio, ratio)
-            .permute(0, 1, 3, 5, 2, 4)
-            .contiguous()
-            .view(b, -1, y // ratio, x // ratio)
-        )
-
-
-class UpCunet2x_fast(nn.Module):
-    def __init__(self, in_channels=3, out_channels=3, pro_mode=True):
-        super(UpCunet2x_fast, self).__init__()
-        self.unet1 = UNet1(12, 64, deconv=True)
-        self.unet2 = UNet2(64, 64, deconv=False)
-        self.ps = nn.PixelShuffle(2)
-        self.conv_final = nn.Conv2d(64, 12, 3, 1, padding=0, bias=True)
-        self.inv = pixel_unshuffle(2)
-        self.pro_mode = pro_mode
-
-    def forward(self, x):
-        x = torch.clamp(x, 0, 1)
-
-        if self.pro_mode:
-            x = (x * 0.7) + 0.15
-
-        n, c, h0, w0 = x.shape
-        x00 = x
-        ph = ((h0 - 1) // 2 + 1) * 2
-        pw = ((w0 - 1) // 2 + 1) * 2
-        x = F.pad(x, (38, 38 + pw - w0, 38, 38 + ph - h0), "reflect")
-        x = self.inv(x)  # +18
-        x = self.unet1.forward(x)
-        x0 = self.unet2.forward(x)
-        x1 = F.pad(x, (-20, -20, -20, -20))
-        x = torch.add(x0, x1)
-        x = self.conv_final(x)
-        x = F.pad(x, (-1, -1, -1, -1))
-        x = self.ps(x)
-        if w0 != pw or h0 != ph:
-            x = x[:, :, : h0 * 2, : w0 * 2]
-        x += F.interpolate(x00, scale_factor=2, mode="nearest")
+        if self.scale == 4:
+            x += F.interpolate(x00, scale_factor=4, mode="nearest")
 
         if self.pro_mode:
             x = (x - 0.15) / 0.7

@@ -12,7 +12,7 @@ def weights_init(net, init_type="kaiming", init_gain=0.02):
         classname = m.__class__.__name__
 
         if classname == "AnchorLinear" or classname == "AnchorConv2d":
-            return 
+            return
 
         if hasattr(m, "weight") and classname.find("Conv") != -1:
             if init_type == "normal":
