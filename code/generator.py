@@ -671,12 +671,12 @@ def CreateGenerator(cfg, scale):
     elif cfg["netG"] == "UpCunet2x":
         from arch.cugan_arch import UpCunet2x
 
-        netG = UpCunet2x(pro_mode=cfg["pro_mode"])
-
-    elif cfg["netG"] == "UpCunet2x_fast":
-        from arch.cugan_arch import UpCunet2x_fast
-
-        netG = UpCunet2x_fast(pro_mode=cfg["pro_mode"])
+        netG = cugan(
+            in_channels=cfg["in_channels"],
+            out_channels=cfg["out_channels"],
+            scale=scale,
+            pro_mode=cfg["pro_mode"],
+        )
 
     elif cfg["netG"] == "SAFMN":
         from arch.safmn_arch import SAFMN
@@ -816,8 +816,9 @@ def CreateGenerator(cfg, scale):
             anchor_window_down_factor=cfg["anchor_window_down_factor"],
             out_proj_type=cfg["out_proj_type"],
             conv_type=cfg["conv_type"],
-            upsampler=scale,
+            upsampler=cfg["upsampler"],
             local_connection=cfg["local_connection"],
+            upscale=scale,
         )
 
     elif cfg["netG"] == "craft":
