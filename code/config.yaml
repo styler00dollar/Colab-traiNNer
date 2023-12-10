@@ -185,16 +185,16 @@ network_G:
     #pro_mode: True
 
     # OmniSR (2023)
-    netG: OmniSR
-    num_in_ch: 3
-    num_out_ch: 3
-    num_feat: 64
-    window_size: 8
-    res_num: 5
-    bias: True
-    block_num: 4
-    pe: True
-    ffn_bias: True
+    #netG: OmniSR
+    #num_in_ch: 3
+    #num_out_ch: 3
+    #num_feat: 64
+    #window_size: 8
+    #res_num: 5
+    #bias: True
+    #block_num: 4
+    #pe: True
+    #ffn_bias: True
 
     # EMT (2023)
     #netG: EMT
@@ -259,6 +259,61 @@ network_G:
     #img_range: 1.
     #resi_connection: '1conv'
     #upsampler: 'pixelshuffle'
+
+    # grl (2023)
+    #netG: grl
+    #img_size: 64
+    #window_size: 16
+    #depths: [4, 4, 8, 8, 8, 4, 4]
+    #embed_dim: 180
+    #num_heads_window: [3, 3, 3, 3, 3, 3, 3]
+    #num_heads_stripe: [3, 3, 3, 3, 3, 3, 3]
+    #mlp_ratio: 2
+    #qkv_proj_type: "linear"
+    #anchor_proj_type: "avgpool"
+    #anchor_window_down_factor: 2
+    #out_proj_type: "linear"
+    #conv_type: "1conv"
+    #upsampler: "pixelshuffle"
+    #local_connection: True
+
+    # craft (2023)
+    #netG: craft
+    #in_chans: 3
+    #embed_dim: 96
+    #depths: [6, 6, 6, 6]
+    #num_heads: [6, 6, 6, 6]
+    #split_size_0: 4
+    #split_size_1: 16
+    #mlp_ratio: 2.0
+    #qkv_bias: True
+    #qk_scale: 
+    #img_range: 1.0
+    #upsampler: ""
+    #resi_connection: "1conv"
+
+    # srformer (2023)
+    netG: srformer
+    img_size: 48
+    patch_size: 1
+    in_chans: 3
+    embed_dim: 180
+    depths: [6, 6, 6, 6, 6, 6]
+    num_heads: [6, 6, 6, 6, 6, 6]
+    window_size: 24
+    mlp_ratio: 4.0
+    qkv_bias: True
+    qk_scale: 
+    drop_rate: 0.0
+    attn_drop_rate: 0.0
+    drop_path_rate: 0.1
+    ape: False
+    patch_norm: True
+    use_checkpoint: False
+    upscale: 2
+    img_range: 1.0
+    upsampler: ""
+    resi_connection: "1conv"
 
     # DCTLSA (2023)
     #netG: DCTLSA
