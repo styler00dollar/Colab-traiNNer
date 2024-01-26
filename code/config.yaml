@@ -632,7 +632,7 @@ network_G:
     num_in_ch: 3
     num_out_ch: 3
     feature_channels: 48
-    bias: True,
+    bias: True
     img_range: 255.
     rgb_mean: [0.5, 0.5, 0.5]
 
