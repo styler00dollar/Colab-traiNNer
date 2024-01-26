@@ -181,10 +181,10 @@ network_G:
     #group: 1 # unused for now
 
     # CUGAN
-    netG: UpCunet2x
-    in_channels: 3
-    out_channels: 3
-    pro_mode: True
+    # netG: cugan
+    #in_channels: 3
+    #out_channels: 3
+    #pro_mode: True
 
     # OmniSR (2023)
     #netG: OmniSR
@@ -627,6 +627,15 @@ network_G:
     #mlpDim: 128
     #conv: fft # Conv2D | fft
 
+    # span (2023) (Swift Parameter-free Attention Network)
+    netG: span
+    num_in_ch: 3
+    num_out_ch: 3
+    feature_channels: 48
+    bias: True,
+    img_range: 255.
+    rgb_mean: [0.5, 0.5, 0.5]
+
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
     #netG: DFNet
@@ -901,14 +910,14 @@ network_D:
     #z_norm: False
 
     # PatchGAN
-    netD: NLayerDiscriminator
-    input_nc: 3
-    ndf: 64
-    n_layers: 3
-    use_sigmoid: False
-    getIntermFeat: False
-    patch: True
-    use_spectral_norm: False
+    #netD: NLayerDiscriminator
+    #input_nc: 3
+    #ndf: 64
+    #n_layers: 3
+    #use_sigmoid: False
+    #getIntermFeat: False
+    #patch: True
+    #use_spectral_norm: False
 
     # Multiscale
     #netD: MultiscaleDiscriminator

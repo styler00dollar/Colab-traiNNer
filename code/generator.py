@@ -866,6 +866,19 @@ def CreateGenerator(cfg, scale):
             resi_connection=cfg["resi_connection"],
         )
 
+    elif cfg["netG"] == "span":
+        from arch.span_arch import span
+
+        netG = span(
+            num_in_ch=cfg["num_in_ch"],
+            num_out_ch=cfg["num_out_ch"],
+            feature_channels=cfg["feature_channels"],
+            upscale=scale,
+            bias=cfg["bias"],
+            img_range=cfg["img_range"],
+            rgb_mean=cfg["rgb_mean"],
+        )
+
     ############################
 
     if cfg["CEM"] is True:
