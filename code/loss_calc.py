@@ -735,7 +735,7 @@ class AllLoss(pl.LightningModule):
         if self.cfg["train"]["KullbackHistogramLossV2_weight"] > 0:
             KullbackHistogramLoss_forward = self.cfg["train"][
                 "KullbackHistogramLossV2_weight"
-            ] * self.KullbackHistogramLoss(out.float(), hr_image.float())
+            ] * self.KullbackHistogramLossV2(out.float(), hr_image.float())
             total_loss += KullbackHistogramLoss_forward
             if self.cfg["logging"]:
                 writer.add_scalar(
