@@ -1118,6 +1118,14 @@ network_D:
     #num_feat: 64
     #skip_connection: True
 
+    #netD: a2fpn
+    #band: 3
+    #class_num: 1
+    #encoder_channels: [512, 256, 128, 64]
+    #pyramid_channels: 64
+    #segmentation_channels: 64
+    #dropout: 0.2
+
 train: 
     # Adam8bit needs "pip install bitsandbytes-cuda111"
     # SGD_AGC needs "pip3 install git+https://github.com/vballoli/nfnets-pytorch"

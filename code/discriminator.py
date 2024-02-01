@@ -537,6 +537,18 @@ def CreateDiscriminator(cfg):
             skip_connection=cfg["network_D"]["skip_connection"],
         )
 
+    elif cfg["network_D"]["netD"] == "a2fpn":
+        from arch.a2fpn_arch import a2fpn
+
+        netD = a2fpn(
+            band=cfg["network_D"]["band"],
+            class_num=cfg["network_D"]["class_num"],
+            encoder_channels=cfg["network_D"]["encoder_channels"],
+            pyramid_channels=cfg["network_D"]["pyramid_channels"],
+            segmentation_channels=cfg["network_D"]["segmentation_channels"],
+            dropout=cfg["network_D"]["dropout"],
+        )
+
     if cfg["network_D"]["WSConv_replace"] == "True":
         from nfnets import replace_conv, WSConv2d, ScaledStdConv2d
 
