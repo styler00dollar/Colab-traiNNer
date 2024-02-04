@@ -668,8 +668,8 @@ def CreateGenerator(cfg, scale):
 
         netG = GMFSS_union()
 
-    elif cfg["netG"] == "UpCunet2x":
-        from arch.cugan_arch import UpCunet2x
+    elif cfg["netG"] == "cugan":
+        from arch.cugan_arch import cugan
 
         netG = cugan(
             in_channels=cfg["in_channels"],
