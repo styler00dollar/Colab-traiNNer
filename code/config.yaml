@@ -628,13 +628,33 @@ network_G:
     #conv: fft # Conv2D | fft
 
     # span (2023) (Swift Parameter-free Attention Network)
-    netG: span
-    num_in_ch: 3
-    num_out_ch: 3
-    feature_channels: 48
-    bias: True
-    img_range: 255.
-    rgb_mean: [0.5, 0.5, 0.5]
+    #netG: span
+    #num_in_ch: 3
+    #num_out_ch: 3
+    #feature_channels: 48
+    #bias: True
+    #img_range: 255.
+    #rgb_mean: [0.5, 0.5, 0.5]
+
+    # rgt (2023)
+    netG: rgt
+    img_size: 64
+    in_chans: 3
+    embed_dim: 180
+    depth: [6,6,6,6,6,6]
+    num_heads: [6,6,6,6,6,6]
+    mlp_ratio: 2
+    qkv_bias: True
+    qk_scale:
+    drop_rate: 0.0
+    attn_drop_rate: 0.0
+    drop_path_rate: 0.1
+    use_chk: False
+    upscale: 2
+    img_range: 1.0
+    resi_connection: "1conv"
+    split_size: [8, 32]
+    c_ratio: 0.5
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)

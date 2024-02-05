@@ -879,6 +879,29 @@ def CreateGenerator(cfg, scale):
             rgb_mean=cfg["rgb_mean"],
         )
 
+    elif cfg["netG"] == "rgt":
+        from arch.rgt_arch import RGT
+
+        netG = RGT(
+            img_size=cfg["img_size"],
+            in_chans=cfg["in_chans"],
+            embed_dim=cfg["embed_dim"],
+            depth=cfg["depth"],
+            num_heads=cfg["num_heads"],
+            mlp_ratio=cfg["mlp_ratio"],
+            qkv_bias=cfg["qkv_bias"],
+            qk_scale=cfg["qk_scale"],
+            drop_rate=cfg["drop_rate"],
+            attn_drop_rate=cfg["attn_drop_rate"],
+            drop_path_rate=cfg["drop_path_rate"],
+            use_chk=cfg["use_chk"],
+            upscale=scale,
+            img_range=cfg["img_range"],
+            resi_connection=cfg["resi_connection"],
+            split_size=cfg["split_size"],
+            c_ratio=cfg["c_ratio"],
+        )
+
     ############################
 
     if cfg["CEM"] is True:
