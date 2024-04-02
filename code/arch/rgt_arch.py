@@ -2,17 +2,15 @@
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
-from torch import Tensor
 from torch.nn import functional as F
 
 from timm.models.layers import DropPath, trunc_normal_
 from einops.layers.torch import Rearrange
-from einops import rearrange, repeat
+from einops import rearrange
 
 import math
 import numpy as np
 
-import random
 
 
 def img2windows(img, H_sp, W_sp):
@@ -855,9 +853,9 @@ class RGT(nn.Module):
         # ------------------------- 2, Deep Feature Extraction ------------------------- #
         self.num_layers = len(depth)
         self.use_chk = use_chk
-        self.num_features = (
-            self.embed_dim
-        ) = embed_dim  # num_features for consistency with other models
+        self.num_features = self.embed_dim = (
+            embed_dim  # num_features for consistency with other models
+        )
         heads = num_heads
 
         self.before_RG = nn.Sequential(

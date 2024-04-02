@@ -12,7 +12,6 @@ ActivationFunction.py (18-12-20)
 https://github.com/Vious/LBAM_Pytorch/blob/98c2ae70486f4ba3ab86d4345e586e7841cfe343/models/ActivationFunction.py
 """
 
-import math
 import torch
 from torch.nn.parameter import Parameter
 from torch import nn
@@ -70,9 +69,6 @@ class MaskUpdate(pl.LightningModule):
         return torch.pow(self.updateFunc(inputMaskMap), self.alpha)
 
 
-import math
-import torch
-from torch import nn
 
 # from models.ActivationFunction import GaussActivation, MaskUpdate
 # from models.weightInitial import weights_init
@@ -185,9 +181,6 @@ class ReverseAttention(pl.LightningModule):
         return outputFeatures
 
 
-import math
-import torch
-from torch import nn
 
 # from models.ActivationFunction import GaussActivation, MaskUpdate
 # from models.weightInitial import weights_init
@@ -317,9 +310,6 @@ class ForwardAttention(pl.LightningModule):
         return features, maskUpdated, convPreF, maskActiv
 
 
-import torch
-import torch.nn as nn
-from torchvision import models
 
 # from models.forwardAttentionLayer import ForwardAttention
 # from models.reverseAttentionLayer import ReverseAttention, ReverseMaskConv

@@ -787,15 +787,15 @@ class FunctionSepconv(torch.autograd.Function):
         assert intInputHeight - intFilterSize == intOutputHeight - 1
         assert intInputWidth - intFilterSize == intOutputWidth - 1
 
-        assert input.is_contiguous() == True
-        assert vertical.is_contiguous() == True
-        assert horizontal.is_contiguous() == True
+        assert input.is_contiguous() is True
+        assert vertical.is_contiguous() is True
+        assert horizontal.is_contiguous() is True
 
         output = input.new_zeros(
             intSample, intInputDepth, intOutputHeight, intOutputWidth
         )
 
-        if input.is_cuda == True:
+        if input.is_cuda is True:
 
             class Stream:
                 ptr = torch.cuda.current_stream().cuda_stream
@@ -827,7 +827,7 @@ class FunctionSepconv(torch.autograd.Function):
                 stream=Stream,
             )
 
-        elif input.is_cuda == False:
+        elif input.is_cuda is False:
             raise NotImplementedError()
 
         # end
@@ -851,25 +851,25 @@ class FunctionSepconv(torch.autograd.Function):
         assert intInputHeight - intFilterSize == intOutputHeight - 1
         assert intInputWidth - intFilterSize == intOutputWidth - 1
 
-        assert gradOutput.is_contiguous() == True
+        assert gradOutput.is_contiguous() is True
 
         gradInput = (
             input.new_zeros(intSample, intInputDepth, intInputHeight, intInputWidth)
-            if self.needs_input_grad[0] == True
+            if self.needs_input_grad[0] is True
             else None
         )
         gradVertical = (
             input.new_zeros(intSample, intFilterSize, intOutputHeight, intOutputWidth)
-            if self.needs_input_grad[1] == True
+            if self.needs_input_grad[1] is True
             else None
         )
         gradHorizontal = (
             input.new_zeros(intSample, intFilterSize, intOutputHeight, intOutputWidth)
-            if self.needs_input_grad[2] == True
+            if self.needs_input_grad[2] is True
             else None
         )
 
-        if input.is_cuda == True:
+        if input.is_cuda is True:
 
             class Stream:
                 ptr = torch.cuda.current_stream().cuda_stream
@@ -928,7 +928,7 @@ class FunctionSepconv(torch.autograd.Function):
                 stream=Stream,
             )
 
-        elif input.is_cuda == False:
+        elif input.is_cuda is False:
             raise NotImplementedError()
 
         # end

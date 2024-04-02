@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import os
 import logging
 from collections import OrderedDict
 
@@ -49,7 +48,7 @@ class USRNetmodel(BaseModel):
 
         # set if data should be normalized (-1,1) or not (0,1)
         if self.is_train:
-            z_norm = opt["datasets"]["train"].get("znorm", False)
+            opt["datasets"]["train"].get("znorm", False)
 
         # define networks and load pretrained models
         self.netG = networks.define_G(opt).to(self.device)  # G

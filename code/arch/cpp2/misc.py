@@ -12,7 +12,6 @@ import contextlib
 import numpy as np
 import torch
 import warnings
-from . import misc  # import dnnlib
 
 # ----------------------------------------------------------------------------
 # Cached construction of constant tensors. Avoids CPU=>GPU copy when the

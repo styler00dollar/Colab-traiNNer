@@ -4,14 +4,12 @@ https://github.com/xindongzhang/ELAN
 models/elan_block.py
 models/elan_network.py
 """
+
 import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
-import numbers
-from torch.nn.utils import weight_norm
-from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
 import yaml
 

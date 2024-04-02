@@ -286,12 +286,7 @@ class SNConvWithActivation(pl.LightningModule):
 
 
 import torch
-from torch.optim.optimizer import Optimizer, required
 
-from torch.autograd import Variable
-import torch.nn.functional as F
-from torch import nn
-from torch import Tensor
 from torch.nn import Parameter
 
 
@@ -324,9 +319,9 @@ class SpectralNorm(pl.LightningModule):
 
     def _made_params(self):
         try:
-            u = getattr(self.module, self.name + "_u")
-            v = getattr(self.module, self.name + "_v")
-            w = getattr(self.module, self.name + "_bar")
+            getattr(self.module, self.name + "_u")
+            getattr(self.module, self.name + "_v")
+            getattr(self.module, self.name + "_bar")
             return True
         except AttributeError:
             return False
@@ -355,10 +350,6 @@ class SpectralNorm(pl.LightningModule):
 
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
-from torch.autograd import Variable
 
 
 # from .spectral import SpectralNorm
@@ -616,7 +607,7 @@ class InpaintSANet(pl.LightningModule):
         # Coarse
         # masked_imgs =  imgs * (1 - masks) + masks
 
-        if img_exs == None:
+        if img_exs is None:
             input_imgs = torch.cat([imgs, masks, torch.full_like(masks, 1.0)], dim=1)
         else:
             input_imgs = torch.cat(

@@ -2,6 +2,7 @@
 5-Dez-21
 https://github.com/xmu-xiaoma666/External-Attention-pytorch/blob/master/model/attention/TripletAttention.py
 """
+
 import torch
 import torch.nn as nn
 

@@ -2,18 +2,14 @@
 BasicSR/codes/models/modules/LPIPS/networks_basic.py (6-Dez-20)
 https://github.com/victorca25/BasicSR/blob/master/codes/models/modules/LPIPS/networks_basic.py
 """
+
 from __future__ import absolute_import
 
-import sys
 import torch
 import torch.nn as nn
-import torch.nn.init as init
 from torch.autograd import Variable
-import numpy as np
-from pdb import set_trace as st
 
 # from skimage import color
-from IPython import embed
 from . import pretrained_networks as pn
 from . import perceptual_loss as util
 import pytorch_lightning as pl
@@ -42,6 +38,7 @@ class Upsample(pl.LightningModule):
             those pixels. This only has effect when :attr:`mode` is
             ``'linear'``, ``'bilinear'``, or ``'trilinear'``. Default: ``False``
     """
+
     # To prevent warning: nn.Upsample is deprecated
     # https://discuss.pytorch.org/t/which-function-is-better-for-upsampling-upsampling-or-interpolate/21811/8
     # From: https://pytorch.org/docs/stable/_modules/torch/nn/modules/upsampling.html#Upsample

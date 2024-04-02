@@ -2,7 +2,6 @@
 """Lamb optimizer."""
 
 import collections
-import math
 
 import torch
 from tensorboardX import SummaryWriter

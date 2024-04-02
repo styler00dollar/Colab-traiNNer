@@ -2,6 +2,7 @@
 20-Mai-2020
 https://github.com/victorca25/BasicSR/blob/14aced7d1049a283761c145f3cf300a94c6ac4b9/codes/models/modules/architectures/glow/Permutations.py
 """
+
 import numpy as np
 import torch
 from torch import nn as nn

@@ -7,17 +7,13 @@ https://github.com/louisfghbvc/Efficient-Transformer-for-Single-Image-Super-Reso
 https://github.com/louisfghbvc/Efficient-Transformer-for-Single-Image-Super-Resolution/blob/main/models/comm.py
 https://github.com/louisfghbvc/Efficient-Transformer-for-Single-Image-Super-Resolution/blob/main/models/hfm.py
 """
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from einops import rearrange
-from einops.layers.torch import Rearrange
 
-import torch
-from torch import tensor
-import torch.nn as nn
-import torch.nn.functional as F
 
 
 # High Filter Module

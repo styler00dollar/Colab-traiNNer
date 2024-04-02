@@ -2,6 +2,7 @@
 31-Dez-21
 https://github.com/victorca25/augmennt/blob/master/augmennt/transforms.py
 """
+
 from __future__ import division
 import torch
 import math
@@ -2081,7 +2082,7 @@ class RandomQuantizeSOM(RandomBase):
         # initialize som
         self.som.random_weights_init(pixels)
         # save the starting weights (the image’s initial colors)
-        starting_weights = self.som.get_weights().copy()
+        self.som.get_weights().copy()
         self.som.train_random(pixels, 500, verbose=False)
         # som.train_random(pixels, 100)
 

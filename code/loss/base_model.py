@@ -2,12 +2,11 @@
 BasicSR/codes/models/modules/LPIPS/base_model.py (6-Dez-20)
 https://github.com/victorca25/BasicSR/blob/master/codes/models/modules/LPIPS/base_model.py
 """
+
 import os
 import torch
-from torch.autograd import Variable
 
 # from pdb import set_trace as st
-from IPython import embed
 
 
 class BaseModel:

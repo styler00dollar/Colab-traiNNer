@@ -15,7 +15,6 @@ from abc import ABC
 from math import prod
 from omegaconf import OmegaConf
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
-from timm.models.layers import to_2tuple, trunc_normal_
 from typing import Tuple
 import math
 import numpy as np

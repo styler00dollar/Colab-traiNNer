@@ -3,6 +3,7 @@
 https://github.com/sniklaus/revisiting-sepconv/blob/fea509d98157170df1fb35bf615bd41d98858e1a/run.py
 https://github.com/sniklaus/revisiting-sepconv/blob/fea509d98157170df1fb35bf615bd41d98858e1a/sepconv/sepconv.py
 """
+
 #!/usr/bin/env python
 
 import cupy
@@ -229,7 +230,7 @@ class sepconv_func(torch.autograd.Function):
             ]
         )
 
-        if tenIn.is_cuda == True:
+        if tenIn.is_cuda is True:
             cuda_launch(
                 cuda_kernel(
                     "sepconv_out",
@@ -284,7 +285,7 @@ class sepconv_func(torch.autograd.Function):
                 ],
             )
 
-        elif tenIn.is_cuda != True:
+        elif tenIn.is_cuda is not True:
             assert False
 
         # end
@@ -301,27 +302,27 @@ class sepconv_func(torch.autograd.Function):
         tenIn, tenVer, tenHor = self.saved_tensors
 
         tenOutgrad = tenOutgrad.contiguous()
-        assert tenOutgrad.is_cuda == True
+        assert tenOutgrad.is_cuda is True
 
         tenIngrad = (
             tenIn.new_empty(
                 [tenIn.shape[0], tenIn.shape[1], tenIn.shape[2], tenIn.shape[3]]
             )
-            if self.needs_input_grad[0] == True
+            if self.needs_input_grad[0] is True
             else None
         )
         tenVergrad = (
             tenVer.new_empty(
                 [tenVer.shape[0], tenVer.shape[1], tenVer.shape[2], tenVer.shape[3]]
             )
-            if self.needs_input_grad[1] == True
+            if self.needs_input_grad[1] is True
             else None
         )
         tenHorgrad = (
             tenHor.new_empty(
                 [tenHor.shape[0], tenHor.shape[1], tenHor.shape[2], tenHor.shape[3]]
             )
-            if self.needs_input_grad[2] == True
+            if self.needs_input_grad[2] is True
             else None
         )
 
@@ -543,7 +544,6 @@ import torch
 import getopt
 import math
 import numpy
-import os
 import PIL
 import PIL.Image
 import sys
@@ -610,7 +610,7 @@ class Basic(torch.nn.Module):
         fltStride = 1.0
 
         for intPart, strPart in enumerate(self.strType.split("+")[0].split("-")):
-            if strPart.startswith("conv") == True:
+            if strPart.startswith("conv") is True:
                 intKsize = 3
                 intPad = 1
                 strPad = "zeros"
@@ -643,7 +643,7 @@ class Basic(torch.nn.Module):
                 intChans = intChans[1:]
                 fltStride *= 1.0
 
-            elif strPart.startswith("sconv") == True:
+            elif strPart.startswith("sconv") is True:
                 intKsize = 3
                 intPad = 1
                 strPad = "zeros"
@@ -676,7 +676,7 @@ class Basic(torch.nn.Module):
                 intChans = intChans[1:]
                 fltStride *= 2.0
 
-            elif strPart.startswith("up") == True:
+            elif strPart.startswith("up") is True:
 
                 class Up(torch.nn.Module):
                     def __init__(self, strType):
@@ -733,7 +733,7 @@ class Basic(torch.nn.Module):
                 netMain += [Up(strType)]
                 fltStride *= 0.5
 
-            elif strPart.startswith("prelu") == True:
+            elif strPart.startswith("prelu") is True:
                 netMain += [
                     torch.nn.PReLU(
                         num_parameters=1,
@@ -751,7 +751,7 @@ class Basic(torch.nn.Module):
         self.netMain = torch.nn.Sequential(*netMain)
 
         for strPart in self.strType.split("+")[1:]:
-            if strPart.startswith("skip") == True:
+            if strPart.startswith("skip") is True:
                 if intIn == intOut and fltStride == 1.0:
                     self.netShortcut = torch.nn.Identity()
 
@@ -825,7 +825,7 @@ class Basic(torch.nn.Module):
 
                 # end
 
-            elif strPart.startswith("...") == True:
+            elif strPart.startswith("...") is True:
                 pass
 
             # end

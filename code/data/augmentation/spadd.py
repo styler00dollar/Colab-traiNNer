@@ -2,6 +2,7 @@
 31-Dez-21
 https://github.com/victorca25/augmennt/blob/master/augmennt/spadd.py
 """
+
 # Workaround to disable Intel Fortran Control+C console event handler installed by scipy
 from os import environ as os_env
 

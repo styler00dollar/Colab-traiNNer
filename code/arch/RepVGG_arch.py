@@ -3,7 +3,6 @@ repvgg.py (20-2-20)
 https://github.com/DingXiaoH/RepVGG/blob/main/repvgg.py
 """
 
-
 import torch.nn as nn
 import numpy as np
 import torch

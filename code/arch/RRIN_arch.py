@@ -2,6 +2,7 @@
 https://github.com/HopLee6/RRIN/blob/e868adb943f55a0f0f622c1db966e2f5c80835b7/model.py
 https://github.com/HopLee6/RRIN/blob/e868adb943f55a0f0f622c1db966e2f5c80835b7/unet.py
 """
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,9 +10,6 @@ import numpy as np
 
 # from unet import UNet
 
-import torch
-from torch import nn
-import torch.nn.functional as F
 
 # Adapted from "Tunable U-Net implementation in PyTorch"
 # https://github.com/jvanvugt/pytorch-unet

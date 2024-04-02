@@ -2,7 +2,7 @@
 5-Dez-21
 https://github.com/xmu-xiaoma666/External-Attention-pytorch/blob/master/model/attention/A2Atttention.py
 """
-import numpy as np
+
 import torch
 from torch import nn
 from torch.nn import init

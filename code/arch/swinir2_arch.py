@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
-from timm.models.layers import DropPath, to_2tuple, trunc_normal_
+from timm.models.layers import to_2tuple, trunc_normal_
 from typing import Tuple, Optional, List, Union, Any
 import timm
 
@@ -962,9 +962,11 @@ class SwinTransformerStage(nn.Module):
                     ff_feature_ratio=ff_feature_ratio,
                     dropout=dropout,
                     dropout_attention=dropout_attention,
-                    dropout_path=dropout_path[index]
-                    if isinstance(dropout_path, list)
-                    else dropout_path,
+                    dropout_path=(
+                        dropout_path[index]
+                        if isinstance(dropout_path, list)
+                        else dropout_path
+                    ),
                     sequential_self_attention=sequential_self_attention,
                 )
                 for index in range(depth)
@@ -1316,9 +1318,9 @@ class BasicLayer(nn.Module):
                     ff_feature_ratio=mlp_ratio,
                     dropout=drop,
                     dropout_attention=attn_drop,
-                    dropout_path=drop_path[i]
-                    if isinstance(drop_path, list)
-                    else drop_path,
+                    dropout_path=(
+                        drop_path[i] if isinstance(drop_path, list) else drop_path
+                    ),
                     sequential_self_attention=sequential_self_attention,
                 )
                 for i in range(depth)

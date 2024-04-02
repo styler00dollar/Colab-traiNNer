@@ -2,8 +2,8 @@
 28-Sep-21
 https://github.com/avalonstrel/GatedConvolution_pytorch/blob/22455dae24c42b58ac3fe4803c35487fe56d56dd/models/networks.py
 """
+
 import torch
-import numpy as np
 import torch.nn.functional as F
 import torch.nn as nn
 

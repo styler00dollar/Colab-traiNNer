@@ -258,7 +258,7 @@ class cugan(nn.Module):
         self.pro_mode = pro_mode
 
         if self.scale == 1:
-            raise ValueError(f"1x scale ratio is unsupported. Please use 2x, 3x or 4x.")
+            raise ValueError("1x scale ratio is unsupported. Please use 2x, 3x or 4x.")
 
         if self.scale == 2:
             self.unet1 = UNet1(in_channels, out_channels, deconv=True)

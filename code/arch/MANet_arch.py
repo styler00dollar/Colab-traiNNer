@@ -121,21 +121,16 @@ class PartialConv2d(nn.Conv2d):
             return output
 
 
-import math
 
 # from partialconv2d import PartialConv2d
 # from .conv.partialconv import PartialConv2d
-import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torchvision import models
 
 # import ContextualAttention
 PartialConv = PartialConv2d
 
-import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class SEModule(nn.Module):

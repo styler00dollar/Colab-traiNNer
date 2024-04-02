@@ -2,6 +2,7 @@
 12-Okt-21
 https://github.com/victorca25/traiNNer/blob/f332913117a37672cfe4c681e93bf54a111240eb/codes/dataops/colors.py
 """
+
 """
 Functions for color operations on tensors.
 If needed, there are more conversions that can be used:
@@ -12,8 +13,6 @@ https://github.com/R08UST/Color_Conversion_pytorch/blob/master/differentiable_co
 
 import torch
 import torch.nn as nn
-import math
-import cv2
 import numpy as np
 
 

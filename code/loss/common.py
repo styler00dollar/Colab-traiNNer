@@ -12,7 +12,6 @@ import torch
 import cv2
 import logging
 
-import copy
 from torchvision.utils import make_grid
 
 # from dataops.colors import *
@@ -805,7 +804,7 @@ def imresize(img, scale, antialiasing=True, interpolation=None):
     # output: CHW RGB [0,1] w/o round
 
     in_C, in_H, in_W = img.size()
-    out_C, out_H, out_W = in_C, math.ceil(in_H * scale), math.ceil(in_W * scale)
+    _out_C, out_H, out_W = in_C, math.ceil(in_H * scale), math.ceil(in_W * scale)
 
     # Choose interpolation method, each method has the matching kernel size
     kernel, kernel_width = {
@@ -902,7 +901,7 @@ def imresize_np(img, scale, antialiasing=True, interpolation=None):
     img = torch.from_numpy(img)
 
     in_H, in_W, in_C = img.size()
-    out_C, out_H, out_W = in_C, math.ceil(in_H * scale), math.ceil(in_W * scale)
+    _out_C, out_H, out_W = in_C, math.ceil(in_H * scale), math.ceil(in_W * scale)
 
     # Choose interpolation method, each method has the matching kernel size
     kernel, kernel_width = {

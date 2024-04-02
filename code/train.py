@@ -4,7 +4,6 @@ import yaml
 from data.dataloader import DataModule
 import sys
 
-import torch
 
 torch.set_float32_matmul_precision("medium")
 
@@ -44,7 +43,7 @@ if __name__ == "__main__":
     # limit_val_batches=0
 
     # Warning: stochastic_weight_avg **can cause crashing after an epoch**. Test if it crashes first if you reach next epoch. Not all generators are tested.
-    if cfg["use_tpu"] == False:
+    if cfg["use_tpu"] is False:
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
             log_every_n_steps=50,
@@ -60,7 +59,7 @@ if __name__ == "__main__":
 
     # 2+ cfg['gpus'] (locally, not inside Google Colab)
     # Recommended: Pytorch 1.8+. 1.7.1 seems to have dataloader issues and ddp only works if code is run within console.
-    if cfg["use_tpu"] == False and cfg["gpus"] > 1:
+    if cfg["use_tpu"] is False and cfg["gpus"] > 1:
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
             log_every_n_steps=50,
@@ -77,17 +76,16 @@ if __name__ == "__main__":
         )
 
     # TPU
-    if cfg["use_tpu"] == True and cfg["use_amp"] == False:
+    if cfg["use_tpu"] is True and cfg["use_amp"] is False:
         print("Currently not supported")
         sys.exit(0)
 
-    if cfg["use_tpu"] == True and cfg["use_amp"] == True:
+    if cfg["use_tpu"] is True and cfg["use_amp"] is True:
         print("Currently not supported")
         sys.exit(0)
 
     # Loading a pretrain pth
     if cfg["path"]["pretrain_model_G"]:
-        import omegaconf
 
         # model.netG.load_state_dict(torch.load(cfg['path']['pretrain_model_G'])['state_dict'])
         model.netG.load_state_dict(

@@ -15,22 +15,14 @@ task.py (16-12-20)
 https://github.com/lyndonzheng/Pluralistic-Inpainting/blob/1ca1855615fed8b686ca218c6494f455860f9996/util/task.py
 """
 
-from PIL import Image
-from random import randint
 from torch import nn
 from torch.nn import Parameter
 from torch.nn import init
-from torch.optim import lr_scheduler
 import copy
-import cv2
 import functools
 import logging
-import numpy as np
-import random
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.transforms as transforms
 
 logger = logging.getLogger("base")
 import pytorch_lightning as pl
@@ -103,9 +95,9 @@ class SpectralNorm(pl.LightningModule):
 
     def _made_params(self):
         try:
-            u = getattr(self.module, self.name + "_u")
-            v = getattr(self.module, self.name + "_v")
-            w = getattr(self.module, self.name + "_bar")
+            getattr(self.module, self.name + "_u")
+            getattr(self.module, self.name + "_v")
+            getattr(self.module, self.name + "_bar")
             return True
         except AttributeError:
             return False
@@ -626,11 +618,7 @@ class Auto_Attn(pl.LightningModule):
         return out, attention
 
 
-import torch
 from torch import nn
-from torch.nn import Parameter
-import torch.nn.functional as F
-import copy
 
 
 ####################################################################################################
@@ -672,9 +660,9 @@ class SpectralNorm(pl.LightningModule):
 
     def _made_params(self):
         try:
-            u = getattr(self.module, self.name + "_u")
-            v = getattr(self.module, self.name + "_v")
-            w = getattr(self.module, self.name + "_bar")
+            getattr(self.module, self.name + "_u")
+            getattr(self.module, self.name + "_v")
+            getattr(self.module, self.name + "_bar")
             return True
         except AttributeError:
             return False

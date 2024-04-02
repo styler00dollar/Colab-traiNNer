@@ -2,10 +2,10 @@
 31-Dez-21
 https://github.com/victorca25/augmennt/blob/master/augmennt/functional.py
 """
+
 # from __future__ import division
 import torch
 import math
-import random
 
 # from PIL import Image, ImageOps, ImageEnhance, PILLOW_VERSION
 try:
@@ -16,7 +16,6 @@ except ImportError:
 import numpy as np
 import cv2
 import numbers
-import types
 import collections
 import warnings
 

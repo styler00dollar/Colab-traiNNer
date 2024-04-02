@@ -14,6 +14,7 @@ https://github.com/wangning-001/DSNet/blob/afa174a8f8e4fbdeff086fb546c83c871e959
 deform_conv.py (6-3-20)
 https://github.com/wangning-001/DSNet/blob/afa174a8f8e4fbdeff086fb546c83c871e959141/modules/deform_conv.py
 """
+
 # from modules.Attention import PixelContextualAttention
 # from modules.RegionNorm import RBNModule, RCNModule
 # from modules.ValidMigration import ConvOffset2D
@@ -21,7 +22,6 @@ https://github.com/wangning-001/DSNet/blob/afa174a8f8e4fbdeff086fb546c83c871e959
 from __future__ import absolute_import, division
 from scipy.ndimage.interpolation import map_coordinates as sp_map_coordinates
 from torch.autograd import Variable
-from torchvision import models
 import numpy as np
 import torch
 import torch.nn as nn
@@ -817,7 +817,6 @@ RRDBNet_arch.py (12-2-20)
 https://github.com/victorca25/BasicSR/blob/master/codes/models/modules/architectures/RRDBNet_arch.py
 """
 import math
-import torch
 import torch.nn as nn
 
 # import torchvision

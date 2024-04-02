@@ -24,22 +24,19 @@ InnerCos.py (25-12-20)
 https://github.com/KumapowerLIU/Rethinking-Inpainting-MEDFE/blob/c7156eab4a9890888fa86e641cd685e21b78c31e/models/InnerCos.py
 """
 
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from torch.autograd import Variable
 import collections
-import inspect, re
+import inspect
+import re
 import math
 import numpy as np
 import os
-import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from PIL import Image
-from torchvision.utils import save_image
 import pytorch_lightning as pl
 
 
@@ -305,7 +302,7 @@ class Selfpatch(object):
     ):
         nDim = 3
         assert target_img.dim() == nDim, "target image must be of dimension 3."
-        C = target_img.size(0)
+        target_img.size(0)
 
         self.Tensor = (
             torch.cuda.FloatTensor if torch.cuda.is_available else torch.Tensor
@@ -321,7 +318,7 @@ class Selfpatch(object):
     def build(self, target_img, patch_size=5, stride=1):
         nDim = 3
         assert target_img.dim() == nDim, "target image must be of dimension 3."
-        C = target_img.size(0)
+        target_img.size(0)
 
         self.Tensor = (
             torch.cuda.FloatTensor if torch.cuda.is_available else torch.Tensor
@@ -518,14 +515,14 @@ class ConvDown(pl.LightningModule):
             nf_mult_prev = nf_mult
             if nums == 8:
                 if in_c == 512:
-                    nfmult = 1
+                    pass
                 else:
                     nf_mult = 2
 
             else:
                 nf_mult = min(2**i, 8)
             if kernel != 1:
-                if activ == False and layers == 1:
+                if activ is False and layers == 1:
                     sequence += [
                         nn.Conv2d(
                             nf_mult_prev * in_c,
@@ -565,7 +562,7 @@ class ConvDown(pl.LightningModule):
                     nn.LeakyReLU(0.2, True),
                 ]
 
-            if activ == False:
+            if activ is False:
                 if i + 1 == layers:
                     if layers == 2:
                         sequence += [
@@ -830,7 +827,6 @@ class PCconv(pl.LightningModule):
         return out_final
 
 
-import torch.nn as nn
 
 
 # Define the resnet block
@@ -968,7 +964,6 @@ class Encoder(pl.LightningModule):
 
 
 import torch.nn as nn
-import torch
 
 
 class UnetSkipConnectionDBlock(pl.LightningModule):

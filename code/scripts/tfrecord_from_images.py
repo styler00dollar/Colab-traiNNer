@@ -87,11 +87,9 @@ class TFRecordExporter:
 
 
 import multiprocessing as mp
-import numpy as np
 import argparse
 from tqdm import tqdm
 import random
-import os
 import PIL.Image
 
 # from tfrecord_utils import TFRecordExporter

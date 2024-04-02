@@ -2,9 +2,8 @@
 28-Sep-21
 https://github.com/frank-xwang/TBC-TiedBlockConvolution/blob/main/TiedBlockConv.py
 """
-import torch
+
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class TiedBlockConv2d(nn.Module):

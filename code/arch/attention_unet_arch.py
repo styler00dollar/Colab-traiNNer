@@ -2,6 +2,7 @@
 26-03-2022
 https://github.com/aesrgan/A-ESRGAN/blob/e810596c94a32fa1159b21e63d7635865cf6c2a3/aesrgan/archs/discriminator_arch.py
 """
+
 from torch import nn as nn
 from torch.nn import functional as F
 from torch.nn.utils import spectral_norm

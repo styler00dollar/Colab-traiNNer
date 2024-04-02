@@ -2,12 +2,9 @@
 5-Dez-21
 https://github.com/xmu-xiaoma666/External-Attention-pytorch/blob/master/model/attention/CoTAttention.py
 """
-import numpy as np
+
 import torch
-from torch import flatten, nn
-from torch.nn import init
-from torch.nn.modules.activation import ReLU
-from torch.nn.modules.batchnorm import BatchNorm2d
+from torch import nn
 from torch.nn import functional as F
 
 

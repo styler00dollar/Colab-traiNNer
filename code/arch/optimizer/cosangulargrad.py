@@ -2,11 +2,10 @@
 cosangulargrad.py (25-06-21)
 https://github.com/mhaut/AngularGrad/blob/947417d42f591eeecabe6dbeb524a4d220252bd4/myoptims/cosangulargrad.py
 """
+
 import math
 import torch
 from torch.optim.optimizer import Optimizer
-import numpy as np
-import torch.nn as nn
 
 
 class cosangulargrad(Optimizer):
@@ -99,7 +98,7 @@ class cosangulargrad(Optimizer):
                         diff = abs(previous_grad - grad)
                         final_cos_theta = cos_theta.clone()
                 except:
-                    if ans1[0].item() == False:
+                    if ans1[0].item() is False:
                         min = angle
                         diff = abs(previous_grad - grad)
                         final_cos_theta = cos_theta.clone()

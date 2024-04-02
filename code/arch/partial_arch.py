@@ -3,10 +3,8 @@ model.py (24-12-20)
 https://github.com/jacobaustin123/pytorch-inpainting-partial-conv/blob/master/model.py
 """
 
-from torch import nn, cuda
-from torchvision import models
+from torch import nn
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
 # from .convolutions import partialconv2d

@@ -2,12 +2,13 @@
 20-Mai-2020
 https://github.com/victorca25/BasicSR/blob/14aced7d1049a283761c145f3cf300a94c6ac4b9/codes/models/modules/architectures/SRFlow/FlowUpsamplerNet.py
 """
+
 import numpy as np
 import torch
 from torch import nn as nn
 
 # from models.modules.architectures.glow import flow, thops
-from arch.glow import flow, thops
+from arch.glow import flow
 from arch.SRFlow.Split import Split2d
 from arch.SRFlow.glow_arch import f_conv2d_bias
 from arch.glow.Step import FlowStep
@@ -133,7 +134,7 @@ class FlowUpsamplerNet(nn.Module):
             self.arch_split(H, W, level, self.L)
 
         # if opt_get(opt, ['network_G', 'flow', 'split', 'enable']):
-        if cfg["network_G"]["flow"]["split"]["enable"] == True:
+        if cfg["network_G"]["flow"]["split"]["enable"] is True:
             self.f = f_conv2d_bias(affineInCh, 2 * 3 * 64 // 2 // 2)
         else:
             self.f = f_conv2d_bias(affineInCh, 2 * 3 * 64)
@@ -384,11 +385,10 @@ class FlowUpsamplerNet(nn.Module):
 
         fl_fea = z
         # debug.imwrite("fl_fea", fl_fea)
-        bypasses = {}
         level_conditionals = {}
 
         # opt_get(self.opt, ['network_G', 'flow', 'levelConditional', 'conditional'])
-        if not None == True:
+        if None is not True:
             for level in range(self.L + 1):
                 level_conditionals[level] = rrdbResults[self.levelToName[level]]
 

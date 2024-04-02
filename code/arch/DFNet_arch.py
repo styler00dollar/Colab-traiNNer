@@ -233,7 +233,6 @@ class FusionBlock(pl.LightningModule):
         return result, alpha, raw
 
 
-from torchvision.utils import save_image
 
 
 class DFNet(pl.LightningModule):

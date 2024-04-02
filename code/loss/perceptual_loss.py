@@ -2,6 +2,7 @@
 https://github.com/victorca25/BasicSR/blob/master/codes/models/modules/LPIPS/perceptual_loss.py
 BasicSR/codes/models/modules/LPIPS/perceptual_loss.py (6-12-Dez)
 """
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -10,7 +11,6 @@ import numpy as np
 
 # from skimage.measure import compare_ssim
 import torch
-from torch.autograd import Variable
 
 from . import dist_model
 

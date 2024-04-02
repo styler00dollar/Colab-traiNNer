@@ -1,14 +1,8 @@
-import math
-import numpy as np
 
 import torch
 import torch.nn as nn
 
-import math
-import torch
-import torch.nn as nn
 import torch.nn.functional as F
-import json
 
 
 def sub_mean(x):
@@ -51,7 +45,7 @@ if cfg["network_G"]["conv"] == "fft":
     from .lama_arch import FourierUnit
 
 if cfg["network_G"]["conv"] == "WSConv":
-    from nfnets import WSConv2d, WSConvTranspose2d, ScaledStdConv2d
+    from nfnets import WSConv2d
 
 # ATTENTION
 if cfg["network_G"]["attention"] == "OutlookAttention":

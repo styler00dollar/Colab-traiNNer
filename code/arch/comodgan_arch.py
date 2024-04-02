@@ -5,19 +5,15 @@ https://github.com/zengxianyu/co-mod-gan-pytorch/blob/a34606ec6505146c4cf3fab4cf
 stylegan2.py (25-06-21)
 https://github.com/zengxianyu/co-mod-gan-pytorch/blob/a34606ec6505146c4cf3fab4cfef9b0e77b15ae4/stylegan2.py
 """
+
 import pytorch_lightning as pl
 from arch.cpp.fused_act import FusedLeakyReLU, fused_leaky_relu
 from arch.cpp.upfirdn2d import upfirdn2d
 from collections import OrderedDict
 from torch import nn
-from torch.autograd import Function
 from torch.nn import functional as F
-import functools
 import math
 import numpy as np
-import operator
-import pdb
-import random
 import torch
 
 
@@ -531,7 +527,6 @@ class G_synthesis_co_mod_gan(nn.Module):
         assert noise_injection
 
         super().__init__()
-        act = nonlinearity
         self.num_layers = resolution_log2 * 2 - 2
         self.resolution_log2 = resolution_log2
 

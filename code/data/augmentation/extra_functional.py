@@ -2,6 +2,7 @@
 31-Dez-21
 https://github.com/victorca25/augmennt/blob/master/augmennt/extra_functional.py
 """
+
 # from __future__ import division
 # import torch
 import math
@@ -22,13 +23,10 @@ from .common import (
     polar2z,
     norm_kernel,
     _cv2_str2interpolation,
-    _cv2_interpolation2str,
-    MAX_VALUES_BY_DTYPE,
     from_float,
     to_float,
     split_channels,
     merge_channels,
-    preserve_range_float,
 )
 from .functional import center_crop, crop
 from .camera import unprocess, random_noise_levels, add_noise, process, make_img_even
@@ -700,7 +698,6 @@ def noise_dither_bayer(img: np.ndarray) -> np.ndarray:
         version of the image with dithering applied.
     """
     imgtype = img.dtype
-    size = img.shape
 
     # Note: these are very slow for large images, must crop first before applying.
     # Bayer works more or less. I think it's missing a part of the image, the

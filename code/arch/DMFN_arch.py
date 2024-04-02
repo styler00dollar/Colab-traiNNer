@@ -5,6 +5,7 @@ https://github.com/Zheng222/DMFN/blob/master/models/block.py
 architecture.py (18-12-20)
 https://github.com/Zheng222/DMFN/blob/master/models/architecture.py
 """
+
 import torch.nn as nn
 import torch
 import pytorch_lightning as pl
@@ -174,7 +175,6 @@ class ResBlock_new(pl.LightningModule):
         return output
 
 
-import torch.nn as nn
 
 # from . import block as B
 

@@ -2,6 +2,7 @@
 23-Okt-21
 https://github.com/d-li14/efficientnetv2.pytorch/blob/main/effnetv2.py
 """
+
 """
 Creates a EfficientNetV2 Model as defined in:
 Mingxing Tan, Quoc V. Le. (2021). 
@@ -19,7 +20,6 @@ if cfg["network_D"]["conv"] == "fft":
 
 import torch
 import torch.nn as nn
-import math
 
 __all__ = ["effnetv2_s", "effnetv2_m", "effnetv2_l", "effnetv2_xl"]
 

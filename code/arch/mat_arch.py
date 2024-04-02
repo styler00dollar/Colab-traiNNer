@@ -7,28 +7,23 @@ MAT/networks/basic_module.py
 MAT/torch_utils/misc.py
 MAT/torch_utils/persistence.py
 """
+
 import numpy as np
-import math
 import sys
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
-from timm.models.layers import DropPath, to_2tuple, trunc_normal_
+from timm.models.layers import to_2tuple
 
 from .cpp2 import conv2d_resample
 from .cpp2 import upfirdn2d
 from .cpp2 import bias_act
 
-import sys
-from collections import OrderedDict
-import numpy as np
 
 import re
 import contextlib
-import numpy as np
-import torch
 import warnings
 from .cpp2.util import EasyDict  # import dnnlib
 
@@ -43,7 +38,6 @@ during unpickling. This way, any previously exported pickles will remain
 usable even if the original code is no longer available, or if the current
 version of the code is not consistent with what was originally pickled."""
 
-import sys
 import pickle
 import io
 import inspect
@@ -1311,7 +1305,7 @@ class Discriminator(torch.nn.Module):
                 int(channel_base / 2 ** (stage * channel_decay)), 1, channel_max
             )
 
-        if cmap_dim == None:
+        if cmap_dim is None:
             cmap_dim = nf(2)
         if c_dim == 0:
             cmap_dim = 0
@@ -1887,9 +1881,9 @@ class BasicLayer(nn.Module):
                     qk_scale=qk_scale,
                     drop=drop,
                     attn_drop=attn_drop,
-                    drop_path=drop_path[i]
-                    if isinstance(drop_path, list)
-                    else drop_path,
+                    drop_path=(
+                        drop_path[i] if isinstance(drop_path, list) else drop_path
+                    ),
                     norm_layer=norm_layer,
                 )
                 for i in range(depth)
@@ -2550,7 +2544,7 @@ class Discriminator(torch.nn.Module):
         assert img_resolution == 2**resolution_log2 and img_resolution >= 4
         self.resolution_log2 = resolution_log2
 
-        if cmap_dim == None:
+        if cmap_dim is None:
             cmap_dim = nf(2)
         if c_dim == 0:
             cmap_dim = 0

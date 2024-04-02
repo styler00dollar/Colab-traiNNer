@@ -4,7 +4,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from einops import rearrange
-from einops.layers.torch import Rearrange
 import numbers
 
 from mmedit.models.registry import BACKBONES
@@ -343,8 +342,6 @@ class SCET(nn.Module):
 
 
 if __name__ == "__main__":
-    from torchstat import stat
-    import time
     import torchsummary
 
     net = SCET(32, 128, 4).cuda()

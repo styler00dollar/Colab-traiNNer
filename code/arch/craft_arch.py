@@ -1,7 +1,5 @@
 # https://github.com/AVC2-UESTC/CRAFT-SR/blob/main/basicsr/archs/craft_arch.py
 # https://github.com/XPixelGroup/BasicSR/blob/033cd6896d898fdd3dcda32e3102a792efa1b8f4/basicsr/archs/arch_util.py#L272
-import sys
-import os
 
 import torch
 import torch.nn as nn
@@ -677,9 +675,11 @@ class CRFB(nn.Module):
                     dim=dim,
                     num_heads=num_heads,
                     split_size=[split_size_0, split_size_1],
-                    shift_size=[0, 0]
-                    if (i % 2 == 0)
-                    else [split_size_0 // 2, split_size_1 // 2],
+                    shift_size=(
+                        [0, 0]
+                        if (i % 2 == 0)
+                        else [split_size_0 // 2, split_size_1 // 2]
+                    ),
                     mlp_ratio=mlp_ratio,
                     qkv_bias=qkv_bias,
                     qk_scale=qk_scale,

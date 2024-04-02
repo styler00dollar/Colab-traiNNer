@@ -6,7 +6,6 @@ https://github.com/knazeri/edge-informed-sisr/blob/1b4a6e897a84545fdecdd7acdb527
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 
 
 class BaseNetwork(nn.Module):
@@ -227,13 +226,8 @@ def spectral_norm(module, mode=True):
     return module
 
 
-import os
-import torch
 import torch.nn as nn
-import torch.optim as optim
 
-from torchvision.utils import save_image
-import torch.nn.functional as F
 
 
 class EdgeSRModel(nn.Module):

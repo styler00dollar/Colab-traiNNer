@@ -2,12 +2,10 @@
 5-Dez-21
 https://github.com/xmu-xiaoma666/External-Attention-pytorch/blob/master/model/conv/Involution.py
 """
-import math
-from functools import partial
+
 
 import torch
-from torch import nn, select
-from torch.nn import functional as F
+from torch import nn
 
 
 class Involution(nn.Module):

@@ -10,9 +10,7 @@ https://github.com/jingyuanli001/RFR-Inpainting/blob/master/modules/Attention.py
 """
 
 from torch import nn
-from torchvision import models
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
 # from models.modules.architectures.convolutions.deformconv2d import DeformConv2d

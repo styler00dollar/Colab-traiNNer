@@ -2,11 +2,12 @@
 20-Mai-2020
 https://github.com/victorca25/BasicSR/blob/14aced7d1049a283761c145f3cf300a94c6ac4b9/codes/models/modules/architectures/glow/Step.py
 """
+
 import torch
 from torch import nn as nn
 
 # import models.modules.architectures.SRFlow
-from . import Permutations, flow, thops, ActNorms
+from . import Permutations, ActNorms
 from arch.SRFlow import FlowAffineCouplingsAblation
 
 # from options.options import opt_get

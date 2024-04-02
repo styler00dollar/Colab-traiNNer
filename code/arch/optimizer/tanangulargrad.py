@@ -6,8 +6,6 @@ https://github.com/mhaut/AngularGrad/blob/947417d42f591eeecabe6dbeb524a4d220252b
 import math
 import torch
 from torch.optim.optimizer import Optimizer
-import numpy as np
-import torch.nn as nn
 
 
 class tanangulargrad(Optimizer):
@@ -99,7 +97,7 @@ class tanangulargrad(Optimizer):
                         diff = abs(previous_grad - grad)
                         final_tan_theta = tan_theta.clone()
                 except:
-                    if ans1[0].item() == False:
+                    if ans1[0].item() is False:
                         min = angle
                         diff = abs(previous_grad - grad)
                         final_tan_theta = tan_theta.clone()

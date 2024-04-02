@@ -2,6 +2,7 @@
 model.py (07-06-21)
 https://github.com/benjs/nfnets_pytorch/blob/7b4d1cc701c7de4ee273ded01ce21cbdb1e60c48/nfnets/model.py
 """
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -113,7 +114,7 @@ class NFNet(nn.Module):
     ):
         super(NFNet, self).__init__()
 
-        if not variant in nfnet_params:
+        if variant not in nfnet_params:
             raise RuntimeError(
                 f"Variant {variant} does not exist and could not be loaded."
             )

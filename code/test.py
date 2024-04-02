@@ -23,7 +23,7 @@ def main():
     model.netG.load_state_dict(torch.load(args.netG_pth_path))
 
     # GPU
-    if args.fp16_mode == False:
+    if args.fp16_mode is False:
         trainer = pl.Trainer(gpus=1, progress_bar_refresh_rate=20)
     # GPU with AMP (amp_level='O1' = mixed precision)
     else:

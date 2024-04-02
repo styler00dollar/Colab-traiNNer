@@ -29,7 +29,7 @@ class CustomTrainClass(pl.LightningModule):
 
         self.netG = CreateGenerator(cfg["network_G"], cfg["scale"])
 
-        if cfg["network_G_teacher"]["netG"] != None:
+        if cfg["network_G_teacher"]["netG"] is not None:
             print("Using Teacher!")
             self.netG_teacher = CreateGenerator(cfg["network_G_teacher"], cfg["scale"])
             for param in self.netG_teacher.parameters():
@@ -49,7 +49,7 @@ class CustomTrainClass(pl.LightningModule):
 
         ##################################################################
 
-        if cfg["network_D"]["netD"] != None:
+        if cfg["network_D"]["netD"] is not None:
             from discriminator import CreateDiscriminator
 
             self.netD = CreateDiscriminator(cfg)
@@ -173,7 +173,7 @@ class CustomTrainClass(pl.LightningModule):
         if arch == "sr" and landmarks:
             other["landmarks"] = train_batch[3]
 
-        if cfg["network_G_teacher"]["netG"] != None:
+        if cfg["network_G_teacher"]["netG"] is not None:
             # creating dict for teacher, currently only using same lr data
             other_teacher = other.copy()
 
@@ -203,7 +203,7 @@ class CustomTrainClass(pl.LightningModule):
                 other=other,
             )
 
-            if cfg["network_G_teacher"]["netG"] != None:
+            if cfg["network_G_teacher"]["netG"] is not None:
                 out_teacher, other_teacher = generate(
                     cfg=cfg,
                     lr_image=lr_image,
@@ -382,7 +382,7 @@ class CustomTrainClass(pl.LightningModule):
                 f"{self.prefix}_{epoch}_{global_step}_G.pth",
             ),
         )
-        if cfg["network_D"]["netD"] != None:
+        if cfg["network_D"]["netD"] is not None:
             torch.save(
                 self.trainer.model.netD.state_dict(),
                 os.path.join(

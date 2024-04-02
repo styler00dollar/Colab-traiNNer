@@ -212,7 +212,7 @@ resnet152_config = ResNetConfig(
 
 def resnet50(num_classes, pretrain=True):
     model = ResNet(resnet50_config, num_classes)
-    if pretrain == True:
+    if pretrain is True:
         pretrained_model = models.resnet50(pretrained=True)
         IN_FEATURES = pretrained_model.fc.in_features
         fc = nn.Linear(IN_FEATURES, num_classes)
@@ -225,7 +225,7 @@ def resnet50(num_classes, pretrain=True):
 
 def resnet101(num_classes, pretrain=True):
     model = ResNet(resnet101_config, num_classes)
-    if pretrain == True:
+    if pretrain is True:
         pretrained_model = models.resnet101(pretrained=True)
         IN_FEATURES = pretrained_model.fc.in_features
         fc = nn.Linear(IN_FEATURES, num_classes)
@@ -238,7 +238,7 @@ def resnet101(num_classes, pretrain=True):
 
 def resnet152(num_classes, pretrain=True):
     model = ResNet(resnet152_config, num_classes)
-    if pretrain == True:
+    if pretrain is True:
         pretrained_model = models.resnet152(pretrained=True)
         IN_FEATURES = pretrained_model.fc.in_features
         fc = nn.Linear(IN_FEATURES, num_classes)

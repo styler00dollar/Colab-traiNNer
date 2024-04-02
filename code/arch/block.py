@@ -61,7 +61,7 @@ if "convtype" in cfg["network_G"]:
         cfg["network_G"]["convtype"] == "WSConv"
         and cfg["network_G"]["netG"] in conv_archs
     ):
-        from nfnets import WSConv2d, WSConvTranspose2d, ScaledStdConv2d
+        from nfnets import WSConv2d
 
 ####################
 # Basic blocks

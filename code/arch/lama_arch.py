@@ -168,7 +168,7 @@ class BaseDiscriminator(nn.Module):
         Predict scores and get intermediate activations. Useful for feature matching loss
         :return tuple (scores, list of intermediate activations)
         """
-        raise NotImplemented()
+        raise NotImplementedError()
 
 
 def get_conv_block_ctor(kind="default"):
@@ -401,10 +401,10 @@ class FourierUnit(nn.Module):
                 align_corners=False,
             )
 
-        r_size = x.size()
+        x.size()
         # (batch, c, h, w/2+1, 2)
         fft_dim = (-3, -2, -1) if self.ffc3d else (-2, -1)
-        if half_check == True:
+        if half_check is True:
             ffted = torch.fft.rfftn(
                 x.float(), dim=fft_dim, norm=self.fft_norm
             )  # .type(torch.cuda.HalfTensor)
@@ -438,7 +438,7 @@ class FourierUnit(nn.Module):
         if self.use_se:
             ffted = self.se(ffted)
 
-        if half_check == True:
+        if half_check is True:
             ffted = self.conv_layer(ffted.half())  # (batch, c*2, h, w/2+1)
         else:
             ffted = self.conv_layer(
@@ -469,7 +469,7 @@ class FourierUnit(nn.Module):
             ffted, s=ifft_shape_slice, dim=fft_dim, norm=self.fft_norm
         )
 
-        if half_check == True:
+        if half_check is True:
             output = output.half()
 
         if self.spatial_scale_factor is not None:

@@ -5,10 +5,8 @@ https://github.com/victorca25/BasicSR/blob/master/codes/models/modules/LPIPS/dis
 
 from __future__ import absolute_import
 
-import sys
 import numpy as np
 import torch
-from torch import nn
 import os
 from collections import OrderedDict
 from torch.autograd import Variable
@@ -22,7 +20,6 @@ from .base_model import BaseModel
 # import skimage.transform
 # from tqdm import tqdm
 
-from IPython import embed
 
 from . import networks_basic as networks
 
@@ -319,7 +316,7 @@ def score_jnd_dataset(data_loader, func, name=""):
     ds = np.array(ds)
 
     sorted_inds = np.argsort(ds)
-    ds_sorted = ds[sorted_inds]
+    ds[sorted_inds]
     sames_sorted = sames[sorted_inds]
 
     TPs = np.cumsum(sames_sorted)

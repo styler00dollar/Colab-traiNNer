@@ -3,6 +3,7 @@
 https://github.com/ewrfcas/MST_inpainting/blob/aad75eed6f9eac1192deab7e757112e3d6416656/src/model_inference.py
 https://github.com/ewrfcas/MST_inpainting/blob/aad75eed6f9eac1192deab7e757112e3d6416656/src/layers.py
 """
+
 import os
 
 import cv2

@@ -4,6 +4,7 @@ https://github.com/adam-mehdi/MuarAugment/blob/02fa7a98796fba801403bf8df28d64ffd
 https://github.com/adam-mehdi/MuarAugment/blob/02fa7a98796fba801403bf8df28d64ffd399f8e6/muar/loss.py
 https://github.com/adam-mehdi/MuarAugment/blob/02fa7a98796fba801403bf8df28d64ffd399f8e6/muar/transform_lists.py
 """
+
 import albumentations as A
 import kornia.augmentation as K
 
@@ -90,7 +91,6 @@ import torch
 from torch import nn
 import pytorch_lightning as pl
 
-import kornia.augmentation as K
 
 
 ###################################### BatchRandAugment ###########################################
@@ -285,7 +285,7 @@ class MuAugment:
         self.C, self.S = N_COMPS, N_SELECTED
 
         self.device = device
-        if device == None:
+        if device is None:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def setup(

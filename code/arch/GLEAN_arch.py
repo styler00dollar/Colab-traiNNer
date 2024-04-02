@@ -998,7 +998,6 @@ class ModMBStddevLayer(nn.Module):
         return torch.cat([x, y], dim=1)
 
 
-import torch
 
 
 def get_module_device(module):
@@ -1102,7 +1101,6 @@ def style_mixing(
 
 import random
 
-import mmcv
 import numpy as np
 import torch
 import torch.nn as nn
@@ -1650,7 +1648,6 @@ class StyleGAN2Discriminator(nn.Module):
 
 
 import torch.nn as nn
-import torch.nn.functional as F
 
 # from .sr_backbone_utils import default_init_weights
 
@@ -1859,7 +1856,6 @@ class ResidualBlockNoBN(nn.Module):
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 # from mmcv.runner import load_checkpoint
 
@@ -2044,7 +2040,6 @@ class RRDBNet(nn.Module):
             )
 
 
-import numpy as np
 import torch
 import torch.nn as nn
 

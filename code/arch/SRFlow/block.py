@@ -412,6 +412,7 @@ class Upsample(nn.Module):
             those pixels. This only has effect when :attr:`mode` is
             ``'linear'``, ``'bilinear'``, or ``'trilinear'``. Default: ``False``
     """
+
     # To prevent warning: nn.Upsample is deprecated
     # https://discuss.pytorch.org/t/which-function-is-better-for-upsampling-upsampling-or-interpolate/21811/8
     # From: https://pytorch.org/docs/stable/_modules/torch/nn/modules/upsampling.html#Upsample

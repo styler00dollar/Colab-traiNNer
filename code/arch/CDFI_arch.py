@@ -4,6 +4,7 @@ https://github.com/tding1/CDFI/blob/f048b38e0cfbb4644dc0ac7ceb38288b145d22d8/mod
 https://github.com/tding1/CDFI/blob/f048b38e0cfbb4644dc0ac7ceb38288b145d22d8/cupy_module/adacof.py
 https://github.com/tding1/CDFI/blob/f048b38e0cfbb4644dc0ac7ceb38288b145d22d8/utility.py
 """
+
 import torch
 
 # import cupy_module.adacof as adacof
@@ -29,7 +30,6 @@ def moduleNormalize(frame):
 
 
 import cupy
-import torch
 import re
 import math
 
@@ -371,16 +371,16 @@ class FunctionAdaCoF(torch.autograd.Function):
             intInputWidth - ((intFilterSize - 1) * dilation + 1) == intOutputWidth - 1
         )
 
-        assert input.is_contiguous() == True
-        assert weight.is_contiguous() == True
-        assert offset_i.is_contiguous() == True
-        assert offset_j.is_contiguous() == True
+        assert input.is_contiguous() is True
+        assert weight.is_contiguous() is True
+        assert offset_i.is_contiguous() is True
+        assert offset_j.is_contiguous() is True
 
         output = input.new_zeros(
             intSample, intInputDepth, intOutputHeight, intOutputWidth
         )
 
-        if input.is_cuda == True:
+        if input.is_cuda is True:
 
             class Stream:
                 ptr = torch.cuda.current_stream().cuda_stream
@@ -416,7 +416,7 @@ class FunctionAdaCoF(torch.autograd.Function):
                 stream=Stream,
             )
 
-        elif input.is_cuda == False:
+        elif input.is_cuda is False:
             raise NotImplementedError()
 
         # end
@@ -444,36 +444,36 @@ class FunctionAdaCoF(torch.autograd.Function):
             intInputWidth - ((intFilterSize - 1) * dilation + 1) == intOutputWidth - 1
         )
 
-        assert gradOutput.is_contiguous() == True
+        assert gradOutput.is_contiguous() is True
 
         gradInput = (
             input.new_zeros(intSample, intInputDepth, intInputHeight, intInputWidth)
-            if ctx.needs_input_grad[0] == True
+            if ctx.needs_input_grad[0] is True
             else None
         )
         gradWeight = (
             input.new_zeros(
                 intSample, intFilterSize**2, intOutputHeight, intOutputWidth
             )
-            if ctx.needs_input_grad[1] == True
+            if ctx.needs_input_grad[1] is True
             else None
         )
         gradOffset_i = (
             input.new_zeros(
                 intSample, intFilterSize**2, intOutputHeight, intOutputWidth
             )
-            if ctx.needs_input_grad[2] == True
+            if ctx.needs_input_grad[2] is True
             else None
         )
         gradOffset_j = (
             input.new_zeros(
                 intSample, intFilterSize**2, intOutputHeight, intOutputWidth
             )
-            if ctx.needs_input_grad[2] == True
+            if ctx.needs_input_grad[2] is True
             else None
         )
 
-        if input.is_cuda == True:
+        if input.is_cuda is True:
 
             class Stream:
                 ptr = torch.cuda.current_stream().cuda_stream
@@ -574,7 +574,7 @@ class FunctionAdaCoF(torch.autograd.Function):
                 stream=Stream,
             )
 
-        elif input.is_cuda == False:
+        elif input.is_cuda is False:
             raise NotImplementedError()
 
         # end

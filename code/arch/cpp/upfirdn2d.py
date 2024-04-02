@@ -2,11 +2,12 @@
 upfirdn2d.py (15-jun-21)
 https://github.com/yangxy/GPEN/blob/main/face_model/op/upfirdn2d.py
 """
+
 import os
 
 import torch
 from torch.autograd import Function
-from torch.utils.cpp_extension import load, _import_module_from_library
+from torch.utils.cpp_extension import load
 
 
 module_path = os.path.dirname(__file__)

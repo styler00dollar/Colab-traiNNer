@@ -2,12 +2,11 @@
 netG.py (11-4-20)
 https://github.com/HustQBW/Context-Encoder/blob/main/netG.py
 """
-import numpy as np
+
 import torch
 from torch import nn
 
 # from torch.utils.tensorboard import SummaryWriter
-import time
 
 
 class Net_G(nn.Module):

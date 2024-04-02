@@ -2,13 +2,13 @@
 spectral_norm.py (12-2-20)
 https://github.com/victorca25/BasicSR/blob/master/codes/models/modules/spectral_norm.py
 """
+
 """
 Copy from pytorch github repo
 Spectral Normalization from https://arxiv.org/abs/1802.05957
 """
 import torch
 from torch.nn.functional import normalize
-from torch.nn.parameter import Parameter
 
 
 class SpectralNorm(object):

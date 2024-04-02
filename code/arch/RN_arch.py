@@ -11,12 +11,10 @@ https://github.com/geekyutao/RN/blob/a3cf1fccc08f22fcf4b336503a8853748720fd67/mo
 
 from torchvision.transforms import *
 import logging
-import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
-import torch.optim as optim
 import pytorch_lightning as pl
 
 logger = logging.getLogger("base")

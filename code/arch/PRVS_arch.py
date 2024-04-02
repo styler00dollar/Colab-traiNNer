@@ -21,7 +21,6 @@ https://github.com/jingyuanli001/PRVS-Image-Inpainting/blob/master/modules/Atten
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import math
 from torchvision import models
 
 # from .convolutions import partialconv2d

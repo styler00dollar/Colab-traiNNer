@@ -7,7 +7,6 @@ https://github.com/victorca25/BasicSR/blob/dev2/codes/models/modules/loss.py
 import torch
 import torch.nn as nn
 import math
-import numbers
 import torch.nn.functional as F
 import numpy as np
 import kornia
@@ -24,7 +23,7 @@ from .perceptual import VGG_Model
 
 from .filters import *
 from .colors import *
-from .common import norm, denorm
+from .common import denorm
 
 
 class CharbonnierLoss(nn.Module):
@@ -539,7 +538,7 @@ class GPLoss(nn.Module):
         super(GPLoss, self).__init__()
         self.spl_denorm = spl_denorm
         if (
-            trace == True
+            trace is True
         ):  # Alternate behavior: use the complete calculation with SPL_ComputeWithTrace()
             self.trace = SPL_ComputeWithTrace()
         else:  # Default behavior: use the more efficient SPLoss()
@@ -548,7 +547,7 @@ class GPLoss(nn.Module):
     def __call__(self, input, reference):
         ## Use "spl_denorm" when reading a [-1,1] input, but you want to compute the loss over a [0,1] range
         # Note: only rgb_to_yuv() requires image in the [0,1], so this denorm is optional, depending on the net
-        if self.spl_denorm == True:
+        if self.spl_denorm is True:
             input = denorm(input)
             reference = denorm(reference)
         input_h, input_v = get_image_gradients(input)
@@ -581,7 +580,7 @@ class CPLoss(nn.Module):
         self.yuv_denorm = yuv_denorm
 
         if (
-            trace == True
+            trace is True
         ):  # Alternate behavior: use the complete calculation with SPL_ComputeWithTrace()
             self.trace = SPL_ComputeWithTrace()
             self.trace_YUV = SPL_ComputeWithTrace()
@@ -1179,8 +1178,6 @@ https://github.com/Yukariin/CSA_pytorch/blob/master/loss.py
 """
 import torch
 from torch import nn
-import torch.nn.functional as F
-from torchvision import models
 from torchvision import transforms
 
 
@@ -1252,9 +1249,7 @@ class ConsistencyLoss(nn.Module):
 
 # https://github.com/hzwer/arXiv2020-RIFE/blob/de92bf2f9234dfd6676828bf74592266b36b63bd/model/laplacian.py
 import torch
-import numpy as np
 import torch.nn as nn
-import torch.nn.functional as F
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -1732,7 +1727,7 @@ class Canny(nn.Module):
         width = inidices_positive.size()[3]
         pixel_count = height * width
         batch_size = inidices_positive.size()[0]
-        pixel_range = (
+        (
             torch.arange(pixel_count)
             .view(1, -1)
             .repeat(batch_size, 1)

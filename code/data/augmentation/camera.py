@@ -2,6 +2,7 @@
 31-Dez-21
 https://github.com/victorca25/augmennt/blob/master/augmennt/camera.py
 """
+
 # Workaround to disable Intel Fortran Control+C console event handler installed by scipy
 from os import environ as os_env
 
@@ -962,7 +963,8 @@ def random_noise_levels() -> tuple:
     log_shot_noise = np.random.uniform(log_min_shot_noise, log_max_shot_noise)
     shot_noise = np.exp(log_shot_noise)
 
-    line = lambda x: 2.18 * x + 1.20
+    def line(x):
+        return 2.18 * x + 1.2
     log_read_noise = line(log_shot_noise) + np.random.normal(scale=0.26)
     read_noise = np.exp(log_read_noise)
     return shot_noise, read_noise

@@ -2,6 +2,7 @@
 26-03-2022
 https://github.com/xinntao/Real-ESRGAN/blob/35ee6f781e9a5a80d5f2f1efb9102c9899a81ae1/realesrgan/archs/discriminator_arch.py
 """
+
 import torch
 from torch import nn as nn
 from torch.nn import functional as F

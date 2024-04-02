@@ -11,6 +11,7 @@ https://github.com/xinntao/BasicSR/blob/cf1e32cdfc9710041ed497e9f5c155ceb7567c8f
 upfirdn2d.py (4-jun-2021)
 https://github.com/xinntao/BasicSR/blob/cf1e32cdfc9710041ed497e9f5c155ceb7567c8f/basicsr/ops/upfirdn2d/upfirdn2d.py
 """
+
 # modify from https://github.com/rosinality/stylegan2-pytorch/blob/master/op/fused_act.py # noqa:E501
 
 import torch
@@ -37,8 +38,6 @@ fused_act_ext = load(
 
 # modify from https://github.com/rosinality/stylegan2-pytorch/blob/master/op/upfirdn2d.py  # noqa:E501
 
-import torch
-from torch.autograd import Function
 from torch.nn import functional as F
 
 # try:
@@ -317,9 +316,7 @@ def fused_leaky_relu(input, bias, negative_slope=0.2, scale=2**0.5):
 
 import math
 import random
-import torch
 from torch import nn
-from torch.nn import functional as F
 
 
 class NormStyleCode(nn.Module):
@@ -1265,11 +1262,7 @@ class StyleGAN2Discriminator(nn.Module):
         return out
 
 
-import math
-import random
-import torch
 from torch import nn
-from torch.nn import functional as F
 
 # from basicsr.ops.fused_act import FusedLeakyReLU
 

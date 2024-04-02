@@ -2,12 +2,12 @@
 20-Mai-2020
 https://github.com/victorca25/BasicSR/blob/14aced7d1049a283761c145f3cf300a94c6ac4b9/codes/models/modules/architectures/SRFlow/RRDBNet_arch.py
 """
+
 import functools
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from . import block as B
-from arch.rrdb_arch import ResidualDenseBlock_5CM, RRDBM
+from arch.rrdb_arch import RRDBM
 
 # from options.options import opt_get
 import yaml

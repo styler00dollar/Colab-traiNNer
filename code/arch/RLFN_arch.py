@@ -1,5 +1,4 @@
 # https://github.com/ofsoundof/NTIRE2022_ESR/blob/main/models/team04_rlfn.py
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from collections import OrderedDict
@@ -118,9 +117,9 @@ class RLFB(nn.Module):
     def __init__(self, in_channels, mid_channel, out_channels=None, esa_channels=16):
         super(RLFB, self).__init__()
 
-        if mid_channel == None:
+        if mid_channel is None:
             mid_channel = in_channels
-        if out_channels == None:
+        if out_channels is None:
             out_channels = in_channels
 
         self.c1_r = conv_layer(in_channels, mid_channel, 3)

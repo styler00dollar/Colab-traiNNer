@@ -2,18 +2,15 @@
 lightweight_gan.py (31-jul-21)
 https://github.com/lucidrains/lightweight-gan/blob/b7c34d587d029177ddc641f42b2604506352dfb2/lightweight_gan/lightweight_gan.py
 """
-import os
+
 
 # import multiprocessing
 from random import random
 import math
-from math import log2, floor
+from math import log2
 import torch
-from torch.cuda.amp import autocast, GradScaler
 from torch import nn, einsum
 import torch.nn.functional as F
-import torchvision
-from torchvision import transforms
 from functools import partial
 import kornia
 from einops import rearrange
@@ -311,11 +308,11 @@ class Generator(pl.LightningModule):
         assert is_power_of_two(image_size), "image size must be a power of 2"
 
         if transparent:
-            init_channel = 4
+            pass
         elif greyscale:
-            init_channel = 1
+            pass
         else:
-            init_channel = 3
+            pass
 
         # fmap_max = default(fmap_max, latent_dim)
 
@@ -775,11 +772,11 @@ class SimpleFontGenerator256(pl.LightningModule):
         assert is_power_of_two(image_size), "image size must be a power of 2"
 
         if transparent:
-            init_channel = 4
+            pass
         elif greyscale:
-            init_channel = 1
+            pass
         else:
-            init_channel = 3
+            pass
 
         # fmap_max = default(fmap_max, latent_dim)
 

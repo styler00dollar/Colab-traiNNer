@@ -7,11 +7,8 @@
 from einops import rearrange
 from torch import nn as nn
 from torch.nn import functional as f
-from typing import Union
 import math
 import torch
-import torch.nn as nn
-import torch.nn.functional as f
 
 
 class PixelMixer(nn.Module):
@@ -545,15 +542,17 @@ class MixedTransformerBlock(TransformerGroup):
         act_layer: nn.Module = nn.GELU,
     ) -> None:
         token_mixer_list = [
-            TokenMixer(dim)
-            if _ > (num_GTLs - 1)
-            else SWSA(
-                dim=dim,
-                num_heads=num_heads,
-                attn_layer=[Conv2d1x1(dim, dim * 2), nn.BatchNorm2d(dim * 2)],
-                proj_layer=[Conv2d1x1(dim, dim)],
-                window_list=window_list,
-                shift_list=shift_list if (_ + 1) % 2 == 0 else None,
+            (
+                TokenMixer(dim)
+                if _ > (num_GTLs - 1)
+                else SWSA(
+                    dim=dim,
+                    num_heads=num_heads,
+                    attn_layer=[Conv2d1x1(dim, dim * 2), nn.BatchNorm2d(dim * 2)],
+                    proj_layer=[Conv2d1x1(dim, dim)],
+                    window_list=window_list,
+                    shift_list=shift_list if (_ + 1) % 2 == 0 else None,
+                )
             )
             for _ in range(num_layer)
         ]

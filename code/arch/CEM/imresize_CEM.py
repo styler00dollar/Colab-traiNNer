@@ -15,7 +15,7 @@ from scipy.signal import convolve2d
 # from scipy.signal import gaussian
 from scipy.stats import norm
 import torch  # For using GPU when working with a very large anti-aliasing kernel, e.g. when using extreme upscaling/downscaling such as 32x
-from .filters import get_gaussian_kernel2d, get_kernel_size
+from .filters import get_gaussian_kernel2d
 
 
 class ImRes:
@@ -117,9 +117,7 @@ class ImRes:
         self.antialiasing_kernel = antialiasing_kernel
 
     def return_upscale_kernel(self, ds_factor):
-        return np.rot90(self.antialiasing_kernel, 2).astype(np.float32) / (
-            ds_factor**2
-        )
+        return np.rot90(self.antialiasing_kernel, 2).astype(np.float32) / (ds_factor**2)
 
     def resize(self, im, scale_factor=None, output_shape=None, use_zero_padding=False):
         scale_factor = self.val_scale(im.shape[:2], scale_factor, output_shape)
@@ -167,11 +165,13 @@ class ImRes:
                         .unsqueeze(0)
                         .cuda(),
                         padding=(
-                            self.antialiasing_kernel.shape[0] // 2,
-                            self.antialiasing_kernel.shape[1] // 2,
-                        )
-                        if special_padding_size is None
-                        else 0,
+                            (
+                                self.antialiasing_kernel.shape[0] // 2,
+                                self.antialiasing_kernel.shape[1] // 2,
+                            )
+                            if special_padding_size is None
+                            else 0
+                        ),
                     )
                     .squeeze(0)
                     .squeeze(0)

@@ -1,13 +1,8 @@
 import os
-import numpy as np
-import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 from torchvision import *
-import torchvision
-from PIL import Image
 import random
 import cv2
-import torchvision.transforms.functional as TF
 import glob
 import yaml
 
@@ -16,7 +11,6 @@ with open("config.yaml", "r") as ymlfile:
 
 if cfg["datasets"]["train"]["mode"] == "DS_video_direct":
     from nvidia.dali import pipeline_def, fn
-    from nvidia.dali.plugin.pytorch import feed_ndarray
     from nvidia.dali.plugin.pytorch import DALIGenericIterator
 
     @pipeline_def(

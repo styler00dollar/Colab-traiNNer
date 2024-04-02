@@ -2,9 +2,9 @@
 20-Mai-2020
 https://github.com/victorca25/BasicSR/blob/14aced7d1049a283761c145f3cf300a94c6ac4b9/codes/models/modules/architectures/glow/flow.py
 """
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
 
 from arch.glow.ActNorms import ActNorm2d

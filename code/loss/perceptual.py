@@ -2,7 +2,7 @@
 BasicSR/codes/models/modules/architectures/perceptual.py (8-Nov-20)
 https://github.com/victorca25/BasicSR/blob/dev2/codes/models/modules/architectures/perceptual.py
 """
-import math
+
 import torch
 import torch.nn as nn
 

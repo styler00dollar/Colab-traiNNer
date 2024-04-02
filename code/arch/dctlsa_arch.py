@@ -1,7 +1,6 @@
 # https://github.com/muslll/neosr/blob/master/neosr/archs/dctlsa_arch.py
 # https://github.com/zengkun301/DCTLSA/blob/main/src/model/dctlsa.py
 # https://github.com/muslll/neosr/blob/b26124132f437d0a77a96d13339f33e411427d46/neosr/archs/arch_util.py#L180
-from pathlib import Path
 import collections.abc
 import torch
 import torch.nn as nn
@@ -286,7 +285,6 @@ class SwinTransformerBlock(nn.Module):
         H, W = x_size
         B, L, C = x.shape
 
-        shortcut = x
         x = x.view(B, H, W, C)
 
         # cyclic shift

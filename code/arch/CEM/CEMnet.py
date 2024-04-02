@@ -2,6 +2,7 @@
 CEMnet.py (08-06-21)
 https://github.com/victorca25/BasicSR/blob/c594cada9422f6f3447fbeb2b2e21e4407ab1188/codes/models/modules/architectures/CEM/CEMnet.py
 """
+
 # Workaround to disable Intel Fortran Control+C console event handler installed by scipy
 from os import environ as os_env
 
@@ -12,7 +13,6 @@ from scipy.signal import convolve2d as conv2
 import torch
 import torch.nn as nn
 from .imresize_CEM import calc_strides, ImRes
-import collections
 
 
 class CEMnet:
@@ -328,17 +328,10 @@ class CEM(nn.Module):
         downscale_antialiasing = np.rot90(CEMnet.ds_kernel, 2)
         upscale_antialiasing = CEMnet.ds_kernel * CEMnet.ds_factor**2
         pre_stride, post_stride = calc_strides(None, CEMnet.ds_factor)
-        Upscale_Padder = lambda x: nn.functional.pad(
-            x, (pre_stride[1], post_stride[1], 0, 0, pre_stride[0], post_stride[0])
-        )
-        Aliased_Upscale_OP = lambda x: Upscale_Padder(x.unsqueeze(4).unsqueeze(3)).view(
-            [
-                x.size()[0],
-                x.size()[1],
-                CEMnet.ds_factor * x.size()[2],
-                CEMnet.ds_factor * x.size()[3],
-            ]
-        )
+        def Upscale_Padder(x):
+            return nn.functional.pad(x, (pre_stride[1], post_stride[1], 0, 0, pre_stride[0], post_stride[0]))
+        def Aliased_Upscale_OP(x):
+            return Upscale_Padder(x.unsqueeze(4).unsqueeze(3)).view([x.size()[0], x.size()[1], CEMnet.ds_factor * x.size()[2], CEMnet.ds_factor * x.size()[3]])
         antialiasing_padding = np.floor(np.array(CEMnet.ds_kernel.shape) / 2).astype(
             np.int32
         )
@@ -354,19 +347,10 @@ class CEM(nn.Module):
             upscale_antialiasing,
             pre_filter_func=lambda x: antialiasing_Padder(Aliased_Upscale_OP(x)),
         )
-        Reshaped_input = lambda x: x.view(
-            [
-                x.size()[0],
-                x.size()[1],
-                int(x.size()[2] / self.ds_factor),
-                self.ds_factor,
-                int(x.size()[3] / self.ds_factor),
-                self.ds_factor,
-            ]
-        )
-        Aliased_Downscale_OP = lambda x: Reshaped_input(x)[
-            :, :, :, pre_stride[0], :, pre_stride[1]
-        ]
+        def Reshaped_input(x):
+            return x.view([x.size()[0], x.size()[1], int(x.size()[2] / self.ds_factor), self.ds_factor, int(x.size()[3] / self.ds_factor), self.ds_factor])
+        def Aliased_Downscale_OP(x):
+            return Reshaped_input(x)[:, :, :, pre_stride[0], :, pre_stride[1]]
         self.DownscaleOP = Filter_Layer(
             downscale_antialiasing,
             pre_filter_func=antialiasing_Padder,
@@ -403,10 +387,7 @@ class CEM(nn.Module):
                 x = self.LR_padder(x)
                 latent_input_HR = self.HR_padder(latent_input_HR).view(
                     [latent_input_HR.size(0)]
-                    + [
-                        latent_input_HR.size(1)
-                        * self.generated_image_model.upscale**2
-                    ]
+                    + [latent_input_HR.size(1) * self.generated_image_model.upscale**2]
                     + list(x.size()[2:])
                 )
                 x = torch.cat([latent_input_HR, x], 1)

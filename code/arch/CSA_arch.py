@@ -2,9 +2,9 @@
 model.py (13-12-20)
 https://github.com/Yukariin/CSA_pytorch/blob/master/model.py
 """
+
 import torch
 from torch import nn
-import torch.nn.functional as F
 import pytorch_lightning as pl
 
 

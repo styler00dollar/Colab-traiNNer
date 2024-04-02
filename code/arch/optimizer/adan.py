@@ -1,5 +1,4 @@
 # https://github.com/lucidrains/Adan-pytorch/blob/main/adan_pytorch/adan.py
-import math
 import torch
 from torch.optim import Optimizer
 

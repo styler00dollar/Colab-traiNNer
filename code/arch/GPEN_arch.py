@@ -2,6 +2,7 @@
 model.py (15-jun-21)
 https://github.com/yangxy/GPEN/blob/main/face_model/model.py
 """
+
 """
 @paper: GAN Prior Embedded Network for Blind Face Restoration in the Wild (CVPR2021)
 @author: yangxy (yangtao9009@gmail.com)
@@ -14,13 +15,10 @@ with open("config.yaml", "r") as ymlfile:
 
 import math
 import random
-import functools
-import operator
 
 import torch
 from torch import nn
 from torch.nn import functional as F
-from torch.autograd import Function
 
 # from arch.cpp import FusedLeakyReLU, fused_leaky_relu, upfirdn2d
 from arch.cpp.fused_act import FusedLeakyReLU, fused_leaky_relu
@@ -305,7 +303,7 @@ class NoiseInjection(nn.Module):
     def forward(self, image, noise=None):
         if noise is not None:
             # test
-            if cfg["network_G"]["pooling"] == True:
+            if cfg["network_G"]["pooling"] is True:
                 self.pooling = torch.nn.AdaptiveAvgPool2d(
                     (image.shape[2], image.shape[3])
                 )
@@ -561,7 +559,6 @@ class Generator(nn.Module):
         i = 1
         noise_i = 1
 
-        outs = []
         for conv1, conv2, to_rgb in zip(
             self.convs[::2], self.convs[1::2], self.to_rgbs
         ):
@@ -705,7 +702,7 @@ class FullGenerator(nn.Module):
         )
 
         # test
-        if cfg["network_G"]["pooling"] == True:
+        if cfg["network_G"]["pooling"] is True:
             self.pooling = torch.nn.AdaptiveAvgPool2d(
                 (4, 4)
             )  # values to match normal 512px training
@@ -719,7 +716,7 @@ class FullGenerator(nn.Module):
         truncation_latent=None,
         input_is_latent=False,
     ):
-        if cfg["network_G"]["pooling"] == True:
+        if cfg["network_G"]["pooling"] is True:
             size_x = inputs.shape[2]
             size_y = inputs.shape[3]
 
@@ -729,7 +726,7 @@ class FullGenerator(nn.Module):
             inputs = ecd(inputs)
             noise.append(inputs)
 
-        if cfg["network_G"]["pooling"] == True:
+        if cfg["network_G"]["pooling"] is True:
             inputs = self.pooling(inputs)
 
         inputs = inputs.view(inputs.shape[0], -1)
@@ -745,7 +742,7 @@ class FullGenerator(nn.Module):
         )
 
         # test
-        if cfg["network_G"]["pooling"] == True:
+        if cfg["network_G"]["pooling"] is True:
             tmp = outs[0]
             self.pooling2 = torch.nn.AdaptiveAvgPool2d((int(size_x), int(size_y)))
             tmp = self.pooling2(tmp)

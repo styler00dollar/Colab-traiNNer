@@ -7,7 +7,7 @@ https://github.com/Xiefan-Guo/CTSDG/blob/main/models/generator/bigff.py
 https://github.com/Xiefan-Guo/CTSDG/blob/main/models/generator/cfa.py
 https://github.com/Xiefan-Guo/CTSDG/blob/main/utils/misc.py
 """
-import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -18,16 +18,6 @@ import torch.nn.functional as F
 # from models.generator.pconv import PConvBNActiv
 # from models.generator.projection import Feature2Structure, Feature2Texture
 
-import torch
-import torch.nn as nn
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch
-import torch.nn as nn
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 
 def extract_patches(x, kernel_size=3, stride=1):

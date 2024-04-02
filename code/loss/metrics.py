@@ -10,7 +10,6 @@
 """
 import math
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
 # import lpips
@@ -154,7 +153,6 @@ class OAAcc(object):
         return (tp+tn)/total
         """
         batch_size, chs, img_rows, img_cols = y_true.shape
-        device = y_true.device
         if chs == 1:
             y_pred = _binarize(y_pred, threshold)
             y_true = _binarize(y_true, threshold)

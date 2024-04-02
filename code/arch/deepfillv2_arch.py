@@ -13,7 +13,6 @@ from torch.nn import Parameter
 from torch.nn import functional as F
 import logging
 import torch
-import torch.nn as nn
 import torch.nn.init as init
 
 logger = logging.getLogger("base")
@@ -399,9 +398,9 @@ class SpectralNorm(pl.LightningModule):
 
     def _made_params(self):
         try:
-            u = getattr(self.module, self.name + "_u")
-            v = getattr(self.module, self.name + "_v")
-            w = getattr(self.module, self.name + "_bar")
+            getattr(self.module, self.name + "_u")
+            getattr(self.module, self.name + "_v")
+            getattr(self.module, self.name + "_bar")
             return True
         except AttributeError:
             return False

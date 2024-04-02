@@ -2,6 +2,7 @@
 network.py (3-2-20)
 https://github.com/ChajinShin/AdaFill-Image_Inpainting/blob/main/Model/AdaFill/src/network.py
 """
+
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl

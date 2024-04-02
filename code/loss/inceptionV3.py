@@ -2,6 +2,7 @@
 7-Dez-21
 https://github.com/rosinality/stylegan2-pytorch/blob/3dee637b8937bf3830991c066ed8d9cc58afd661/inception.py
 """
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

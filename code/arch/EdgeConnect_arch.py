@@ -5,13 +5,10 @@ https://github.com/knazeri/edge-connect/blob/master/src/edge_connect.py
 
 import torch
 import torch.nn as nn
-import os
-import torch.optim as optim
 
 # from models.modules.architectures.convolutions.partialconv2d import PartialConv2d
 # from models.modules.architectures.convolutions.deformconv2d import DeformConv2d
 import pytorch_lightning as pl
-from torchvision.utils import save_image
 
 
 class InpaintGenerator(pl.LightningModule):

@@ -2,6 +2,7 @@
 5-Jan-21
 https://github.com/swz30/Restormer/blob/main/Denoising/Restormer.py
 """
+
 ## Restormer: Efficient Transformer for High-Resolution Image Restoration
 ## Syed Waqas Zamir, Aditya Arora, Salman Khan, Munawar Hayat, Fahad Shahbaz Khan, and Ming-Hsuan Yang
 ## https://arxiv.org/abs/2111.09881
@@ -10,7 +11,6 @@ https://github.com/swz30/Restormer/blob/main/Denoising/Restormer.py
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from pdb import set_trace as stx
 import numbers
 
 from einops import rearrange

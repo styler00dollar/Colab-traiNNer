@@ -2,6 +2,7 @@
 31-Dez-21
 https://github.com/victorca25/augmennt/blob/master/augmennt/superpixels.py
 """
+
 # Workaround to disable Intel Fortran Control+C console event handler installed by scipy
 from os import environ as os_env
 
@@ -14,7 +15,6 @@ from .common import (
     preserve_shape,
     _maybe_process_in_chunks,
     _cv2_str2interpolation,
-    MAX_VALUES_BY_DTYPE,
 )
 from .extra_functional import apply_kmeans
 
@@ -227,7 +227,6 @@ def superpixels(
 
     if "seeds" in algo:
         prior = 2
-        double_step = False
         num_levels = 4
         num_histogram_bins = 5
     elif "slic" in algo or "felzenszwalb" in algo:

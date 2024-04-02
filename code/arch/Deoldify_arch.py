@@ -16,7 +16,6 @@ https://github.com/alfagao/DeOldify/blob/bc9d4562bf2014f5268f5c616ae31873577d9fd
 """
 
 from abc import ABC, abstractmethod
-from torchvision import transforms
 from torch.nn.utils.spectral_norm import spectral_norm
 from torchvision.models import resnet18, resnet34, resnet50, resnet101, resnet152
 import pytorch_lightning as pl
@@ -83,9 +82,11 @@ class ConvBlock(pl.LightningModule):
         else:
             layers = [nn.Conv2d(ni, no, ks, stride, padding=pad, bias=bias)]
         if actn:
-            layers.append(
-                nn.LeakyReLU(0.2, inplace=inplace_relu)
-            ) if leakyReLu else layers.append(nn.ReLU(inplace=inplace_relu))
+            (
+                layers.append(nn.LeakyReLU(0.2, inplace=inplace_relu))
+                if leakyReLu
+                else layers.append(nn.ReLU(inplace=inplace_relu))
+            )
         if bn:
             layers.append(nn.BatchNorm2d(no))
         if self_attention:

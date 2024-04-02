@@ -1,6 +1,7 @@
 """
 Swift-SRGAN/swift-srgan/models.py
 """
+
 import torch
 from torch import nn
 

@@ -6,15 +6,13 @@ https://github.com/saic-mdal/lama/blob/6bb704738d4e791106d8e87099d80831999901fc/
 https://github.com/saic-mdal/lama/blob/6bb704738d4e791106d8e87099d80831999901fc/models/ade20k/resnet.py
 https://github.com/saic-mdal/lama/blob/6bb704738d4e791106d8e87099d80831999901fc/models/ade20k/utils.py
 """
+
 """Modified from https://github.com/CSAILVision/semantic-segmentation-pytorch"""
-from scipy.io import loadmat
 from torch.nn.modules import BatchNorm2d
-from torch.nn import BatchNorm2d
 import math
 import numpy as np
 import os
 import os.path
-import pandas as pd
 import sys
 import torch
 import torch.nn.functional as F

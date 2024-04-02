@@ -2,10 +2,10 @@
 RRDBNet_arch.py (12-2-20)
 https://github.com/victorca25/BasicSR/blob/master/codes/models/modules/architectures/RRDBNet_arch.py
 """
+
 import math
 import torch
 import torch.nn as nn
-from torch.nn import functional as F
 
 # import torchvision
 from . import block as B

@@ -5,6 +5,7 @@ https://github.com/victorca25/BasicSR/blob/c594cada9422f6f3447fbeb2b2e21e4407ab1
 common.py (08-06-21)
 https://github.com/victorca25/BasicSR/blob/c594cada9422f6f3447fbeb2b2e21e4407ab1188/codes/dataops/common.py
 """
+
 """
     Multiple image filters used by different functions. Can also be used as augmentations.
 """
@@ -472,9 +473,9 @@ def get_sobel_kernel_2d(kernel_size=3):
     # Note: x is edge detector in x, y is edge detector in y, if not dividing by den
     den = x**2 + y**2
     # den[:, kernel_size // 2] = 1  # avoid division by zero at the center of den
-    den[
-        kernel_size // 2, kernel_size // 2
-    ] = 1  # avoid division by zero at the center of den
+    den[kernel_size // 2, kernel_size // 2] = (
+        1  # avoid division by zero at the center of den
+    )
     # sobel_2D = x / den #produces kernel in range (0,1)
     sobel_2D = 2 * x / den  # produces same kernel as kornia
     return sobel_2D
@@ -569,9 +570,9 @@ def load_filter(
     assert len(kernel.shape) == 4 and kernel.shape[0] == in_channels
 
     if padding:
-        pad = compute_padding(kernel_size)
+        compute_padding(kernel_size)
     else:
-        pad = 0
+        pass
 
     # create filter as convolutional layer
     if dim == 1:

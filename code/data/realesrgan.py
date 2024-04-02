@@ -3,13 +3,12 @@
 https://github.com/xinntao/Real-ESRGAN/blob/master/realesrgan/data/realesrgan_dataset.py
 https://github.com/xinntao/Real-ESRGAN/blob/35ee6f781e9a5a80d5f2f1efb9102c9899a81ae1/realesrgan/models/realesrgan_model.py
 """
+
 import cv2
 import math
 import numpy as np
 import os
-import os.path as osp
 import random
-import time
 import torch
 from basicsr.data.degradations import (
     circular_lowpass_kernel,
@@ -19,9 +18,6 @@ from basicsr.data.degradations import (
 )
 from basicsr.data.transforms import augment, paired_random_crop
 from basicsr.utils import (
-    FileClient,
-    get_root_logger,
-    imfrombytes,
     img2tensor,
     DiffJPEG,
     USMSharp,

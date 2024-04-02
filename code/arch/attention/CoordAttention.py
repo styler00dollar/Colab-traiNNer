@@ -2,9 +2,9 @@
 5-Dez-21
 https://github.com/xmu-xiaoma666/External-Attention-pytorch/blob/master/model/attention/CoordAttention.py
 """
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class h_sigmoid(nn.Module):

@@ -6,6 +6,7 @@ https://github.com/HRNet/HRFormer/blob/main/cls/models/hrt.py
 https://github.com/HRNet/HRFormer/blob/main/cls/models/modules/multihead_attention.py
 https://github.com/HRNet/HRFormer/blob/main/cls/models/modules/ffn_block.py
 """
+
 import yaml
 
 with open("hrt_config.yaml", "r") as ymlfile:
@@ -26,19 +27,11 @@ from timm.models.layers import trunc_normal_
 from torch.nn.functional import linear, pad, softmax, dropout
 from torch.nn.modules.module import Module
 from torch.overrides import has_torch_function, handle_torch_function
-from torch._jit_internal import List, Optional, Tuple
+from torch._jit_internal import Optional, Tuple
 from torch import nn, Tensor
-from typing import Tuple, Optional
-import argparse
-import copy
-import logging
 import math
-import math
-import os
-import pdb
 import torch
 import torch.nn.functional as F
-import torch.nn as nn
 import warnings
 
 BN_MOMENTUM = 0.1
@@ -1099,8 +1092,6 @@ class GeneralTransformerBlock(nn.Module):
 # Written by Rao Fu, RainbowSecret
 # --------------------------------------------------------
 
-import os
-import logging
 import torch.nn as nn
 
 
@@ -1297,13 +1288,12 @@ class HighResolutionTransformerModule(nn.Module):
         drop_paths,
         stride=1,
     ):
-        downsample = None
         if (
             stride != 1
             or self.num_inchannels[branch_index]
             != num_channels[branch_index] * block.expansion
         ):
-            downsample = nn.Sequential(
+            nn.Sequential(
                 nn.Conv2d(
                     self.num_inchannels[branch_index],
                     num_channels[branch_index] * block.expansion,

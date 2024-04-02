@@ -2,7 +2,7 @@
 # resnet.py (15-Sep-21)
 https://github.com/kenshohara/3D-ResNets-PyTorch/blob/540a0ea1abaee379fa3651d4d5afbd2d667a1f49/models/resnet.py
 """
-import math
+
 from functools import partial
 
 import torch

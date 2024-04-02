@@ -3,23 +3,13 @@
 https://github.com/Xianhang/EDSC-pytorch/blob/master/networks/EDSC.py
 https://github.com/Xianhang/EDSC-pytorch/blob/master/networks/dsepconv.py
 """
+
 import torch
-import torchvision
-import cv2
-import os
-import torch.utils.data as data
-import torch.optim as optim
 import torch.nn as nn
-import numpy as np
-import random
-import torchvision.models as models
 import math
-import sys
-import torch.nn.functional as F
 
 # from networks import dsepconv
 
-import torch
 
 import cupy
 import re
@@ -569,18 +559,18 @@ class _FunctionDSepconv(torch.autograd.Function):
         assert intInputHeight == intOutputHeight + intFilterSize - 1
         assert intInputWidth == intOutputWidth + intFilterSize - 1
 
-        assert input.is_contiguous() == True
-        assert vertical.is_contiguous() == True
-        assert horizontal.is_contiguous() == True
-        assert offset_x.is_contiguous() == True
-        assert offset_y.is_contiguous() == True
-        assert mask.is_contiguous() == True
+        assert input.is_contiguous() is True
+        assert vertical.is_contiguous() is True
+        assert horizontal.is_contiguous() is True
+        assert offset_x.is_contiguous() is True
+        assert offset_y.is_contiguous() is True
+        assert mask.is_contiguous() is True
 
         output = input.new_zeros(
             [intSample, intInputDepth, intOutputHeight, intOutputWidth]
         )
 
-        if input.is_cuda == True:
+        if input.is_cuda is True:
             n = output.nelement()
             cupy_launch(
                 "kernel_DSepconv_updateOutput",
@@ -612,7 +602,7 @@ class _FunctionDSepconv(torch.autograd.Function):
                 stream=Stream,
             )
 
-        elif input.is_cuda == False:
+        elif input.is_cuda is False:
             raise NotImplementedError()
 
         # end
@@ -636,21 +626,21 @@ class _FunctionDSepconv(torch.autograd.Function):
         assert intInputHeight == intOutputHeight + intFilterSize - 1
         assert intInputWidth == intOutputWidth + intFilterSize - 1
 
-        assert gradOutput.is_contiguous() == True
+        assert gradOutput.is_contiguous() is True
 
         gradInput = (
             input.new_zeros([intSample, intInputDepth, intInputHeight, intInputWidth])
-            if self.needs_input_grad[0] == True
+            if self.needs_input_grad[0] is True
             else None
         )
         gradVertical = (
             input.new_zeros([intSample, intFilterSize, intOutputHeight, intOutputWidth])
-            if self.needs_input_grad[1] == True
+            if self.needs_input_grad[1] is True
             else None
         )
         gradHorizontal = (
             input.new_zeros([intSample, intFilterSize, intOutputHeight, intOutputWidth])
-            if self.needs_input_grad[2] == True
+            if self.needs_input_grad[2] is True
             else None
         )
         gradOffsetX = (
@@ -662,7 +652,7 @@ class _FunctionDSepconv(torch.autograd.Function):
                     intOutputWidth,
                 ]
             )
-            if self.needs_input_grad[3] == True
+            if self.needs_input_grad[3] is True
             else None
         )
         gradOffsetY = (
@@ -674,7 +664,7 @@ class _FunctionDSepconv(torch.autograd.Function):
                     intOutputWidth,
                 ]
             )
-            if self.needs_input_grad[4] == True
+            if self.needs_input_grad[4] is True
             else None
         )
         gradMask = (
@@ -686,11 +676,11 @@ class _FunctionDSepconv(torch.autograd.Function):
                     intOutputWidth,
                 ]
             )
-            if self.needs_input_grad[5] == True
+            if self.needs_input_grad[5] is True
             else None
         )
 
-        if input.is_cuda == True:
+        if input.is_cuda is True:
             nv = gradVertical.nelement()
             cupy_launch(
                 "kernel_DSepconv_updateGradVertical",
@@ -850,7 +840,7 @@ class _FunctionDSepconv(torch.autograd.Function):
                 stream=Stream,
             )
 
-        elif input.is_cuda == False:
+        elif input.is_cuda is False:
             raise NotImplementedError()
 
         # end

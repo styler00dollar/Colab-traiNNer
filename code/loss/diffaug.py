@@ -6,8 +6,6 @@ import torch.nn.functional as F
 
 policy = "color,translation,cutout"
 
-import torch.nn.functional as nnf
-import random
 
 # torch.autograd.set_detect_anomaly(True)
 scaler = torch.cuda.amp.GradScaler()

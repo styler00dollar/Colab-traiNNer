@@ -3,8 +3,6 @@
 import torch
 from torch import nn as nn
 
-import torch
-from torch import nn as nn
 from torch.nn import functional as F
 
 from basicsr.archs.arch_util import default_init_weights
@@ -241,13 +239,9 @@ class Upsampler_rep(nn.Module):
     def __init__(self, in_channels, out_channels, upscale_factor=4):
         super().__init__()
         self.conv1 = nn.Conv2d(in_channels, out_channels * (upscale_factor**2), 1)
-        self.conv3 = nn.Conv2d(
-            in_channels, out_channels * (upscale_factor**2), 3, 1, 1
-        )
+        self.conv3 = nn.Conv2d(in_channels, out_channels * (upscale_factor**2), 3, 1, 1)
         self.conv1x1 = nn.Conv2d(in_channels, in_channels * 2, 1)
-        self.conv3x3 = nn.Conv2d(
-            in_channels * 2, out_channels * (upscale_factor**2), 3
-        )
+        self.conv3x3 = nn.Conv2d(in_channels * 2, out_channels * (upscale_factor**2), 3)
         self.pixel_shuffle = nn.PixelShuffle(upscale_factor)
 
     def forward(self, x):

@@ -5,13 +5,10 @@ https://github.com/zihangJiang/TokenLabeling/blob/4a734ea96a3b36daebf1446c1cb2e0
 layers.py (07-06-21)
 https://github.com/zihangJiang/TokenLabeling/blob/main/models/layers.py
 """
+
 import torch
 import torch.nn as nn
 import numpy as np
-from functools import partial
-import torch.nn.init as init
-import torch.nn.functional as F
-import math
 from timm.models.layers import DropPath, to_2tuple
 
 DROPOUT_FLOPS = 4
@@ -358,7 +355,6 @@ class FFNBlock(nn.Module):
         return x
 
     def flops(self, s):
-        heads = self.attn.num_heads
         h = self.dim
         i = self.mlp_hidden_dim
         block_flops = dict(
@@ -572,14 +568,10 @@ class PatchEmbed4_2_128(nn.Module):
         return sum(block_flops.values())
 
 
-import torch
 import torch.nn as nn
 
-from timm.models.helpers import load_pretrained
 from timm.models.registry import register_model
 from timm.models.layers import trunc_normal_
-from timm.models.resnet import resnet26d, resnet50d, resnet101d
-import numpy as np
 
 # from .layers import *
 
@@ -691,9 +683,9 @@ class LV_ViT(nn.Module):
     ):
         super().__init__()
         self.num_classes = num_classes
-        self.num_features = (
-            self.embed_dim
-        ) = embed_dim  # num_features for consistency with other models
+        self.num_features = self.embed_dim = (
+            embed_dim  # num_features for consistency with other models
+        )
         self.output_dim = embed_dim if num_classes == 0 else num_classes
         if hybrid_backbone is not None:
             self.patch_embed = HybridEmbed(

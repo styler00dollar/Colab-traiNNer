@@ -36,7 +36,6 @@ from loss.loss import (
     LaplacianLoss,
     SobelLossV2,
     textured_loss,
-    ldl_loss,
     IQA_loss,
 )
 

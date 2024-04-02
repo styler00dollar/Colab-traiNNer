@@ -2,6 +2,7 @@
 31-Dez-21
 https://github.com/victorca25/augmennt/blob/master/augmennt/minisom.py
 """
+
 from math import sqrt
 
 from numpy import (
@@ -20,8 +21,6 @@ from numpy import (
     meshgrid,
     dot,
     logical_and,
-    mean,
-    std,
     cov,
     argsort,
     linspace,
@@ -297,7 +296,7 @@ class MiniSom(object):
         while not it.finished:
             rand_i = self._random_generator.randint(len(data))
             self._weights[it.multi_index] = data[rand_i]
-            norm = fast_norm(self._weights[it.multi_index])
+            fast_norm(self._weights[it.multi_index])
             self._weights[it.multi_index] = self._weights[it.multi_index]
             it.iternext()
 

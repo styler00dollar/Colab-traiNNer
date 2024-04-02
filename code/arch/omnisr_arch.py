@@ -6,7 +6,6 @@
 # https://github.com/Francis0625/Omni-SR/blob/6f5e53b2e0f0afb20901b4270c0a7a08e0a54d1d/ops/OSA.py
 # https://github.com/muslll/neosr/blob/master/neosr/archs/omnisr_arch.py
 
-from pathlib import Path
 
 import torch
 import torch.nn as nn
@@ -269,7 +268,7 @@ class Attention(nn.Module):
             self.register_buffer("rel_pos_indices", rel_pos_indices, persistent=False)
 
     def forward(self, x):
-        batch, height, width, window_height, window_width, _, device, h = (
+        _batch, height, width, window_height, window_width, _, _device, h = (
             *x.shape,
             x.device,
             self.heads,

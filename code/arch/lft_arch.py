@@ -177,9 +177,7 @@ class SpaTrans(nn.Module):
         self.kernel_field = 3
         self.kernel_search = 5
         self.spa_dim = channels * 2
-        self.MLP = nn.Linear(
-            channels * self.kernel_field**2, self.spa_dim, bias=False
-        )
+        self.MLP = nn.Linear(channels * self.kernel_field**2, self.spa_dim, bias=False)
 
         self.norm = nn.LayerNorm(self.spa_dim)
         self.attention = nn.MultiheadAttention(

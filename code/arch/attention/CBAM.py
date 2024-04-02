@@ -2,7 +2,7 @@
 5-Dez-21
 https://github.com/xmu-xiaoma666/External-Attention-pytorch/blob/master/model/attention/CBAM.py
 """
-import numpy as np
+
 import torch
 from torch import nn
 from torch.nn import init

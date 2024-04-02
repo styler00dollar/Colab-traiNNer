@@ -1335,7 +1335,7 @@ class PixelDiscriminator(nn.Module):
 import torch
 from torch import nn
 import torch.nn.functional as F
-from torch.nn import Conv2d, Module, Linear, BatchNorm2d, ReLU
+from torch.nn import Conv2d, Module, ReLU
 from torch.nn.modules.utils import _pair
 
 __all__ = ["SplAtConv2d"]
@@ -1474,7 +1474,6 @@ class rSoftMax(nn.Module):
 ## LICENSE file in the root directory of this source tree
 ##+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 """ResNet variants"""
-import math
 import torch
 import torch.nn as nn
 
@@ -2094,11 +2093,9 @@ import torch
 from torch import nn
 import pytorch_lightning as pl
 import torch
-import math
 import warnings
 import torch
 import torch.nn as nn
-import math
 
 
 def drop_path(x, drop_prob: float = 0.0, training: bool = False):
@@ -2228,7 +2225,7 @@ class matmul(pl.LightningModule):
 
 
 def count_matmul(m, x, y):
-    num_mul = x[0].numel() * x[1].size(-1)
+    x[0].numel() * x[1].size(-1)
     # m.total_ops += torch.DoubleTensor([int(num_mul)])
     m.total_ops += torch.DoubleTensor([int(0)])
 
@@ -2501,9 +2498,9 @@ class TranformerDiscriminator(pl.LightningModule):
     ):
         super().__init__()
         self.num_classes = num_classes
-        self.num_features = (
-            embed_dim
-        ) = self.embed_dim = 64  # num_features for consistency with other models
+        self.num_features = embed_dim = self.embed_dim = (
+            64  # num_features for consistency with other models
+        )
         self.depth = depth
         self.patch_size = patch_size
         self.img_size = img_size

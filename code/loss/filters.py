@@ -448,9 +448,9 @@ def get_sobel_kernel_2d(kernel_size=3):
     # Note: x is edge detector in x, y is edge detector in y, if not dividing by den
     den = x**2 + y**2
     # den[:, kernel_size // 2] = 1  # avoid division by zero at the center of den
-    den[
-        kernel_size // 2, kernel_size // 2
-    ] = 1  # avoid division by zero at the center of den
+    den[kernel_size // 2, kernel_size // 2] = (
+        1  # avoid division by zero at the center of den
+    )
     # sobel_2D = x / den #produces kernel in range (0,1)
     sobel_2D = 2 * x / den  # produces same kernel as kornia
     return sobel_2D

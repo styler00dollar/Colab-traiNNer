@@ -550,7 +550,7 @@ def CreateDiscriminator(cfg):
         )
 
     if cfg["network_D"]["WSConv_replace"] == "True":
-        from nfnets import replace_conv, WSConv2d, ScaledStdConv2d
+        from nfnets import replace_conv, ScaledStdConv2d
 
         replace_conv(netD, ScaledStdConv2d)
 

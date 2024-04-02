@@ -1,7 +1,6 @@
 # https://github.com/pranavphoenix/WaveMixSR/blob/main/wavemixsr/model.py
 import torch
 import torch.nn as nn
-import wavemix
 from wavemix import Level1Waveblock
 
 

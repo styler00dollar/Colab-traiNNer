@@ -2,10 +2,10 @@
 blocks.py (13-12-20)
 https://github.com/GuardSkill/AdaptiveGAN/blob/429311f6d22948904429ff1c19b0d953bc26ba81/src/blocks.py
 """
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn import init
 import pytorch_lightning as pl
 
 
@@ -121,7 +121,7 @@ class Block(pl.LightningModule):
         out = self.nolinear1(self.conv1(x))
         out = self.nolinear2(self.conv2(out))
         out = self.conv3(out)
-        if self.se != None:
+        if self.se is not None:
             out = self.se(out)
         out = out + self.shortcut(x) if self.stride == 1 else out
         return out

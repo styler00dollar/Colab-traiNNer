@@ -1,6 +1,5 @@
 # @markdown Folder path with all the videos
 global outputPath
-from PIL import Image
 from tqdm import tqdm
 
 # @markdown Path to generate the Dataset
@@ -40,7 +39,6 @@ def IsDiffScenes(img1, img2, diff=psnr):
 import os
 import shutil
 from shutil import copyfile
-import time
 import PIL
 import numpy as np
 import glob
@@ -86,8 +84,8 @@ for video in tqdm(files):
             im2 = temp + images[i - 1]
             im3 = temp + images[i]
             if (
-                IsDiffScenes(im1, im2, psnr) == False
-                and IsDiffScenes(im2, im3, psnr) == False
+                IsDiffScenes(im1, im2, psnr) is False
+                and IsDiffScenes(im2, im3, psnr) is False
             ):
                 # print("Triplet Found")
                 triPath = os.path.join(root, str(triIndex).zfill(5))

@@ -1,6 +1,7 @@
 """
 https://github.com/styler00dollar/Colab-DFDNet/tree/local/lightning
 """
+
 import pytorch_lightning as pl
 from torch.autograd import Function
 import torch
@@ -9,7 +10,6 @@ import torch.nn as nn
 # from spectral_norm import SpectralNorm
 import torch.nn.utils.spectral_norm as SpectralNorm
 import torch.nn.functional as F
-import torchvision.transforms as transforms
 
 
 def compute_sum(x, axis=None, keepdim=False):
@@ -212,13 +212,6 @@ def calc_mean_std_4D(feat, eps=1e-5):
     return feat_mean, feat_std
 
 
-import torch
-import torch.nn as nn
-from torch.nn import init
-import functools
-from torch.optim import lr_scheduler
-import torch.nn.functional as F
-from torch.nn import Parameter as P
 
 # from util import util
 from torchvision import models
@@ -227,15 +220,12 @@ from torchvision import models
 import numpy as np
 
 # import scipy.ndimage
-import torch.nn.utils.spectral_norm as SpectralNorm
 
 # from spectral_norm import SpectralNorm
 
 from torch.autograd import Function
 from math import sqrt
-import random
 import os
-import math
 
 import pytorch_lightning as pl
 
@@ -351,7 +341,7 @@ class StyledUpBlock(pl.LightningModule):
             SpectralNorm(nn.Conv2d(in_channel, out_channel, 3, 1, 1)),
             # nn.Conv2d(in_channel,out_channel,3, 1, 1),
             nn.LeakyReLU(0.2, True),
-            SpectralNorm(nn.Conv2d(out_channel, out_channel, 3, 1, 1))
+            SpectralNorm(nn.Conv2d(out_channel, out_channel, 3, 1, 1)),
             # nn.Conv2d(out_channel, out_channel, 3, 1, 1)
         )
         self.ShiftModel1 = nn.Sequential(
@@ -425,7 +415,7 @@ class StyledUpBlock(nn.Module):
             SpectralNorm(nn.Conv2d(in_channel, out_channel, 3, 1, 1)),
             # nn.Conv2d(in_channel,out_channel,3, 1, 1),
             nn.LeakyReLU(0.2, True),
-            SpectralNorm(nn.Conv2d(out_channel, out_channel, 3, 1, 1))
+            SpectralNorm(nn.Conv2d(out_channel, out_channel, 3, 1, 1)),
             # nn.Conv2d(out_channel, out_channel, 3, 1, 1)
         )
         self.ShiftModel1 = nn.Sequential(
@@ -479,7 +469,7 @@ class UNetDictFace(pl.LightningModule):
                 self.part_sizes[j] // 2,
                 self.part_sizes[j] // 2,
             )
-            max_256 = torch.max(
+            torch.max(
                 torch.sqrt(
                     compute_sum(
                         torch.pow(f_256_reshape, 2), axis=[1, 2, 3], keepdim=True
@@ -502,7 +492,7 @@ class UNetDictFace(pl.LightningModule):
                 self.part_sizes[j] // 4,
                 self.part_sizes[j] // 4,
             )
-            max_128 = torch.max(
+            torch.max(
                 torch.sqrt(
                     compute_sum(
                         torch.pow(f_128_reshape, 2), axis=[1, 2, 3], keepdim=True
@@ -525,7 +515,7 @@ class UNetDictFace(pl.LightningModule):
                 self.part_sizes[j] // 8,
                 self.part_sizes[j] // 8,
             )
-            max_64 = torch.max(
+            torch.max(
                 torch.sqrt(
                     compute_sum(
                         torch.pow(f_64_reshape, 2), axis=[1, 2, 3], keepdim=True
@@ -548,7 +538,7 @@ class UNetDictFace(pl.LightningModule):
                 self.part_sizes[j] // 16,
                 self.part_sizes[j] // 16,
             )
-            max_32 = torch.max(
+            torch.max(
                 torch.sqrt(
                     compute_sum(
                         torch.pow(f_32_reshape, 2), axis=[1, 2, 3], keepdim=True
@@ -616,7 +606,7 @@ class UNetDictFace(pl.LightningModule):
             cur_feature = VggFeatures[i]
 
             update_feature = cur_feature.clone()  # * 0
-            cur_part_sizes = self.part_sizes // (512 / f_size)
+            self.part_sizes // (512 / f_size)
             dicts_feature = getattr(self, "Dict_" + str(f_size))
 
             LE_Dict_feature = dicts_feature["left_eye"].to(input)
