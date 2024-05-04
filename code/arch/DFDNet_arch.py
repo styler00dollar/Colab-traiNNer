@@ -212,7 +212,6 @@ def calc_mean_std_4D(feat, eps=1e-5):
     return feat_mean, feat_std
 
 
-
 # from util import util
 from torchvision import models
 

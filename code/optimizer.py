@@ -273,6 +273,7 @@ def CreateOptimizer(cfg, input_G, input_D=None):
                 )
         if cfg["train"]["scheduler"] == "NAdamW":
             from arch.optimizer.nadamw import NAdamW
+
             opt_g = NAdamW(input_G, lr=cfg["train"]["lr_g"])
             if cfg["network_D"]["netD"] is not None:
                 opt_d = NAdamW(input_D, lr=cfg["train"]["lr_g"])

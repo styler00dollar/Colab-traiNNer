@@ -15,7 +15,6 @@ import torch.nn.functional as F
 from einops import rearrange
 
 
-
 # High Filter Module
 class HFM(nn.Module):
     def __init__(self, k=2):

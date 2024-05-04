@@ -229,7 +229,6 @@ def spectral_norm(module, mode=True):
 import torch.nn as nn
 
 
-
 class EdgeSRModel(nn.Module):
     def __init__(self, use_spectral_norm=True):
         super().__init__()

@@ -85,6 +85,11 @@ def generate(
         "span",
         "rgt",
         "SwinFIR",
+        "drct",
+        "atd",
+        "cfat",
+        "ttst",
+        "agdn",
     ):
         if cfg["datasets"]["train"]["mode"] in ("DS_inpaint", "DS_inpaint_TF"):
             # masked test with inpaint dataloader

@@ -656,27 +656,140 @@ network_G:
     #split_size: [8, 32]
     #c_ratio: 0.5
 
-    # SwinFIR
-    netG: SwinFIR
-    img_size: 64
-    patch_size: 1
-    in_chans: 3
-    embed_dim: 96
-    depths: [6, 6, 6, 6]
-    num_heads: [6, 6, 6, 6]
-    window_size: 8
-    mlp_ratio: 4.0
-    qkv_bias: True
-    qk_scale: 
-    drop_rate: 0.0
-    attn_drop_rate: 0.0
-    drop_path_rate: 0.1
-    ape: False
-    patch_norm: True
-    use_checkpoint: False
-    img_range: 1.0
-    upsampler: "pixelshuffle"
-    resi_connection: "SFB"
+    # SwinFIR (2023)
+    #netG: SwinFIR
+    #img_size: 64
+    #patch_size: 1
+    #in_chans: 3
+    #embed_dim: 96
+    #depths: [6, 6, 6, 6]
+    #num_heads: [6, 6, 6, 6]
+    #window_size: 8
+    #mlp_ratio: 4.0
+    #qkv_bias: True
+    #qk_scale: 
+    #drop_rate: 0.0
+    #attn_drop_rate: 0.0
+    #drop_path_rate: 0.1
+    #ape: False
+    #patch_norm: True
+    #use_checkpoint: False
+    #img_range: 1.0
+    #upsampler: "pixelshuffle"
+    #resi_connection: "SFB"
+
+    # drct (2024)
+    #netG: drct
+    #img_size: 64
+    #patch_size: 1
+    #in_chans: 3
+    #embed_dim: 180
+    #depths: [6, 6, 6, 6, 6, 6]
+    #num_heads: [6, 6, 6, 6, 6, 6]
+    #window_size: 16
+    #compress_ratio: 3
+    #squeeze_factor: 30
+    #conv_scale: 0.01
+    #overlap_ratio: 0.5
+    #mlp_ratio: 2
+    #qkv_bias: True
+    #qk_scale: 
+    #drop_rate: 0.0
+    #attn_drop_rate: 0.0
+    #drop_path_rate: 0.1
+    #ape: False
+    #patch_norm: True
+    #upscale: 4
+    #img_range: 1.0
+    #upsampler: "pixelshuffle"
+    #resi_connection: "1conv"
+    #gc: 32
+    
+    # atd (2024)
+    #netG: atd
+    #img_size: 96
+    #patch_size: 1
+    #in_chans: 3
+    #embed_dim: 210
+    #depths: [6, 6, 6, 6, 6, 6]
+    #num_heads: [6, 6, 6, 6, 6, 6]
+    #window_size: 16
+    #category_size: 256
+    #num_tokens: 128
+    #reducted_dim: 20
+    #convffn_kernel_size: 5
+    #mlp_ratio: 2.0
+    #qkv_bias: True
+    #ape: False
+    #patch_norm: True
+    #img_range: 1.0
+    #upsampler: "pixelshuffle"
+    #resi_connection: "1conv"
+    #norm: False
+
+    # cfat (2024) (no bf16)
+    #netG: cfat
+    #img_size: 64
+    #patch_size: 1
+    #in_chans: 3
+    #embed_dim: 180
+    #depths: [8, 8, 8, 8, 8]
+    #num_heads: [6, 6, 6, 6, 6]
+    #window_size: 16
+    #shift_size: [0, 0, 8, 8, 16, 16, 24, 24]
+    #interval: [0, 2, 0, 2, 0]
+    #compress_ratio: 3
+    #squeeze_factor: 30
+    #conv_scale: 0.01
+    #overlap_ratio: 0.5
+    #mlp_ratio: 2
+    #qkv_bias: True
+    #qk_scale: 
+    #drop_rate: 0.0
+    #attn_drop_rate: 0.0
+    #drop_path_rate: 0.1
+    #ape: False
+    #patch_norm: True
+    #use_checkpoint: False
+    #upscale: 4
+    #img_range: 1.0
+    #upsampler: "pixelshuffle"
+    #resi_connection: "1conv"
+
+    # ttst (2024)
+    #netG: ttst
+    #img_size: 64
+    #patch_size: 1
+    #in_chans: 3
+    #embed_dim: 180
+    #depths: [6, 6, 6, 6, 6, 6]
+    #num_heads: [6, 6, 6, 6, 6, 6]
+    #window_size: 8
+    #compress_ratio: 3
+    #squeeze_factor: 30
+    #conv_scale: 0.01
+    #overlap_ratio: 0.5
+    #mlp_ratio: 2.
+    #qkv_bias: True
+    #qk_scale:
+    #drop_rate: 0.
+    #attn_drop_rate: 0.
+    #drop_path_rate: 0.1
+    #ape: False
+    #patch_norm: True
+    #use_checkpoint: False
+    #img_range: 1
+    #upsampler: 'pixelshuffle'
+    #resi_connection: '1conv'
+
+    # agdn (2024)
+    netG: agdn
+    num_in_ch: 3
+    num_feat: 42
+    num_block: 7
+    num_out_ch: 3
+    light: False
+    rgb_mean: [0.5, 0.5, 0.5]
 
     # ----Inpainting Generators----
     # DFNet (batch_size: 2+, needs 2^x image input and validation) (2019)
@@ -898,9 +1011,6 @@ network_G:
 
     # GMFSS_union
     #netG: GMFSS_union
-
-
-
 
 # Discriminator options:
 network_D:

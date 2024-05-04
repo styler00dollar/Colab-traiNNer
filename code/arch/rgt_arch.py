@@ -12,7 +12,6 @@ import math
 import numpy as np
 
 
-
 def img2windows(img, H_sp, W_sp):
     """
     Input: Image (B, C, H, W)

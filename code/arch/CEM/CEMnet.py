@@ -328,10 +328,22 @@ class CEM(nn.Module):
         downscale_antialiasing = np.rot90(CEMnet.ds_kernel, 2)
         upscale_antialiasing = CEMnet.ds_kernel * CEMnet.ds_factor**2
         pre_stride, post_stride = calc_strides(None, CEMnet.ds_factor)
+
         def Upscale_Padder(x):
-            return nn.functional.pad(x, (pre_stride[1], post_stride[1], 0, 0, pre_stride[0], post_stride[0]))
+            return nn.functional.pad(
+                x, (pre_stride[1], post_stride[1], 0, 0, pre_stride[0], post_stride[0])
+            )
+
         def Aliased_Upscale_OP(x):
-            return Upscale_Padder(x.unsqueeze(4).unsqueeze(3)).view([x.size()[0], x.size()[1], CEMnet.ds_factor * x.size()[2], CEMnet.ds_factor * x.size()[3]])
+            return Upscale_Padder(x.unsqueeze(4).unsqueeze(3)).view(
+                [
+                    x.size()[0],
+                    x.size()[1],
+                    CEMnet.ds_factor * x.size()[2],
+                    CEMnet.ds_factor * x.size()[3],
+                ]
+            )
+
         antialiasing_padding = np.floor(np.array(CEMnet.ds_kernel.shape) / 2).astype(
             np.int32
         )
@@ -347,10 +359,22 @@ class CEM(nn.Module):
             upscale_antialiasing,
             pre_filter_func=lambda x: antialiasing_Padder(Aliased_Upscale_OP(x)),
         )
+
         def Reshaped_input(x):
-            return x.view([x.size()[0], x.size()[1], int(x.size()[2] / self.ds_factor), self.ds_factor, int(x.size()[3] / self.ds_factor), self.ds_factor])
+            return x.view(
+                [
+                    x.size()[0],
+                    x.size()[1],
+                    int(x.size()[2] / self.ds_factor),
+                    self.ds_factor,
+                    int(x.size()[3] / self.ds_factor),
+                    self.ds_factor,
+                ]
+            )
+
         def Aliased_Downscale_OP(x):
             return Reshaped_input(x)[:, :, :, pre_stride[0], :, pre_stride[1]]
+
         self.DownscaleOP = Filter_Layer(
             downscale_antialiasing,
             pre_filter_func=antialiasing_Padder,

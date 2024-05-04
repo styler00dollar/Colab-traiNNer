@@ -3,7 +3,6 @@ lightweight_gan.py (31-jul-21)
 https://github.com/lucidrains/lightweight-gan/blob/b7c34d587d029177ddc641f42b2604506352dfb2/lightweight_gan/lightweight_gan.py
 """
 
-
 # import multiprocessing
 from random import random
 import math

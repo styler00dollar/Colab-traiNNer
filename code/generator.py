@@ -928,6 +928,142 @@ def CreateGenerator(cfg, scale):
             resi_connection=cfg["resi_connection"],
         )
 
+    # drct
+    elif cfg["netG"] == "drct":
+        from arch.drct_arch import drct
+
+        netG = drct(
+            img_size=cfg["img_size"],
+            patch_size=cfg["patch_size"],
+            in_chans=cfg["in_chans"],
+            embed_dim=cfg["embed_dim"],
+            depths=cfg["depths"],
+            num_heads=cfg["num_heads"],
+            window_size=cfg["window_size"],
+            compress_ratio=cfg["compress_ratio"],
+            squeeze_factor=cfg["squeeze_factor"],
+            conv_scale=cfg["conv_scale"],
+            overlap_ratio=cfg["overlap_ratio"],
+            mlp_ratio=cfg["mlp_ratio"],
+            qkv_bias=cfg["qkv_bias"],
+            qk_scale=cfg["qk_scale"],
+            drop_rate=cfg["drop_rate"],
+            attn_drop_rate=cfg["attn_drop_rate"],
+            drop_path_rate=cfg["drop_path_rate"],
+            ape=cfg["ape"],
+            patch_norm=cfg["patch_norm"],
+            upscale=scale,
+            img_range=cfg["img_range"],
+            upsampler=cfg["upsampler"],
+            resi_connection=cfg["resi_connection"],
+            gc=cfg["gc"],
+        )
+
+    # atd
+    elif cfg["netG"] == "atd":
+        from arch.atd_arch import atd
+
+        netG = atd(
+            img_size=cfg["img_size"],
+            patch_size=cfg["patch_size"],
+            in_chans=cfg["in_chans"],
+            embed_dim=cfg["embed_dim"],
+            depths=cfg["depths"],
+            num_heads=cfg["num_heads"],
+            window_size=cfg["window_size"],
+            category_size=cfg["category_size"],
+            num_tokens=cfg["num_tokens"],
+            reducted_dim=cfg["reducted_dim"],
+            convffn_kernel_size=cfg["convffn_kernel_size"],
+            mlp_ratio=cfg["mlp_ratio"],
+            qkv_bias=cfg["qkv_bias"],
+            ape=cfg["ape"],
+            patch_norm=cfg["patch_norm"],
+            upscale=scale,
+            img_range=cfg["img_range"],
+            upsampler=cfg["upsampler"],
+            resi_connection=cfg["resi_connection"],
+            norm=cfg["norm"],
+        )
+
+    # cfat
+    elif cfg["netG"] == "cfat":
+        from arch.cfat_arch import cfat
+
+        netG = cfat(
+            img_size=cfg["img_size"],
+            patch_size=cfg["patch_size"],
+            in_chans=cfg["in_chans"],
+            embed_dim=cfg["embed_dim"],
+            depths=cfg["depths"],
+            num_heads=cfg["num_heads"],
+            window_size=cfg["window_size"],
+            shift_size=cfg["shift_size"],
+            interval=cfg["interval"],
+            compress_ratio=cfg["compress_ratio"],
+            squeeze_factor=cfg["squeeze_factor"],
+            conv_scale=cfg["conv_scale"],
+            overlap_ratio=cfg["overlap_ratio"],
+            mlp_ratio=cfg["mlp_ratio"],
+            qkv_bias=cfg["qkv_bias"],
+            qk_scale=cfg["qk_scale"],
+            drop_rate=cfg["drop_rate"],
+            attn_drop_rate=cfg["attn_drop_rate"],
+            drop_path_rate=cfg["drop_path_rate"],
+            ape=cfg["ape"],
+            patch_norm=cfg["patch_norm"],
+            use_checkpoint=cfg["use_checkpoint"],
+            upscale=scale,
+            img_range=cfg["img_range"],
+            upsampler=cfg["upsampler"],
+            resi_connection=cfg["resi_connection"],
+        )
+
+    # ttst
+    elif cfg["netG"] == "ttst":
+        from arch.ttst_arch import ttst
+
+        netG = ttst(
+            img_size=cfg["img_size"],
+            patch_size=cfg["patch_size"],
+            in_chans=cfg["in_chans"],
+            embed_dim=cfg["embed_dim"],
+            depths=cfg["depths"],
+            num_heads=cfg["num_heads"],
+            window_size=cfg["window_size"],
+            compress_ratio=cfg["compress_ratio"],
+            squeeze_factor=cfg["squeeze_factor"],
+            conv_scale=cfg["conv_scale"],
+            overlap_ratio=cfg["overlap_ratio"],
+            mlp_ratio=cfg["mlp_ratio"],
+            qkv_bias=cfg["qkv_bias"],
+            qk_scale=cfg["qk_scale"],
+            drop_rate=cfg["drop_rate"],
+            attn_drop_rate=cfg["attn_drop_rate"],
+            drop_path_rate=cfg["drop_path_rate"],
+            ape=cfg["ape"],
+            patch_norm=cfg["patch_norm"],
+            use_checkpoint=cfg["use_checkpoint"],
+            upscale=scale,
+            img_range=cfg["img_range"],
+            upsampler=cfg["upsampler"],
+            resi_connection=cfg["resi_connection"],
+        )
+
+    # agdn
+    elif cfg["netG"] == "agdn":
+        from arch.agdn_arch import agdn
+
+        netG = agdn(
+            num_in_ch=cfg["num_in_ch"],
+            num_feat=cfg["num_feat"],
+            num_block=cfg["num_block"],
+            num_out_ch=cfg["num_out_ch"],
+            upscale=scale,
+            light=cfg["light"],
+            rgb_mean=cfg["rgb_mean"],
+        )
+
     ############################
 
     if cfg["CEM"] is True:

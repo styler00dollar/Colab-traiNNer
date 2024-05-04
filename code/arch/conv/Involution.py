@@ -3,7 +3,6 @@
 https://github.com/xmu-xiaoma666/External-Attention-pytorch/blob/master/model/conv/Involution.py
 """
 
-
 import torch
 from torch import nn
 

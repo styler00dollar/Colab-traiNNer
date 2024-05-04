@@ -827,8 +827,6 @@ class PCconv(pl.LightningModule):
         return out_final
 
 
-
-
 # Define the resnet block
 class ResnetBlock(pl.LightningModule):
     def __init__(self, dim, dilation=1):

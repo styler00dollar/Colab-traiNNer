@@ -19,7 +19,6 @@ import torch.nn.functional as F
 # from models.generator.projection import Feature2Structure, Feature2Texture
 
 
-
 def extract_patches(x, kernel_size=3, stride=1):
     if kernel_size != 1:
         x = nn.ZeroPad2d(1)(x)

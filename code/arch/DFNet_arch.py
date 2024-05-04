@@ -233,8 +233,6 @@ class FusionBlock(pl.LightningModule):
         return result, alpha, raw
 
 
-
-
 class DFNet(pl.LightningModule):
     def __init__(
         self,

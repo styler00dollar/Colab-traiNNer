@@ -16,48 +16,48 @@ from torch import Tensor
 class NAdamW(torch.optim.Optimizer):
     r"""Implements NAdamW algorithm.
 
-      See Table 1 in https://arxiv.org/abs/1910.05446 for the implementation of
-      the NAdam algorithm (there is also a comment in the code which highlights
-      the only difference of NAdamW and AdamW).
-      For further details regarding the algorithm we refer to
-      `Decoupled Weight Decay Regularization`_.
+    See Table 1 in https://arxiv.org/abs/1910.05446 for the implementation of
+    the NAdam algorithm (there is also a comment in the code which highlights
+    the only difference of NAdamW and AdamW).
+    For further details regarding the algorithm we refer to
+    `Decoupled Weight Decay Regularization`_.
 
-      Args:
-        params (iterable): iterable of parameters to optimize or dicts defining
-            parameter groups
-        lr (float, optional): learning rate (default: 1e-3)
-        betas (Tuple[float, float], optional): coefficients used for computing
-            running averages of gradient and its square (default: (0.9, 0.999))
-        eps (float, optional): term added to the denominator to improve
-            numerical stability (default: 1e-8)
-        weight_decay (float, optional): weight decay coefficient (default: 1e-2)
-      .. _Decoupled Weight Decay Regularization:
-          https://arxiv.org/abs/1711.05101
-      .. _On the Convergence of Adam and Beyond:
-          https://openreview.net/forum?id=ryQu7f-RZ
+    Args:
+      params (iterable): iterable of parameters to optimize or dicts defining
+          parameter groups
+      lr (float, optional): learning rate (default: 1e-3)
+      betas (Tuple[float, float], optional): coefficients used for computing
+          running averages of gradient and its square (default: (0.9, 0.999))
+      eps (float, optional): term added to the denominator to improve
+          numerical stability (default: 1e-8)
+      weight_decay (float, optional): weight decay coefficient (default: 1e-2)
+    .. _Decoupled Weight Decay Regularization:
+        https://arxiv.org/abs/1711.05101
+    .. _On the Convergence of Adam and Beyond:
+        https://openreview.net/forum?id=ryQu7f-RZ
     """
 
     def __init__(
-            self,
-            params,
-            lr=1e-3,
-            betas=(0.9, 0.999),
-            eps=1e-8,
-            weight_decay=1e-2,
-            maximize: bool = False,
-            foreach: Optional[bool] = None,
-            capturable: bool = False,
+        self,
+        params,
+        lr=1e-3,
+        betas=(0.9, 0.999),
+        eps=1e-8,
+        weight_decay=1e-2,
+        maximize: bool = False,
+        foreach: Optional[bool] = None,
+        capturable: bool = False,
     ):
         if not 0.0 <= lr:
-            raise ValueError(f'Invalid learning rate: {lr}')
+            raise ValueError(f"Invalid learning rate: {lr}")
         if not 0.0 <= eps:
-            raise ValueError(f'Invalid epsilon value: {eps}')
+            raise ValueError(f"Invalid epsilon value: {eps}")
         if not 0.0 <= betas[0] < 1.0:
-            raise ValueError(f'Invalid beta parameter at index 0: {betas[0]}')
+            raise ValueError(f"Invalid beta parameter at index 0: {betas[0]}")
         if not 0.0 <= betas[1] < 1.0:
-            raise ValueError(f'Invalid beta parameter at index 1: {betas[1]}')
+            raise ValueError(f"Invalid beta parameter at index 1: {betas[1]}")
         if not 0.0 <= weight_decay:
-            raise ValueError(f'Invalid weight_decay value: {weight_decay}')
+            raise ValueError(f"Invalid weight_decay value: {weight_decay}")
         defaults = dict(
             lr=lr,
             betas=betas,
@@ -73,18 +73,19 @@ class NAdamW(torch.optim.Optimizer):
         super().__setstate__(state)
         state_values = list(self.state.values())
         step_is_tensor = (len(state_values) != 0) and torch.is_tensor(
-            state_values[0]['step'])
+            state_values[0]["step"]
+        )
         if not step_is_tensor:
             for s in state_values:
-                s['step'] = torch.tensor(float(s['step']))
+                s["step"] = torch.tensor(float(s["step"]))
 
     @torch.no_grad()
     def step(self, closure=None):
         """Performs a single optimization step.
 
-            Args:
-              closure (callable, optional): A closure that reevaluates the model
-                  and returns the loss.
+        Args:
+          closure (callable, optional): A closure that reevaluates the model
+              and returns the loss.
         """
         self._cuda_graph_capture_health_check()
 
@@ -99,29 +100,33 @@ class NAdamW(torch.optim.Optimizer):
             exp_avgs = []
             exp_avg_sqs = []
             state_steps = []
-            beta1, beta2 = group['betas']
+            beta1, beta2 = group["betas"]
 
-            for p in group['params']:
+            for p in group["params"]:
                 if p.grad is None:
                     continue
                 params_with_grad.append(p)
                 if p.grad.is_sparse:
-                    raise RuntimeError('NAdamW does not support sparse gradients')
+                    raise RuntimeError("NAdamW does not support sparse gradients")
                 grads.append(p.grad)
 
                 state = self.state[p]
 
                 # State initialization
                 if len(state) == 0:
-                    state['step'] = torch.tensor(0.)
+                    state["step"] = torch.tensor(0.0)
                     # Exponential moving average of gradient values
-                    state['exp_avg'] = torch.zeros_like(p, memory_format=torch.preserve_format)
+                    state["exp_avg"] = torch.zeros_like(
+                        p, memory_format=torch.preserve_format
+                    )
                     # Exponential moving average of squared gradient values
-                    state['exp_avg_sq'] = torch.zeros_like(p, memory_format=torch.preserve_format)
+                    state["exp_avg_sq"] = torch.zeros_like(
+                        p, memory_format=torch.preserve_format
+                    )
 
-                exp_avgs.append(state['exp_avg'])
-                exp_avg_sqs.append(state['exp_avg_sq'])
-                state_steps.append(state['step'])
+                exp_avgs.append(state["exp_avg"])
+                exp_avg_sqs.append(state["exp_avg_sq"])
+                state_steps.append(state["step"])
 
             nadamw(
                 params_with_grad,
@@ -131,40 +136,41 @@ class NAdamW(torch.optim.Optimizer):
                 state_steps,
                 beta1=beta1,
                 beta2=beta2,
-                lr=group['lr'],
-                weight_decay=group['weight_decay'],
-                eps=group['eps'],
-                maximize=group['maximize'],
-                capturable=group['capturable'],
+                lr=group["lr"],
+                weight_decay=group["weight_decay"],
+                eps=group["eps"],
+                maximize=group["maximize"],
+                capturable=group["capturable"],
             )
 
         return loss
 
 
 def nadamw(
-        params: List[Tensor],
-        grads: List[Tensor],
-        exp_avgs: List[Tensor],
-        exp_avg_sqs: List[Tensor],
-        state_steps: List[Tensor],
-        foreach: Optional[bool] = None,
-        capturable: bool = False,
-        *,
-        beta1: float,
-        beta2: float,
-        lr: float,
-        weight_decay: float,
-        eps: float,
-        maximize: bool,
+    params: List[Tensor],
+    grads: List[Tensor],
+    exp_avgs: List[Tensor],
+    exp_avg_sqs: List[Tensor],
+    state_steps: List[Tensor],
+    foreach: Optional[bool] = None,
+    capturable: bool = False,
+    *,
+    beta1: float,
+    beta2: float,
+    lr: float,
+    weight_decay: float,
+    eps: float,
+    maximize: bool,
 ) -> None:
     r"""Functional API that performs NAdamW algorithm computation.
-      See NAdamW class for details.
+    See NAdamW class for details.
     """
 
     if not all(isinstance(t, torch.Tensor) for t in state_steps):
         raise RuntimeError(
-            'API has changed, `state_steps` argument must contain a list of' +
-            ' singleton tensors')
+            "API has changed, `state_steps` argument must contain a list of"
+            + " singleton tensors"
+        )
 
     if foreach is None:
         foreach = True
@@ -190,19 +196,19 @@ def nadamw(
 
 
 def _single_tensor_nadamw(
-        params: List[Tensor],
-        grads: List[Tensor],
-        exp_avgs: List[Tensor],
-        exp_avg_sqs: List[Tensor],
-        state_steps: List[Tensor],
-        *,
-        beta1: float,
-        beta2: float,
-        lr: float,
-        weight_decay: float,
-        eps: float,
-        maximize: bool,
-        capturable: bool
+    params: List[Tensor],
+    grads: List[Tensor],
+    exp_avgs: List[Tensor],
+    exp_avg_sqs: List[Tensor],
+    state_steps: List[Tensor],
+    *,
+    beta1: float,
+    beta2: float,
+    lr: float,
+    weight_decay: float,
+    eps: float,
+    maximize: bool,
+    capturable: bool,
 ):
 
     for i, param in enumerate(params):
@@ -215,7 +221,7 @@ def _single_tensor_nadamw(
         step_t += 1
 
         # Perform stepweight decay.
-        param.mul_(1. - lr * weight_decay)
+        param.mul_(1.0 - lr * weight_decay)
 
         # Decay the first and second moment running average coefficient.
         exp_avg.mul_(beta1).add_(grad, alpha=1 - beta1)
@@ -238,12 +244,14 @@ def _single_tensor_nadamw(
             # The official PyTorch implementation of NAdam uses a different algorithm.
             exp_avg = exp_avg.mul(beta1).add_(grad, alpha=1 - beta1)
 
-            denom = (exp_avg_sq.sqrt() / (bias_correction2_sqrt * step_size_neg)).add_(eps / step_size_neg)
+            denom = (exp_avg_sq.sqrt() / (bias_correction2_sqrt * step_size_neg)).add_(
+                eps / step_size_neg
+            )
             param.addcdiv_(exp_avg, denom)
         else:
             step = step_t.item()
-            bias_correction1 = 1 - beta1 ** step
-            bias_correction2 = 1 - beta2 ** step
+            bias_correction1 = 1 - beta1**step
+            bias_correction2 = 1 - beta2**step
             step_size = lr / bias_correction1
             bias_correction2_sqrt = math.sqrt(bias_correction2)
 
@@ -256,19 +264,19 @@ def _single_tensor_nadamw(
 
 
 def _multi_tensor_nadamw(
-        params: List[Tensor],
-        grads: List[Tensor],
-        exp_avgs: List[Tensor],
-        exp_avg_sqs: List[Tensor],
-        state_steps: List[Tensor],
-        *,
-        beta1: float,
-        beta2: float,
-        lr: float,
-        weight_decay: float,
-        eps: float,
-        maximize: bool,
-        capturable: bool,
+    params: List[Tensor],
+    grads: List[Tensor],
+    exp_avgs: List[Tensor],
+    exp_avg_sqs: List[Tensor],
+    state_steps: List[Tensor],
+    *,
+    beta1: float,
+    beta2: float,
+    lr: float,
+    weight_decay: float,
+    eps: float,
+    maximize: bool,
+    capturable: bool,
 ):
     if len(params) == 0:
         return
@@ -283,7 +291,9 @@ def _multi_tensor_nadamw(
 
     grads = [torch.view_as_real(x) if torch.is_complex(x) else x for x in grads]
     exp_avgs = [torch.view_as_real(x) if torch.is_complex(x) else x for x in exp_avgs]
-    exp_avg_sqs = [torch.view_as_real(x) if torch.is_complex(x) else x for x in exp_avg_sqs]
+    exp_avg_sqs = [
+        torch.view_as_real(x) if torch.is_complex(x) else x for x in exp_avg_sqs
+    ]
     params = [torch.view_as_real(x) if torch.is_complex(x) else x for x in params]
 
     # update steps

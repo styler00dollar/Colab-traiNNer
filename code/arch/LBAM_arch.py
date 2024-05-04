@@ -69,7 +69,6 @@ class MaskUpdate(pl.LightningModule):
         return torch.pow(self.updateFunc(inputMaskMap), self.alpha)
 
 
-
 # from models.ActivationFunction import GaussActivation, MaskUpdate
 # from models.weightInitial import weights_init
 
@@ -179,7 +178,6 @@ class ReverseAttention(pl.LightningModule):
             outputFeatures = self.activ(outputFeatures)
 
         return outputFeatures
-
 
 
 # from models.ActivationFunction import GaussActivation, MaskUpdate
@@ -308,7 +306,6 @@ class ForwardAttention(pl.LightningModule):
             features = self.activ(features)
 
         return features, maskUpdated, convPreF, maskActiv
-
 
 
 # from models.forwardAttentionLayer import ForwardAttention

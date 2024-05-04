@@ -175,7 +175,6 @@ class ResBlock_new(pl.LightningModule):
         return output
 
 
-
 # from . import block as B
 
 

@@ -965,6 +965,7 @@ def random_noise_levels() -> tuple:
 
     def line(x):
         return 2.18 * x + 1.2
+
     log_read_noise = line(log_shot_noise) + np.random.normal(scale=0.26)
     read_noise = np.exp(log_read_noise)
     return shot_noise, read_noise

@@ -998,8 +998,6 @@ class ModMBStddevLayer(nn.Module):
         return torch.cat([x, y], dim=1)
 
 
-
-
 def get_module_device(module):
     """Get the device of a module.
 

@@ -65,7 +65,7 @@ class DS_lrhr_val(Dataset):
         for hr_path, _, fnames in sorted(os.walk(hr_path)):
             for fname in sorted(fnames):
                 path = os.path.join(hr_path, fname)
-                if ".pt" in path or ".jpg" in path or ".webp" in path:
+                if ".png" in path or ".jpg" in path or ".webp" in path:
                     self.samples.append(path)
         if len(self.samples) == 0:
             raise RuntimeError("Found 0 files in subfolders of: " + hr_path)
