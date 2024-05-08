@@ -8,7 +8,8 @@ You can also use the code locally. Install commands for local usage:
 ```
 pip install lion-pytorch pytorch-lightning==2.0.4 \
     git+https://github.com/vballoli/nfnets-pytorch \
-    basicsr albumentations IPython scipy pandas opencv-python pillow wget \
+    git+https://github.com/styler00dollar/BasicSR albumentations \
+    IPython scipy pandas opencv-python pillow wget \
     tfrecord x-transformers adamp efficientnet_pytorch \
     tensorboardX vit-pytorch swin-transformer-pytorch madgrad \
     git+https://github.com/huggingface/pytorch-image-models pillow-avif-plugin \
